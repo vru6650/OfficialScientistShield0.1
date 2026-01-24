@@ -2,7 +2,7 @@
 
 ![Node.js](https://img.shields.io/badge/node-%3E%3D18.0-brightgreen) ![MongoDB](https://img.shields.io/badge/MongoDB-6.x-green) ![License](https://img.shields.io/badge/license-MIT-blue) ![Build](https://img.shields.io/badge/build-Vite%20%2B%20Express-orange)
 
-ScientistShield 2.0 is a modern MERN knowledge platform that bundles tutorials, quizzes, problems, search, and safe multi‑language code runners into a single learning experience. The project ships with a production-ready Express backend, a Vite + React frontend, and optional Elasticsearch integration for full‑text search. A macOS-inspired desktop workspace with Stage Manager keeps admin tools, readers, and utilities organized across sessions.
+ScientistShield 2.0 is a modern MERN knowledge platform that bundles tutorials, quizzes, problems, search, and safe multi‑language code runners into a single learning experience. The project ships with a production-ready Express backend, a Vite + React frontend, and optional Elasticsearch integration for full‑text search. A macOS-inspired desktop workspace keeps admin tools, readers, and utilities organized across sessions without hiding windows behind scenes.
 
 ---
 
@@ -28,7 +28,7 @@ ScientistShield 2.0 is a modern MERN knowledge platform that bundles tutorials, 
 - **Safe Execution** – Sandbox endpoints for JavaScript, Python, C/C++, Java, and C# with defensive timeouts and helpful failure messages.
 - **Authentication** – JWT + cookie sessions, role‑based routes, and secure API middlewares.
 - **Operations Ready** – Production build script, shared logger, centralized error handler, and environment driven configuration.
-- **Desktop Workspace** – Persistent Stage Manager scenes, Mission Control, and dock controls for a macOS-like productivity flow.
+- **Desktop Workspace** – Mission Control, focus mode, and dock controls deliver a macOS-like productivity flow.
 
 ## Architecture
 ```
@@ -183,28 +183,20 @@ The suite covers controllers, routes, services, and utilities using Node's built
 
 ---
 
-## Stage Manager Workspace
-Stage Manager powers the macOS-inspired desktop by keeping related windows grouped into curated “scenes” so you can jump between workflows without losing context.
+## Desktop Controls
+The desktop now keeps every utility visible so you can rearrange layouts freely—no staged scenes required.
 
-### Key capabilities
-- Toggle Stage Manager from the dock control or with `⌘⌥S` (`Ctrl+Alt+S` on Windows/Linux).
-- Cycle scenes via `⌘⌥→` / `⌘⌥←`, or open Mission Control with `⌘↑` to pick a window visually.
-- Scene activation restores missing utility panes and minimizes anything that does not belong, keeping the layout tidy.
-- The window shelf revives closed or staged utilities and can add them back into the active scene with one click.
-- Hot corners trigger Stage Manager (bottom-left), Mission Control, Quick Look, and Focus Mode; flick the pointer into a corner to fire the mapped action.
-
-### Default scenes
-- **Workspace** – Primary reading surface paired with the System Status utility.
-- **Creator Kit** – Main window alongside Scratchpad and Now Playing for content creation.
-- **Planning Loop** – Main window with the Action Queue for roadmap triage.
-
-Locked scenes ship with the workspace. Use **Save Current Layout** inside the Stage Manager panel to capture your own sets; every visible utility is recorded (the primary window is always included). Remove any unlocked set from the same panel and the dock will stay in sync automatically.
+### Window controls
+- Focus Mode hides supporting utilities and keeps the primary window front and center. Toggle it from the command palette or with `⌘⌥F` (`Ctrl+Alt+F` on Windows/Linux).
+- Mission Control fans out every window for drag-and-drop arrangement. Launch it from the dock or with `⌘↑` (`Ctrl+Up` on Windows/Linux).
+- Quick Look previews the focused window with Spacebar so you can skim content without moving focus.
+- Hot corners trigger Quick Look, Mission Control, and Focus Mode; flick the pointer into a corner to fire the mapped action.
+- The wallpaper shifts automatically with the time of day, blending light and dark themes with macOS-style gradients.
 
 ### Persistence & data keys
-Stage Manager synchronizes state across tabs through `localStorage`:
+Window positions, focus mode, hot corners, and scratchpad content still persist via `localStorage`:
 
 ```
-scientistshield.desktop.stageManager.v1   // Scene definitions, enabled flag, active scene
 scientistshield.desktop.windowState.v2    // Window positions, sizes, z-index, focus memory
 scientistshield.desktop.hotCorners.v1     // Enabled state and per-corner actions
 scientistshield.desktop.scratchpad        // Scratchpad text content
@@ -222,8 +214,9 @@ The client UI adopts a WhiteSur (macOS Big Sur) inspired theme featuring frosted
   - Reset with `localStorage.removeItem('iconPack'); location.reload();`
 - The header features macOS-style window controls. Glass surfaces use the `glass-effect` utility to adapt across light/dark modes.
 - The PWA manifest `theme_color` matches the accent color for cohesive installations.
-- Use the dock's **Stage Manager** control to toggle curated window groups. State persists via `localStorage` (`scientistshield.desktop.stageManager.v1`) and broadcasts across components so the desktop and dock stay in sync.
+- Dock controls launch Mission Control, focus mode, and other utilities so everything stays within reach.
 
 ---
 
 Versions: ScientistShield_0.1 · ScientistShield0.2 · ScientistShield1.0 · ScientistShield2.0
+# finaldock2
