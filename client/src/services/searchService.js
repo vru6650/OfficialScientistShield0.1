@@ -27,7 +27,7 @@ export const getSearchResults = async (params = {}, options = {}) => {
     }
 
     const queryString = searchParams.toString();
-    const url = queryString ? `/api/search?${queryString}` : '/api/search';
+    const url = queryString ? `/api/v1/search?${queryString}` : '/api/v1/search';
 
     const res = await apiFetch(url, { signal: options.signal });
     if (!res.ok) {

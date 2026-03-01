@@ -2,6 +2,7 @@ import {
     FaCode,
     FaBolt,
     FaMagic,
+    FaLanguage,
     FaLaptopCode,
     FaChalkboardTeacher,
     FaQuestionCircle,
@@ -12,6 +13,7 @@ import {
     FaLayerGroup,
     FaProjectDiagram,
     FaCodeBranch,
+    FaBookReader,
 } from 'react-icons/fa';
 
 export const workspaceTools = [
@@ -46,6 +48,27 @@ export const workspaceTools = [
         ],
     },
     {
+        id: 'hindi-pdf-epub-converter',
+        name: 'Hindi PDF to EPUB Converter',
+        description: 'Convert Hindi PDF documents into EPUB eBooks directly in your browser.',
+        longDescription:
+            'Upload a Hindi PDF, extract Unicode-safe text with preserved paragraphs/headings/lists, auto-detect smart chapters, tune OCR language profiles, choose Sanskrit-ready Devanagari fonts, embed PDF images, and export an EPUB with bookmark-driven TOC navigation.',
+        icon: FaLanguage,
+        category: 'Converters',
+        accent: 'from-fuchsia-500 to-rose-500',
+        tags: ['hindi', 'pdf', 'epub', 'ebook'],
+        tips: [
+            'This converter works best with text-based PDFs that contain selectable text.',
+            'Use Smart chapter mode and OCR language profile settings for cleaner structure in mixed Sanskrit-Hindi-English books.',
+            'Turn on formatting preservation to keep paragraphs, headings, and list blocks in the EPUB output.',
+            'Select the Sanskrit Devanagari serif font profile when your text includes many Sanskrit shlokas, Hindi prose, and English headings.',
+            'Use conversion presets for one-click tuning (recommended, OCR-heavy scans, fast text, or image archive).',
+            'Pick the Advanced Devanagari OCR profile for the highest accuracy on mixed Hindi/Sanskrit/Marathi/Nepali scans with English headings.',
+            'Export the conversion report JSON to keep a reusable audit of OCR usage, layout settings, and output quality stats.',
+            'Scanned image-only PDFs usually need OCR before conversion to produce readable Unicode text in the EPUB.',
+        ],
+    },
+    {
         id: 'text-transformer',
         name: 'Text Transformer',
         description: 'Quickly switch between common casing styles and clean text.',
@@ -58,6 +81,24 @@ export const workspaceTools = [
         tips: [
             'Use sentence and title case helpers to prepare marketing copy without leaving the app.',
             'Generate snake case instantly when you need environment variable friendly identifiers.',
+        ],
+    },
+    {
+        id: 'ebook-reader',
+        name: 'Reader Workspace',
+        description: 'Reading, reading rhythm, table of contents, bookmarks, highlights, underlines, and notes.',
+        longDescription:
+            'Drop EPUB or PDF files, auto-build a TOC, and read in scroll or paged view with keyboard/touch navigation. Customize typography, width, margins, brightness, and theme presets; toggle focus mode or auto-scroll. Power features include multi-color highlights/underlines with notes, bookmarks, case/whole-word search with jump navigation, read-aloud (Web Speech), inline dictionary lookups, line-guided reading, and persistent progress/highlights via localStorage.',
+        icon: FaBookReader,
+        category: 'Reading',
+        accent: 'from-emerald-500 to-teal-500',
+        tags: ['ebook', 'reader', 'epub', 'pdf'],
+        tips: [
+            'Tap the Reading Control Center to tune fonts, spacing, brightness, width, and theme presets (day/sepia/mint/dusk/night).',
+            'Switch between scroll and paged view; use arrows, PageUp/PageDown, or swipe to turn pages, and press Alt+Enter for fullscreen focus.',
+            'Highlight or underline with four palettes, attach quick notes, and reopen them from the highlight list; bookmarks and progress auto-save per book.',
+            'Use search with case/whole-word toggles, jump previous/next, and combine with the reading guide or high-contrast mode for deep study.',
+            'Select text to run inline dictionary lookup or trigger read-aloud via Web Speech voices; auto-scroll helps with hands-free reading.',
         ],
     },
 ];
@@ -94,6 +135,17 @@ export const resourceTools = [
         tags: ['visualization', 'code flow'],
         isFeatured: true,
         highlight: 'New • Step through binary search, debounce, and BFS',
+    },
+    {
+        id: 'hindi-pdf-epub-converter-workbench',
+        name: 'Hindi PDF to EPUB Converter',
+        description: 'Convert Hindi PDFs into EPUB with OCR profiles, smart chapters, and image embedding controls.',
+        icon: FaLanguage,
+        category: 'Developer Tools',
+        href: '/tools/hindi-pdf-epub-converter',
+        tags: ['hindi', 'pdf', 'epub', 'converter'],
+        isFeatured: true,
+        highlight: 'New • Browser-based PDF to EPUB conversion',
     },
     {
         id: 'tutorial-library',
@@ -160,6 +212,17 @@ export const resourceTools = [
         tags: ['curated', 'thematic'],
         external: false,
         highlight: 'New content is added weekly',
+    },
+    {
+        id: 'ebook-reader-directory',
+        name: 'Reader Workspace',
+        description: 'Reading, reading rhythm, table of contents, bookmarks, highlights, underlines, and notes.',
+        icon: FaBookReader,
+        category: 'Reading',
+        href: '/tools/ebook-reader',
+        tags: ['ebook', 'reader', 'epub', 'pdf'],
+        isFeatured: true,
+        highlight: 'New • Reader workspace',
     },
 ];
 

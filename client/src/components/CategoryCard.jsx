@@ -76,7 +76,7 @@ const CategoryCard = ({ title, description, linkTo, gradient }) => {
         <Link to={linkTo} className="block w-full h-full">
             <motion.div
                 ref={cardRef}
-                className={`relative flex flex-col items-center justify-center p-8 rounded-xl overflow-hidden transition-shadow duration-300 text-center ${gradient}`}
+                className="macos-sequoia-card macos-liquid-card h-full text-left"
                 variants={itemVariants}
                 initial="hidden"
                 whileInView="visible"
@@ -88,39 +88,50 @@ const CategoryCard = ({ title, description, linkTo, gradient }) => {
                     rotateX,
                     rotateY,
                     scale,
-                    boxShadow: useTransform(shadowOpacity, (o) => `0 15px 30px rgba(0,0,0,${o})`),
+                    '--card-tilt-shadow': useTransform(shadowOpacity, (o) => `0 32px 90px -64px rgba(15,23,42,${o})`),
                     perspective: 1000
                 }}
             >
-                {/* Add a motion.div for the icon */}
-                {Icon && (
-                    <motion.div
-                        className="mb-4"
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        whileHover={{ rotate: 5, scale: 1.1 }}
-                    >
-                        <Icon size={60} className="text-white relative z-10" />
-                    </motion.div>
-                )}
+                <div className={`macos-sequoia-card__halo macos-liquid-card__halo ${gradient}`} aria-hidden />
+                <span className="macos-sequoia-card__shine macos-liquid-card__shine" aria-hidden />
 
-                <h2 className="text-3xl font-bold text-white mb-2 relative z-10">{title}</h2>
-                <p className="text-gray-100 mb-4 text-sm relative z-10">{description}</p>
-                <Button outline className="text-white border-white hover:bg-white hover:text-gray-800 relative z-10">
-                    Learn {title}
-                    <HiArrowRight className="ml-2" />
-                </Button>
+                <div className="macos-sequoia-card__header">
+                    <span className="macos-sequoia-card__badge">
+                        <span className="macos-sequoia-card__dot" aria-hidden />
+                        Liquid glass ready
+                    </span>
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">
+                        {title}
+                    </span>
+                </div>
 
-                <motion.div
-                    className="absolute inset-0 z-0 rounded-xl"
-                    animate={{
-                        backgroundImage: isHovering ?
-                            "linear-gradient(45deg, #10b981, #3b82f6, #8b5cf6, #ec4899)" :
-                            "linear-gradient(45deg, transparent, transparent, transparent, transparent)"
-                    }}
-                    transition={{ duration: 0.5 }}
-                />
+                <div className="flex flex-col gap-6">
+                    <div className="flex items-center gap-4">
+                        {Icon && (
+                            <motion.div
+                                className="macos-sequoia-card__icon macos-liquid-card__icon"
+                                initial={{ opacity: 0, y: -12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.35, delay: 0.15 }}
+                                whileHover={{ rotate: 4, scale: 1.04 }}
+                            >
+                                <Icon size={32} aria-hidden />
+                            </motion.div>
+                        )}
+                        <div className="space-y-2">
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h2>
+                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{description}</p>
+                        </div>
+                    </div>
+
+                    <div className="macos-sequoia-card__footer">
+                        <span className="macos-sequoia-card__footnote">Liquid glass surface</span>
+                        <Button pill className="btn-aqua macos-sequoia-card__button">
+                            Open space
+                            <HiArrowRight className="ml-2" />
+                        </Button>
+                    </div>
+                </div>
             </motion.div>
         </Link>
     );

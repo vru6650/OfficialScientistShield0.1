@@ -7,11 +7,8 @@ import dashboardIcon from '../assets/dock/dashboard.svg';
 import quickAddIcon from '../assets/dock/quick-add.svg';
 import themeIcon from '../assets/dock/theme.svg';
 import fileManagerIcon from '../assets/dock/file-manager.svg';
-import stageManagerIcon from '../assets/dock/stage-manager.svg';
+import settingsIcon from '../assets/dock/settings.svg';
 
-// Optional WhiteSur icon pack support
-// If localStorage.iconPack === 'whitesur', we prefer icons from
-// `/icons/whitesur/<key>.svg` served from the public/ folder.
 const getIconPack = () => {
     if (typeof window === 'undefined') return 'default';
     try {
@@ -26,6 +23,12 @@ const buildIconSrc = (key, fallbackImport) => {
     if (pack === 'whitesur') return `/icons/whitesur/${key}.svg`;
     return fallbackImport;
 };
+
+export const resolveDockIcons = (items) =>
+    items.map((item) => ({
+        ...item,
+        iconSrc: buildIconSrc(item.key, item.fallbackIconSrc ?? item.iconSrc),
+    }));
 
 export const baseDockItems = [
     {
@@ -113,21 +116,21 @@ export const themeDockItem = {
     iconAlt: 'Toggle theme',
 };
 
-export const stageManagerDockItem = {
-    key: 'stage-manager',
-    type: 'stage-manager',
-    label: 'Stage Manager',
-    iconSrc: buildIconSrc('stage-manager', stageManagerIcon),
-    fallbackIconSrc: stageManagerIcon,
-    iconAlt: 'Stage Manager controls',
+export const settingsDockItem = {
+    key: 'settings',
+    type: 'settings',
+    label: 'Settings',
+    iconSrc: buildIconSrc('settings', settingsIcon),
+    fallbackIconSrc: settingsIcon,
+    iconAlt: 'Open settings',
 };
 
-export const baseDockSequence = [...baseDockItems, stageManagerDockItem, quickAddDockItem, themeDockItem];
+export const baseDockSequence = [...baseDockItems, quickAddDockItem, settingsDockItem, themeDockItem];
 
 export const dockSequenceWithDashboard = [
     ...baseDockItems,
     dashboardDockItem,
-    stageManagerDockItem,
     quickAddDockItem,
+    settingsDockItem,
     themeDockItem,
 ];

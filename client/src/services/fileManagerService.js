@@ -15,17 +15,17 @@ export const getDirectory = async (parentId = null) => {
         params.append('parentId', parentId);
     }
     const query = params.toString();
-    const res = await apiFetch(`/api/files${query ? `?${query}` : ''}`);
+    const res = await apiFetch(`/api/v1/files${query ? `?${query}` : ''}`);
     return handleResponse(res);
 };
 
 export const getFolderTree = async () => {
-    const res = await apiFetch('/api/files/tree');
+    const res = await apiFetch('/api/v1/files/tree');
     return handleResponse(res);
 };
 
 export const createFolder = async ({ name, parentId = null }) => {
-    const res = await apiFetch('/api/files/folder', {
+    const res = await apiFetch('/api/v1/files/folder', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -41,7 +41,7 @@ export const uploadFile = async ({ file, parentId = null }) => {
     if (parentId) {
         formData.append('parentId', parentId);
     }
-    const res = await apiFetch('/api/files/upload', {
+    const res = await apiFetch('/api/v1/files/upload', {
         method: 'POST',
         body: formData,
     });
@@ -49,7 +49,7 @@ export const uploadFile = async ({ file, parentId = null }) => {
 };
 
 export const updateFileNode = async ({ id, payload }) => {
-    const res = await apiFetch(`/api/files/${id}`, {
+    const res = await apiFetch(`/api/v1/files/${id}`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ export const updateFileNode = async ({ id, payload }) => {
 };
 
 export const deleteFileNode = async (id) => {
-    const res = await apiFetch(`/api/files/${id}`, {
+    const res = await apiFetch(`/api/v1/files/${id}`, {
         method: 'DELETE',
     });
     return handleResponse(res);

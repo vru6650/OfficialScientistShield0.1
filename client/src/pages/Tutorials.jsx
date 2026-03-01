@@ -1,12 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Spinner, Alert, Button, TextInput, Select } from 'flowbite-react';
-import { motion } from 'framer-motion';
+import {
+    HiOutlineArrowPath,
+    HiOutlineBookOpen,
+    HiOutlineMagnifyingGlass,
+    HiOutlineSparkles,
+    HiOutlineSquares2X2,
+    HiOutlineXMark,
+} from 'react-icons/hi2';
 
 import TutorialCard from '../components/TutorialCard';
+import TutorialCardSkeleton from '../components/TutorialCardSkeleton';
 import { getTutorials } from '../services/tutorialService.js';
-import TutorialCardSkeleton from '../components/TutorialCardSkeleton'; // <-- Import the new skeleton component
+
+const formatCategoryLabel = (value) =>
+    value
+        .replace(/-/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase());
 
 export default function Tutorials() {
     const location = useLocation();
@@ -37,35 +48,54 @@ export default function Tutorials() {
     });
 
     const tutorials = data?.tutorials || [];
+    const totalTutorials = data?.totalTutorials ?? tutorials.length;
+    const lastMonthTutorials = data?.lastMonthTutorials ?? null;
 
-    const handleSearchSubmit = (e) => {
-        e.preventDefault();
+    const handleSearchSubmit = (event) => {
+        event.preventDefault();
         const urlParams = new URLSearchParams(location.search);
         urlParams.set('searchTerm', sidebarSearchTerm);
         navigate({ search: urlParams.toString() });
     };
 
-    const handleCategoryChange = (e) => {
-        const newCategory = e.target.value;
+    const handleCategoryChange = (event) => {
+        const newCategory = event.target.value;
         const urlParams = new URLSearchParams(location.search);
         urlParams.set('category', newCategory);
         navigate({ search: urlParams.toString() });
     };
 
-    const handleSortChange = (e) => {
-        const newSort = e.target.value;
+    const handleSortChange = (event) => {
+        const newSort = event.target.value;
         const urlParams = new URLSearchParams(location.search);
         urlParams.set('sort', newSort);
         navigate({ search: urlParams.toString() });
     };
 
+    const handleResetFilters = () => {
+        setSidebarSearchTerm('');
+        navigate('/tutorials');
+    };
+
     const { data: categoriesData, isLoading: categoriesLoading, isError: categoriesError } = useQuery({
         queryKey: ['tutorialCategories'],
         queryFn: async () => {
-            return new Promise(resolve => {
+            return new Promise((resolve) => {
                 setTimeout(() => {
                     resolve([
-                        'JavaScript', 'React.js', 'Next.js', 'CSS', 'HTML', 'Node.js', 'C++', 'Python', 'Go', 'PHP', 'TypeScript', 'Data Science', 'Machine Learning'
+                        'JavaScript',
+                        'React.js',
+                        'Next.js',
+                        'CSS',
+                        'HTML',
+                        'Node.js',
+                        'C++',
+                        'Python',
+                        'Go',
+                        'PHP',
+                        'TypeScript',
+                        'Data Science',
+                        'Machine Learning',
                     ]);
                 }, 500);
             });
@@ -73,98 +103,281 @@ export default function Tutorials() {
         staleTime: Infinity,
     });
 
+    const numberFormatter = useMemo(() => new Intl.NumberFormat(), []);
     const availableCategories = categoriesData || [];
+    const formattedTotal = numberFormatter.format(totalTutorials);
+    const formattedNew = lastMonthTutorials !== null ? numberFormatter.format(lastMonthTutorials) : '--';
+    const formattedCategories = categoriesLoading
+        ? '...'
+        : categoriesError
+            ? '--'
+            : numberFormatter.format(availableCategories.length);
 
-    const containerVariants = {
-        visible: {
-            transition: {
-                staggerChildren: 0.1
-            }
+    const activeFilters = useMemo(() => {
+        const filters = [];
+        if (searchTerm.trim()) {
+            filters.push({ key: 'search', label: `Search: ${searchTerm.trim()}` });
         }
-    };
+        if (category !== 'uncategorized') {
+            filters.push({ key: 'category', label: formatCategoryLabel(category) });
+        }
+        if (sort === 'asc') {
+            filters.push({ key: 'sort', label: 'Oldest first' });
+        }
+        return filters;
+    }, [searchTerm, category, sort]);
 
-    const cardVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0 }
-    };
+    const resultsSummary = isLoading
+        ? 'Loading tutorials...'
+        : `Showing ${numberFormatter.format(tutorials.length)} of ${formattedTotal} tutorials`;
+
+    const stats = [
+        {
+            label: 'Total tutorials',
+            value: formattedTotal,
+            helper: 'Curated, expert-led guides',
+            icon: HiOutlineBookOpen,
+        },
+        {
+            label: 'New this month',
+            value: formattedNew,
+            helper: 'Fresh content shipping weekly',
+            icon: HiOutlineSparkles,
+        },
+        {
+            label: 'Categories',
+            value: formattedCategories,
+            helper: 'Design, backend, and data',
+            icon: HiOutlineSquares2X2,
+        },
+    ];
 
     return (
-        <div className="p-3 max-w-7xl mx-auto min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-            <h1 className="text-4xl lg:text-5xl font-extrabold text-center my-10 leading-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 drop-shadow-md">
-                Explore All Tutorials
-            </h1>
+        <div className="min-h-screen">
+            <section className="relative overflow-hidden px-4 pt-10 pb-12 sm:px-6 lg:px-8">
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-100/60 via-transparent to-indigo-100/60 opacity-70 dark:from-sky-900/25 dark:to-indigo-900/25"
+                />
+                <div className="relative mx-auto flex max-w-6xl flex-col gap-10">
+                    <div className="macos-panel macos-panel--wide">
+                        <div className="macos-panel__grid space-y-10 p-6 sm:p-8 lg:p-10">
+                            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                                <div className="space-y-3">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.4em] text-sky-500 dark:text-sky-300">
+                                        Tutorial Library
+                                    </p>
+                                    <h1 className="text-3xl font-extrabold text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+                                        Discover guided paths built for momentum
+                                    </h1>
+                                    <p className="max-w-2xl text-base text-slate-600 dark:text-slate-300">
+                                        Step into a studio-like learning experience with curated tutorials, hands-on demos,
+                                        and curated paths for every stage of your journey.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="macos-chip text-[11px] font-semibold uppercase tracking-widest">
+                                        Updated daily
+                                    </span>
+                                    <span className="macos-chip text-[11px] font-semibold uppercase tracking-widest">
+                                        Verified content
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {stats.map(({ label, value, helper, icon: Icon }) => (
+                                    <div key={label} className="macos-tile p-5">
+                                        <div className="flex items-center gap-3">
+                                            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white shadow-md">
+                                                <Icon className="h-5 w-5" aria-hidden />
+                                            </span>
+                                            <div>
+                                                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-300">
+                                                    {label}
+                                                </p>
+                                                <p className="text-2xl font-semibold text-slate-900 dark:text-white">
+                                                    {value}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                                            {helper}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
 
-            {/* Filter and Search Section */}
-            <motion.div
-                className="flex flex-col md:flex-row gap-6 mb-12 items-center justify-center bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 100 }}
-            >
-                <form onSubmit={handleSearchSubmit} className="flex gap-4 w-full md:w-auto">
-                    <TextInput
-                        type="text"
-                        placeholder="Search tutorials..."
-                        value={sidebarSearchTerm}
-                        onChange={(e) => setSidebarSearchTerm(e.target.value)}
-                        className="flex-grow md:flex-grow-0 bg-gray-700 text-white"
-                    />
-                    <Button type="submit" gradientDuoTone="purpleToBlue">Search</Button>
-                </form>
+                    <div className="macos-tile p-6">
+                        <form
+                            onSubmit={handleSearchSubmit}
+                            className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr_0.7fr_auto] lg:items-end"
+                        >
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="tutorial-search"
+                                    className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-300"
+                                >
+                                    Search tutorials
+                                </label>
+                                <div className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm transition focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-200 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-200 dark:focus-within:border-sky-300 dark:focus-within:ring-sky-900/40">
+                                    <HiOutlineMagnifyingGlass className="h-5 w-5 text-slate-400" aria-hidden />
+                                    <input
+                                        id="tutorial-search"
+                                        type="text"
+                                        value={sidebarSearchTerm}
+                                        onChange={(event) => setSidebarSearchTerm(event.target.value)}
+                                        placeholder="Search by topic, tool, or keyword..."
+                                        className="w-full border-none bg-transparent text-sm placeholder:text-slate-400 focus:outline-none focus:ring-0 dark:placeholder:text-slate-500"
+                                    />
+                                    {sidebarSearchTerm && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSidebarSearchTerm('')}
+                                            className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800/70 dark:hover:text-slate-200"
+                                            aria-label="Clear search"
+                                        >
+                                            <HiOutlineXMark className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
 
-                <div className="flex gap-4 w-full md:w-auto">
-                    <Select value={category} onChange={handleCategoryChange} className="min-w-[150px] bg-gray-700 text-white">
-                        <option value="uncategorized">All Categories</option>
-                        {categoriesLoading ? (
-                            <option disabled>Loading categories...</option>
-                        ) : categoriesError ? (
-                            <option disabled>Error loading categories</option>
-                        ) : (
-                            availableCategories.map((cat, index) => (
-                                <option key={index} value={cat.toLowerCase().replace(/\s/g, '-')}>{cat}</option>
-                            ))
-                        )}
-                    </Select>
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="tutorial-category"
+                                    className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-300"
+                                >
+                                    Category
+                                </label>
+                                <select
+                                    id="tutorial-category"
+                                    value={category}
+                                    onChange={handleCategoryChange}
+                                    className="w-full rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:border-sky-300 dark:focus:ring-sky-900/40"
+                                >
+                                    <option value="uncategorized">All Categories</option>
+                                    {categoriesLoading ? (
+                                        <option disabled>Loading categories...</option>
+                                    ) : categoriesError ? (
+                                        <option disabled>Unable to load categories</option>
+                                    ) : (
+                                        availableCategories.map((cat) => (
+                                            <option key={cat} value={cat.toLowerCase().replace(/\s/g, '-')}>
+                                                {cat}
+                                            </option>
+                                        ))
+                                    )}
+                                </select>
+                            </div>
 
-                    <Select value={sort} onChange={handleSortChange} className="min-w-[120px] bg-gray-700 text-white">
-                        <option value="desc">Latest</option>
-                        <option value="asc">Oldest</option>
-                    </Select>
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="tutorial-sort"
+                                    className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-300"
+                                >
+                                    Sort by
+                                </label>
+                                <select
+                                    id="tutorial-sort"
+                                    value={sort}
+                                    onChange={handleSortChange}
+                                    className="w-full rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:border-sky-300 dark:focus:ring-sky-900/40"
+                                >
+                                    <option value="desc">Latest</option>
+                                    <option value="asc">Oldest</option>
+                                </select>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3">
+                                <button
+                                    type="submit"
+                                    className="btn-aqua px-5 py-2 text-sm font-semibold"
+                                >
+                                    Apply filters
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleResetFilters}
+                                    className="macos-chip text-[11px] font-semibold uppercase tracking-widest"
+                                >
+                                    <HiOutlineArrowPath className="h-4 w-4" aria-hidden />
+                                    Reset
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-300">
+                                Results
+                            </p>
+                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                                {resultsSummary}
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {activeFilters.length ? (
+                                activeFilters.map((filter) => (
+                                    <span key={filter.key} className="macos-chip text-[11px] font-semibold uppercase tracking-widest">
+                                        {filter.label}
+                                    </span>
+                                ))
+                            ) : (
+                                <span className="text-xs text-slate-500 dark:text-slate-400">
+                                    No filters applied
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 </div>
-            </motion.div>
+            </section>
 
-            {/* Loading, Error, and No Results States */}
-            {isLoading && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-10">
-                    {[...Array(8)].map((_, index) => <TutorialCardSkeleton key={index} />)}
+            <section className="px-4 pb-16 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-6xl">
+                    {isLoading && (
+                        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                            {Array.from({ length: 6 }).map((_, index) => (
+                                <TutorialCardSkeleton key={index} />
+                            ))}
+                        </div>
+                    )}
+
+                    {isError && (
+                        <div className="macos-tile border border-red-200/70 bg-red-50/80 p-6 text-red-700 dark:border-red-700/60 dark:bg-red-900/30 dark:text-red-200">
+                            Unable to load tutorials. {error?.message || 'Please try again.'}
+                        </div>
+                    )}
+
+                    {!isLoading && !isError && tutorials.length === 0 && (
+                        <div className="macos-tile flex flex-col items-center gap-3 p-10 text-center text-slate-600 dark:text-slate-300">
+                            <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                                No tutorials match these filters
+                            </p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                Try adjusting your search or reset the filters to explore everything.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={handleResetFilters}
+                                className="macos-chip text-[11px] font-semibold uppercase tracking-widest"
+                            >
+                                Reset filters
+                            </button>
+                        </div>
+                    )}
+
+                    {!isLoading && !isError && tutorials.length > 0 && (
+                        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                            {tutorials.map((tutorial) => (
+                                <TutorialCard key={tutorial._id} tutorial={tutorial} />
+                            ))}
+                        </div>
+                    )}
                 </div>
-            )}
-            {isError && (
-                <Alert color="failure" className="text-center mx-auto max-w-lg mt-12 animate-fade-in">
-                    Error loading tutorials: {error?.message || 'Please try again.'}
-                </Alert>
-            )}
-            {!isLoading && tutorials.length === 0 && !isError && (
-                <p className="text-center text-gray-400 text-lg my-12 animate-fade-in">
-                    No tutorials found matching your criteria. Try adjusting your search or filters!
-                </p>
-            )}
-
-            {/* Tutorials Grid */}
-            {!isLoading && tutorials.length > 0 && (
-                <motion.div
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-10"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                >
-                    {tutorials.map((tutorial) => (
-                        <motion.div key={tutorial._id} variants={cardVariants}>
-                            <TutorialCard tutorial={tutorial} />
-                        </motion.div>
-                    ))}
-                </motion.div>
-            )}
+            </section>
         </div>
     );
 }

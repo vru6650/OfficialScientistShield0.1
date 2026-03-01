@@ -1,72 +1,88 @@
 import { Modal, Table, Button } from 'flowbite-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { HiOutlineExclamationCircle } from 'react-icons/hi';
 import { FaCheck, FaTimes } from 'react-icons/fa';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../utils/apiFetch';
+
+const PAGE_SIZE = 9;
+
+const fetchUsersPage = async ({ pageParam = 0 }) => {
+  const res = await apiFetch(`/api/v1/user/getusers?startIndex=${pageParam}&limit=${PAGE_SIZE}`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Failed to fetch users');
+  }
+  return data;
+};
 
 export default function DashUsers() {
   const { currentUser } = useSelector((state) => state.user);
-  const [users, setUsers] = useState([]);
-  const [showMore, setShowMore] = useState(true);
+  const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [userIdToDelete, setUserIdToDelete] = useState('');
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await apiFetch('/api/user/getusers');
-        const data = await res.json();
-        if (res.ok) {
-          setUsers(data.users);
-          if (data.users.length < 9) {
-            setShowMore(false);
-          }
-        }
-      } catch (error) {
-        console.log(error.message);
-      }
-    };
-    if (currentUser.isAdmin) {
-      fetchUsers();
-    }
-  }, [currentUser._id]);
 
-  const handleShowMore = async () => {
-    const startIndex = users.length;
-    try {
-      const res = await apiFetch(`/api/user/getusers?startIndex=${startIndex}`);
-      const data = await res.json();
-      if (res.ok) {
-        setUsers((prev) => [...prev, ...data.users]);
-        if (data.users.length < 9) {
-          setShowMore(false);
-        }
+  const isAdmin = Boolean(currentUser?.isAdmin);
+
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['adminUsers', currentUser?._id],
+    queryFn: fetchUsersPage,
+    enabled: isAdmin,
+    getNextPageParam: (lastPage, pages) =>
+      lastPage?.users?.length === PAGE_SIZE ? pages.length * PAGE_SIZE : undefined,
+  });
+
+  const users = data?.pages?.flatMap((page) => page.users) ?? [];
+
+  const deleteMutation = useMutation({
+    mutationFn: async (userId) => {
+      const res = await apiFetch(`/api/v1/user/delete/${userId}`, {
+        method: 'DELETE',
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(payload.message || 'Failed to delete user');
       }
-    } catch (error) {
-      console.log(error.message);
-    }
+      return userId;
+    },
+    onSuccess: (deletedId) => {
+      queryClient.setQueryData(['adminUsers', currentUser?._id], (oldData) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            users: page.users.filter((user) => user._id !== deletedId),
+          })),
+        };
+      });
+      setShowModal(false);
+    },
+  });
+
+  const handleShowMore = () => {
+    fetchNextPage();
   };
 
-  const handleDeleteUser = async () => {
-    try {
-        const res = await apiFetch(`/api/user/delete/${userIdToDelete}`, {
-            method: 'DELETE',
-        });
-        const data = await res.json();
-        if (res.ok) {
-            setUsers((prev) => prev.filter((user) => user._id !== userIdToDelete));
-            setShowModal(false);
-        } else {
-            console.log(data.message);
-        }
-    } catch (error) {
-        console.log(error.message);
-    }
+  const handleDeleteUser = () => {
+    if (!userIdToDelete) return;
+    deleteMutation.mutate(userIdToDelete);
   };
+
+  const shouldShowEmpty = !isLoading && !isError && users.length === 0;
 
   return (
     <div className='table-auto overflow-x-scroll md:mx-auto p-3 scrollbar scrollbar-track-slate-100 scrollbar-thumb-slate-300 dark:scrollbar-track-slate-700 dark:scrollbar-thumb-slate-500'>
-      {currentUser.isAdmin && users.length > 0 ? (
+      {isAdmin && users.length > 0 ? (
         <>
           <Table hoverable className='shadow-md'>
             <Table.Head>
@@ -114,18 +130,21 @@ export default function DashUsers() {
               </Table.Body>
             ))}
           </Table>
-          {showMore && (
+          {hasNextPage && (
             <button
               onClick={handleShowMore}
               className='w-full text-teal-500 self-center text-sm py-7'
+              disabled={isFetchingNextPage}
             >
-              Show more
+              {isFetchingNextPage ? 'Loading...' : 'Show more'}
             </button>
           )}
         </>
-      ) : (
-        <p>You have no users yet!</p>
-      )}
+      ) : null}
+      {isAdmin && isLoading && users.length === 0 ? <p>Loading users...</p> : null}
+      {isAdmin && isError ? <p>{error?.message || 'Failed to load users.'}</p> : null}
+      {isAdmin && shouldShowEmpty ? <p>You have no users yet!</p> : null}
+      {!isAdmin ? <p>You have no users yet!</p> : null}
       <Modal
         show={showModal}
         onClose={() => setShowModal(false)}
@@ -140,7 +159,7 @@ export default function DashUsers() {
               Are you sure you want to delete this user?
             </h3>
             <div className='flex justify-center gap-4'>
-              <Button color='failure' onClick={handleDeleteUser}>
+              <Button color='failure' onClick={handleDeleteUser} disabled={deleteMutation.isLoading}>
                 Yes, I'm sure
               </Button>
               <Button color='gray' onClick={() => setShowModal(false)}>

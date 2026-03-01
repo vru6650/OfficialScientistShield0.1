@@ -33,6 +33,8 @@ export default function PagedReader({
   });
   const [showToc, setShowToc] = useState(false);
   const [headings, setHeadings] = useState([]);
+  const bookmarkKey = chapterId ? `reading-bookmark:${chapterId}` : null;
+  const [bookmarkPage, setBookmarkPage] = useState(null);
   // Parsed content handled by InteractiveReadingSurface
   const hasExternal = Boolean(extSettings);
   const hook = useReadingSettings();
@@ -134,14 +136,20 @@ export default function PagedReader({
       } else if (e.key.toLowerCase() === 't') {
         setShowToc((s) => !s);
       } else if (e.key.toLowerCase() === 'b') {
-        saveBookmark();
+        if (!bookmarkKey) return;
+        setBookmarkPage(page);
+        try {
+          localStorage.setItem(bookmarkKey, String(page));
+        } catch {
+          // Keep in-memory bookmark even if storage is unavailable.
+        }
       } else if (e.key.toLowerCase() === 'f') {
         toggleFullscreen();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [go]);
+  }, [bookmarkKey, go, page]);
 
   // Touch swipe navigation
   useEffect(() => {
@@ -171,7 +179,9 @@ export default function PagedReader({
         const frac = Math.min(1, Math.max(0, page / (pages - 1 || 1)));
         localStorage.setItem(`reading-progress:${chapterId}`, frac.toFixed(4));
       }
-    } catch (_) {}
+    } catch (_) {
+      // Ignore storage persistence issues; reading should continue.
+    }
   }, [chapterId, page, pages]);
 
   // Estimate total reading time if not provided
@@ -208,14 +218,18 @@ export default function PagedReader({
   // UI helpers
   const canPrev = page > 0;
   const canNext = page < pages - 1;
-  const goto = (idx) => {
+  const goto = useCallback((idx) => {
     const el = containerRef.current; if (!el) return;
     const target = Math.min(pages - 1, Math.max(0, idx));
     el.scrollTo({ left: target * el.clientWidth, behavior: 'smooth' });
-  };
+  }, [pages]);
   const changeSize = (s) => {
     setSize(s);
-    try { localStorage.setItem('paged-size', s); } catch {}
+    try {
+      localStorage.setItem('paged-size', s);
+    } catch {
+      // Ignore persistence errors for optional UI preference.
+    }
     // trigger recalculation
     requestAnimationFrame(updatePages);
   };
@@ -274,20 +288,28 @@ export default function PagedReader({
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-  }, [pages]);
+  }, [goto, pages]);
 
   // Bookmark current page and recall
-  const bookmarkKey = chapterId ? `reading-bookmark:${chapterId}` : null;
-  const [bookmarkPage, setBookmarkPage] = useState(null);
   useEffect(() => {
-    if (!bookmarkKey) return; try {
-      const raw = localStorage.getItem(bookmarkKey); if (!raw) return;
-      const idx = Number(raw); if (Number.isFinite(idx)) setBookmarkPage(idx);
-    } catch {}
+    if (!bookmarkKey) return;
+    try {
+      const raw = localStorage.getItem(bookmarkKey);
+      if (!raw) return;
+      const idx = Number(raw);
+      if (Number.isFinite(idx)) setBookmarkPage(idx);
+    } catch {
+      setBookmarkPage(null);
+    }
   }, [bookmarkKey]);
   const saveBookmark = () => {
     if (!bookmarkKey) return;
-    try { localStorage.setItem(bookmarkKey, String(page)); setBookmarkPage(page); } catch {}
+    setBookmarkPage(page);
+    try {
+      localStorage.setItem(bookmarkKey, String(page));
+    } catch {
+      // Keep in-memory bookmark even if storage is unavailable.
+    }
   };
   const gotoBookmark = () => { if (bookmarkPage == null) return; goto(bookmarkPage); };
 

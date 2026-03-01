@@ -1,0 +1,40 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="settings-gradient" x1="18" y1="12" x2="62" y2="68" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7DD3FC" />
+      <stop offset="1" stop-color="#6366F1" />
+    </linearGradient>
+    <linearGradient id="settings-gear" x1="26" y1="24" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.96" />
+      <stop offset="1" stop-color="#E2E8F0" stop-opacity="0.72" />
+    </linearGradient>
+    <linearGradient id="settings-core" x1="34" y1="34" x2="46" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38BDF8" />
+      <stop offset="1" stop-color="#0EA5E9" />
+    </linearGradient>
+    <linearGradient id="settings-teeth" x1="36" y1="16" x2="44" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EEF2FF" stop-opacity="0.9" />
+      <stop offset="1" stop-color="#E2E8F0" stop-opacity="0.7" />
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="68" height="68" rx="22" fill="url(#settings-gradient)" />
+  <rect x="6" y="6" width="68" height="68" rx="22" stroke="white" stroke-opacity="0.32" stroke-width="1.5" />
+  <circle cx="40" cy="40" r="20" fill="url(#settings-gear)" />
+  <circle cx="40" cy="40" r="20" fill="#0F172A" fill-opacity="0.08" />
+  <circle cx="40" cy="40" r="20" stroke="white" stroke-opacity="0.18" stroke-width="1.5" />
+  <g fill="url(#settings-teeth)">
+    <rect x="38" y="10" width="4" height="12" rx="2" />
+    <rect x="38" y="10" width="4" height="12" rx="2" transform="rotate(45 40 40)" />
+    <rect x="38" y="10" width="4" height="12" rx="2" transform="rotate(90 40 40)" />
+    <rect x="38" y="10" width="4" height="12" rx="2" transform="rotate(135 40 40)" />
+    <rect x="38" y="10" width="4" height="12" rx="2" transform="rotate(180 40 40)" />
+    <rect x="38" y="10" width="4" height="12" rx="2" transform="rotate(225 40 40)" />
+    <rect x="38" y="10" width="4" height="12" rx="2" transform="rotate(270 40 40)" />
+    <rect x="38" y="10" width="4" height="12" rx="2" transform="rotate(315 40 40)" />
+  </g>
+  <circle cx="40" cy="40" r="13" fill="#0F172A" fill-opacity="0.12" />
+  <circle cx="40" cy="40" r="12.5" stroke="white" stroke-opacity="0.2" stroke-width="1.5" />
+  <circle cx="40" cy="40" r="8.5" fill="url(#settings-core)" />
+  <circle cx="40" cy="40" r="8.5" fill="#FFFFFF" fill-opacity="0.32" />
+  <path d="M40 30C34.4772 30 30 34.4772 30 40C30 45.5228 34.4772 50 40 50C35.5817 48 34 32 40 30Z" fill="#FFFFFF" fill-opacity="0.2" />
+</svg>

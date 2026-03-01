@@ -103,8 +103,10 @@ const ChapterContent = ({ activeChapter, sanitizedContent, parserOptions, conten
                         dangerouslySetInnerHTML={{ __html: sanitizedContent }}
                     />
                     <CodeEditor
+                        key={`chapter-code-${activeChapter._id || activeChapter.chapterSlug || activeChapter.chapterTitle || 'default'}`}
                         initialCode={activeChapter.initialCode || ''}
                         language={activeChapter.codeLanguage || 'javascript'}
+                        workspaceId={`tutorial-${activeChapter._id || activeChapter.chapterSlug || activeChapter.chapterTitle || 'default'}`}
                     />
                 </motion.div>
             );
@@ -315,7 +317,7 @@ export default function SingleTutorialPage() {
         if (!currentUser) { navigate('/sign-in'); return; }
         if (isCompleted) return;
         try {
-            const res = await apiFetch(`/api/tutorial/complete/${tutorial._id}/${activeChapter._id}`, {
+            const res = await apiFetch(`/api/v1/tutorial/complete/${tutorial._id}/${activeChapter._id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

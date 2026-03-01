@@ -3,7 +3,7 @@ import { apiFetch } from '../utils/apiFetch';
 
 // --- API Fetch Function ---
 const fetchPostBySlug = async (slug) => {
-    const res = await apiFetch(`/api/post/getposts?slug=${slug}`);
+    const res = await apiFetch(`/api/v1/post/getposts?slug=${slug}`);
 
     if (!res.ok) {
         const errorData = await res.json();

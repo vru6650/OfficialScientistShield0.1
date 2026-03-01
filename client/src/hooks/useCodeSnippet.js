@@ -1,38 +1,27 @@
 // client/src/hooks/useCodeSnippet.js
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../utils/apiFetch';
 
+const fetchSnippet = async (snippetId) => {
+    const res = await apiFetch(`/api/v1/code-snippet/${snippetId}`);
+    const data = await res.json();
+    if (!res.ok) {
+        throw new Error(data.message || 'Failed to fetch code snippet');
+    }
+    return data;
+};
+
 export default function useCodeSnippet(snippetId) {
-    const [snippet, setSnippet] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const query = useQuery({
+        queryKey: ['codeSnippet', snippetId],
+        queryFn: () => fetchSnippet(snippetId),
+        enabled: Boolean(snippetId),
+        staleTime: 1000 * 60 * 10,
+    });
 
-    useEffect(() => {
-        if (!snippetId) {
-            setSnippet(null);
-            return;
-        }
-
-        const fetchSnippet = async () => {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const res = await apiFetch(`/api/code-snippet/${snippetId}`);
-                const data = await res.json();
-                if (!res.ok) {
-                    throw new Error(data.message || 'Failed to fetch code snippet');
-                }
-                setSnippet(data);
-            } catch (err) {
-                setError(err.message);
-                setSnippet(null);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchSnippet();
-    }, [snippetId]);
-
-    return { snippet, isLoading, error };
+    return {
+        snippet: query.data ?? null,
+        isLoading: query.isLoading,
+        error: query.error?.message ?? null,
+    };
 }

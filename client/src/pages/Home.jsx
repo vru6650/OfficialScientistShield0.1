@@ -240,12 +240,11 @@ export default function Home() {
 
     return (
         <main className="relative min-h-screen">
-            {/* Soft gradient glow background */}
             <div
                 aria-hidden
-                className="pointer-events-none absolute inset-x-0 -top-32 -z-10 blur-3xl opacity-30 dark:opacity-20"
+                className="pointer-events-none absolute inset-x-0 -top-32 -z-10 blur-3xl opacity-40 dark:opacity-25"
             >
-                <div className="mx-auto h-64 w-3/4 rounded-full bg-gradient-to-tr from-purple-500 via-indigo-500 to-sky-500" />
+                <div className="mx-auto h-64 w-3/4 rounded-full bg-gradient-to-tr from-sky-400 via-indigo-400 to-fuchsia-500" />
             </div>
 
             {/* Error banner (non-blocking) */}
@@ -270,45 +269,46 @@ export default function Home() {
             <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-20">
                 {/* Stats */}
                 <section className="relative" aria-labelledby="community-impact">
-                    <div className="absolute inset-0 -z-10 bg-gradient-to-br from-sky-100 via-purple-100 to-rose-100 dark:from-sky-900/40 dark:via-indigo-900/30 dark:to-rose-900/40 blur-3xl opacity-60" />
-                    <div className="rounded-3xl border border-white/50 dark:border-white/10 bg-white/70 dark:bg-gray-900/60 shadow-xl backdrop-blur-xl p-6 sm:p-8 lg:p-10">
-                        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
-                            <div>
-                                <p className="text-sm uppercase tracking-widest text-sky-500 dark:text-sky-400 font-semibold">
-                                    Community Impact
-                                </p>
-                                <h2
-                                    id="community-impact"
-                                    className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white"
-                                >
-                                    Built for learners who never stop exploring
-                                </h2>
-                            </div>
-                            <p className="text-base sm:text-lg max-w-xl text-gray-600 dark:text-gray-300">
-                                From your first line of code to launching your startup, ScientistShield grows with you by blending
-                                curated learning, interactive practice, and a vibrant community.
-                            </p>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-                            {stats.map(({ icon: Icon, label, value, description }) => (
-                                <div
-                                    key={label}
-                                    className="group rounded-2xl border border-slate-200/70 dark:border-slate-700/70 bg-white/70 dark:bg-slate-900/60 p-6 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white text-2xl shadow-md">
-                                            <Icon aria-hidden />
-                                        </span>
-                                        <div>
-                                            <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
-                                                {label}
-                                            </p>
-                                            <p className="text-3xl font-black text-slate-900 dark:text-white">{value}</p>
-                                        </div>
-                                    </div>
-                                    <p className="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{description}</p>
+                    <div className="macos-panel macos-panel--wide">
+                        <div className="macos-panel__grid p-6 sm:p-8 lg:p-10 space-y-8">
+                            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+                                <div>
+                                    <p className="text-sm uppercase tracking-widest text-sky-500 dark:text-sky-400 font-semibold">
+                                        Community Impact
+                                    </p>
+                                    <h2
+                                        id="community-impact"
+                                        className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white"
+                                    >
+                                        Built for learners who never stop exploring
+                                    </h2>
                                 </div>
-                            ))}
+                                <p className="text-base sm:text-lg max-w-xl text-gray-600 dark:text-gray-300">
+                                    From your first line of code to launching your startup, ScientistShield grows with you by blending
+                                    curated learning, interactive practice, and a vibrant community.
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                                {stats.map(({ icon: Icon, label, value, description }) => (
+                                    <div
+                                        key={label}
+                                        className="macos-tile group p-6"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white text-2xl shadow-md">
+                                                <Icon aria-hidden />
+                                            </span>
+                                            <div>
+                                                <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
+                                                    {label}
+                                                </p>
+                                                <p className="text-3xl font-black text-slate-900 dark:text-white">{value}</p>
+                                            </div>
+                                        </div>
+                                        <p className="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{description}</p>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -334,7 +334,7 @@ export default function Home() {
                         {highlights.map(({ icon: Icon, title, description }) => (
                             <article
                                 key={title}
-                                className="group relative overflow-hidden rounded-3xl border border-slate-200/70 dark:border-slate-700/70 bg-white/70 dark:bg-slate-900/60 p-8 shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                                className="macos-tile group relative overflow-hidden p-8"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-sky-200/0 via-sky-200/0 to-sky-200/20 dark:from-sky-500/0 dark:via-sky-500/0 dark:to-sky-500/15 transition-opacity duration-300 group-hover:opacity-100" />
                                 <div className="relative flex items-start gap-5">
@@ -482,7 +482,7 @@ export default function Home() {
                         Interactive Code Playground
                     </h2>
                     <Suspense fallback={<EditorSkeleton />}>
-                        <CodeEditor />
+                        <CodeEditor workspaceId='home-playground' />
                     </Suspense>
                 </section>
 

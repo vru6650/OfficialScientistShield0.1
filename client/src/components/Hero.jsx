@@ -1,9 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, TextInput } from 'flowbite-react';
 import { useMemo, useState } from 'react';
 
 import { TypeAnimation } from 'react-type-animation';
-import { HiMagnifyingGlass } from 'react-icons/hi2';
+import { HiMagnifyingGlass, HiOutlineArrowRightCircle, HiOutlineSparkles } from 'react-icons/hi2';
 import ParticlesBackground from './ParticlesBackground';
 
 export default function Hero() {
@@ -20,6 +19,15 @@ export default function Hero() {
         []
     );
 
+    const heroStatus = useMemo(
+        () => [
+            { label: 'Wallpaper', value: 'Liquid glass auroras' },
+            { label: 'Chrome', value: 'Depth, caustics, blur' },
+            { label: 'Flow', value: 'Windowed workspace' },
+        ],
+        []
+    );
+
     const handleSearch = (e) => {
         e.preventDefault();
         const params = new URLSearchParams();
@@ -32,62 +40,103 @@ export default function Hero() {
     };
 
     return (
-        <section className="relative overflow-hidden py-space-5xl px-space-lg sm:px-space-xl lg:px-space-2xl text-center min-h-[500px] flex items-center justify-center">
-            {/* Animated particle background for a more dynamic hero section */}
+        <section className="macos-hero-shell relative overflow-hidden py-space-4xl px-4 sm:px-8 lg:px-12 min-h-[520px] flex items-center justify-center">
             <ParticlesBackground />
 
-            {/* Content Container */}
-            <div className="relative z-10 w-full max-w-4xl mx-auto">
-                <h1 className="text-4xl sm:text-6xl lg:text-8xl font-extrabold font-heading mb-space-lg sm:mb-space-xl leading-tight animate-fade-in-up text-[var(--color-text-primary)]">
-                    <TypeAnimation
-                        sequence={[
-                            'Level Up Your Coding Skills',
-                            2000,
-                            'Master Web Development',
-                            2000,
-                            'Build Amazing Projects',
-                            2000,
-                        ]}
-                        wrapper="span"
-                        speed={50}
-                        repeat={Infinity}
-                    />
-                </h1>
-                <p className="text-lg sm:text-xl lg:text-2xl font-body mb-space-2xl max-w-3xl mx-auto opacity-0 animate-fade-in delay-500 text-[var(--color-text-secondary)]">
-                    Explore thousands of tutorials, articles, and projects to become a better developer.
-                </p>
-                <form
-                    onSubmit={handleSearch}
-                    className="flex max-w-xl mx-auto rounded-radius-full overflow-hidden shadow-2xl transition-all duration-300 hover:scale-[1.02] focus-within:scale-[1.02] mt-space-2xl"
-                >
-                    <TextInput
-                        type="text"
-                        placeholder="Search tutorials, posts, and problems..."
-                        className="flex-grow rounded-l-radius-full [&>div>input]:!rounded-none [&>div>input]:!border-0 [&>div>input]:!ring-0 [&>div>input]:!shadow-none [&>div>input]:bg-white/90 dark:[&>div>input]:bg-gray-800/90 [&>div>input]:placeholder-gray-500 dark:[&>div>input]:placeholder-gray-400 [&>div>input]:text-gray-900 dark:[&>div>input]:text-gray-100 focus:!ring-0"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        icon={HiMagnifyingGlass}
-                    />
-                    <Button
-                        type="submit"
-                        className="btn-aqua !rounded-none rounded-r-radius-full h-11 w-20 transform hover:scale-105"
-                    >
-                        Go
-                    </Button>
-                </form>
-                <div className="mt-space-xl space-y-3">
-                    <p className="text-sm uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300">Popular searches</p>
-                    <div className="flex flex-wrap justify-center gap-3">
-                        {quickFilters.map((filter) => (
-                            <Link
-                                key={filter.value}
-                                to={`/search?searchTerm=${encodeURIComponent(filter.value)}`}
-                                className="group inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-sky-400 hover:bg-sky-50/80 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-sky-400 dark:hover:bg-slate-900/80"
-                            >
-                                <span className="h-2 w-2 rounded-full bg-sky-500 transition-colors duration-200 group-hover:bg-sky-600" aria-hidden />
-                                {filter.label}
-                            </Link>
-                        ))}
+            <div className="macos-hero-window macos-window macos-window--focused relative z-10">
+                <div className="macos-hero-titlebar">
+                    <div className="macos-hero-lights" aria-hidden>
+                        <span className="macos-hero-light macos-hero-light--red" />
+                        <span className="macos-hero-light macos-hero-light--amber" />
+                        <span className="macos-hero-light macos-hero-light--green" />
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-slate-500 dark:text-slate-300">
+                        <HiOutlineSparkles className="h-4 w-4" aria-hidden />
+                        macOS Liquid Glass Studio
+                    </div>
+                    <span className="macos-hero-pill">
+                        <HiOutlineArrowRightCircle aria-hidden />
+                        Press ⌘K for command search
+                    </span>
+                </div>
+
+                <div className="space-y-8 text-center">
+                    <div className="flex justify-center">
+                        <span className="macos-hero-ribbon">
+                            <HiOutlineSparkles className="h-4 w-4" aria-hidden />
+                            Liquid glass finish
+                        </span>
+                    </div>
+                    <p className="text-xs uppercase tracking-[0.32em] text-slate-500 dark:text-slate-300 font-semibold">
+                        ScientistShield · Desktop-grade workspace
+                    </p>
+                    <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold leading-tight">
+                        <span className="macos-hero-gradient inline-block">
+                            <TypeAnimation
+                                sequence={[
+                                    'Build in macOS Liquid Glass mode',
+                                    2000,
+                                    'Glide through native, tactile UI',
+                                    2000,
+                                    'Ship polished projects faster',
+                                    2000,
+                                ]}
+                                wrapper="span"
+                                speed={50}
+                                repeat={Infinity}
+                            />
+                        </span>
+                    </h1>
+                    <p className="text-lg sm:text-xl max-w-3xl mx-auto text-[var(--color-text-secondary)]">
+                        Liquid glass wallpaper with live caustics, translucent chrome, and tactile controls mirror the latest macOS aesthetic so the workspace stays calm while you explore tutorials, posts, and tools.
+                    </p>
+
+                    <form onSubmit={handleSearch} className="macos-command">
+                        <HiMagnifyingGlass className="macos-command__icon" aria-hidden />
+                        <input
+                            type="text"
+                            className="macos-command__input"
+                            placeholder="Search tutorials, posts, and problems..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <button type="submit" className="btn-aqua macos-command__submit">
+                            Start
+                        </button>
+                    </form>
+
+                    <div className="flex justify-center">
+                        <div className="desktop-status">
+                            <div className="desktop-status__chip">
+                                <span className="desktop-status__dot" aria-hidden />
+                                Liquid glass
+                            </div>
+                            <div className="desktop-status__divider" aria-hidden />
+                            {heroStatus.map(({ label, value }) => (
+                                <div key={label} className="desktop-status__pill">
+                                    <span className="desktop-status__label">{label}</span>
+                                    <span className="desktop-status__value">{value}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <p className="text-sm uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300">
+                            Popular shortcuts
+                        </p>
+                        <div className="macos-chip-row justify-center">
+                            {quickFilters.map((filter) => (
+                                <Link
+                                    key={filter.value}
+                                    to={`/search?searchTerm=${encodeURIComponent(filter.value)}`}
+                                    className="macos-chip"
+                                >
+                                    <span className="h-2 w-2 rounded-full bg-sky-500 shadow-[0_0_0_4px_rgba(10,132,255,0.15)]" aria-hidden />
+                                    {filter.label}
+                                </Link>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>

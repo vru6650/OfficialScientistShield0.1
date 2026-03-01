@@ -1,5 +1,5 @@
 // client/src/components/InteractiveCodeBlock.jsx
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from 'flowbite-react';
 import { FaPlayCircle, FaCode, FaTimes, FaExternalLinkAlt } from 'react-icons/fa';
@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 export default function InteractiveCodeBlock({ initialCode, language }) {
     const navigate = useNavigate();
     const [isInteractive, setIsInteractive] = useState(false);
+    const workspaceId = useId();
 
     const handleToggle = () => {
         setIsInteractive(!isInteractive);
@@ -94,6 +95,7 @@ export default function InteractiveCodeBlock({ initialCode, language }) {
                         <CodeEditor
                             initialCode={{ [language]: initialCode }}
                             language={language}
+                            workspaceId={`interactive-${workspaceId}`}
                         />
                     </motion.div>
                 ) : (

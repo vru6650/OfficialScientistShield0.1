@@ -1,5 +1,6 @@
 import { Button, Select, Spinner, Badge } from 'flowbite-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getSearchResults } from '../services/searchService';
 import { HiOutlineMicrophone, HiOutlineSearch, HiOutlineX } from 'react-icons/hi';
@@ -89,10 +90,6 @@ export default function Search() {
         sort: 'relevance',
         contentTypes: [...ALL_TYPES],
     });
-    const [results, setResults] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [metadata, setMetadata] = useState({ total: 0, took: null, fallbackUsed: false, message: null });
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -109,19 +106,11 @@ export default function Search() {
         });
     }, [location.search]);
 
-    useEffect(() => {
+    const queryInput = useMemo(() => {
         const params = new URLSearchParams(location.search);
         const searchTerm = params.get('searchTerm') || '';
-
-        if (!searchTerm.trim()) {
-            setResults([]);
-            setMetadata({ total: 0, took: null, fallbackUsed: false, message: null });
-            setError(null);
-            return () => {};
-        }
-
-        const controller = new AbortController();
-        const sort = params.get('sort') || 'relevance';
+        const sortFromUrl = params.get('sort') || 'relevance';
+        const sort = SORT_OPTIONS.some((option) => option.value === sortFromUrl) ? sortFromUrl : 'relevance';
         const typeParam = params.get('types');
         const parsedTypes = parseTypesFromQuery(typeParam, { defaultToAll: false });
 
@@ -135,31 +124,32 @@ export default function Search() {
             query.types = parsedTypes;
         }
 
-        setLoading(true);
-        setError(null);
-
-        getSearchResults(query, { signal: controller.signal })
-            .then((data) => {
-                setResults(Array.isArray(data.results) ? data.results : []);
-                setMetadata({
-                    total: data.total ?? 0,
-                    took: data.took ?? null,
-                    fallbackUsed: Boolean(data.fallbackUsed),
-                    message: data.message || null,
-                });
-            })
-            .catch((err) => {
-                if (err.name === 'AbortError') return;
-                setError(err.message || 'Unable to fetch search results.');
-                setResults([]);
-                setMetadata({ total: 0, took: null, fallbackUsed: false, message: null });
-            })
-            .finally(() => {
-                setLoading(false);
-            });
-
-        return () => controller.abort();
+        return query;
     }, [location.search]);
+
+    const searchEnabled = Boolean(queryInput.searchTerm?.trim());
+
+    const { data: searchData, isLoading, isError, error } = useQuery({
+        queryKey: ['search', queryInput],
+        queryFn: ({ signal }) => getSearchResults(queryInput, { signal }),
+        enabled: searchEnabled,
+        keepPreviousData: true,
+        staleTime: 1000 * 30,
+    });
+
+    const results = searchEnabled && Array.isArray(searchData?.results) ? searchData.results : [];
+    const loading = searchEnabled ? isLoading : false;
+    const errorMessage = searchEnabled && isError
+        ? error?.message || 'Unable to fetch search results.'
+        : null;
+    const metadata = searchEnabled
+        ? {
+            total: searchData?.total ?? 0,
+            took: searchData?.took ?? null,
+            fallbackUsed: Boolean(searchData?.fallbackUsed),
+            message: searchData?.message || null,
+        }
+        : { total: 0, took: null, fallbackUsed: false, message: null };
 
     const handleSearchInputChange = (event) => {
         const { value } = event.target;
@@ -256,8 +246,8 @@ export default function Search() {
             return 'Searching across the knowledge base…';
         }
 
-        if (error) {
-            return error;
+        if (errorMessage) {
+            return errorMessage;
         }
 
         const pieces = [];
@@ -286,7 +276,7 @@ export default function Search() {
             }
         }
         return pieces.join(' · ');
-    }, [sidebarData.searchTerm, loading, error, metadata, sidebarData.contentTypes]);
+    }, [sidebarData.searchTerm, loading, errorMessage, metadata, sidebarData.contentTypes]);
 
     const hasCustomTypes = sidebarData.contentTypes.length && sidebarData.contentTypes.length < ALL_TYPES.length;
 
@@ -418,7 +408,7 @@ export default function Search() {
                     </div>
                 )}
 
-                {!loading && !error && results.length === 0 && sidebarData.searchTerm.trim() && (
+                {!loading && !errorMessage && results.length === 0 && sidebarData.searchTerm.trim() && (
                     <div className='rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-lg text-gray-500 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400'>
                         No matching content yet. Try a different keyword or expand the content filter.
                     </div>
@@ -430,7 +420,7 @@ export default function Search() {
                     </div>
                 )}
 
-                {!loading && !error && results.length > 0 && (
+                {!loading && !errorMessage && results.length > 0 && (
                     <div className='flex flex-col gap-8'>
                         {results.map((result) => {
                             const path = buildResultPath(result);
@@ -491,9 +481,9 @@ export default function Search() {
                     </div>
                 )}
 
-                {!loading && error && (
+                {!loading && errorMessage && (
                     <div className='rounded-2xl border border-red-200 bg-red-50 p-6 text-red-600 dark:border-red-700 dark:bg-red-900/40 dark:text-red-300'>
-                        {error}
+                        {errorMessage}
                     </div>
                 )}
             </main>

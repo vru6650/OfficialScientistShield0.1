@@ -7,31 +7,31 @@ const API = axios.create({
 });
 
 export const getProblems = async (searchQuery = '') => {
-    const { data } = await API.get(`/api/problems?${searchQuery}`);
+    const { data } = await API.get(`/api/v1/problems?${searchQuery}`);
     return data;
 };
 
 export const getProblemBySlug = async (problemSlug) => {
-    const { data } = await API.get(`/api/problems/slug/${problemSlug}`);
+    const { data } = await API.get(`/api/v1/problems/slug/${problemSlug}`);
     return data;
 };
 
 export const getProblemById = async (problemId) => {
-    const { data } = await API.get(`/api/problems/${problemId}`);
+    const { data } = await API.get(`/api/v1/problems/${problemId}`);
     return data;
 };
 
 export const createProblem = async (payload) => {
-    const { data } = await API.post('/api/problems', payload);
+    const { data } = await API.post('/api/v1/problems', payload);
     return data;
 };
 
-export const updateProblem = async ({ problemId, userId, payload }) => {
-    const { data } = await API.put(`/api/problems/${problemId}/${userId}`, payload);
+export const updateProblem = async ({ problemId, payload }) => {
+    const { data } = await API.put(`/api/v1/problems/${problemId}`, payload);
     return data;
 };
 
-export const deleteProblem = async ({ problemId, userId }) => {
-    const { data } = await API.delete(`/api/problems/${problemId}/${userId}`);
+export const deleteProblem = async ({ problemId }) => {
+    const { data } = await API.delete(`/api/v1/problems/${problemId}`);
     return data;
 };

@@ -1,93 +1,60 @@
 import { Link } from 'react-router-dom';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { useState, useRef } from 'react';
-import Card from './ui/Card';
+import { motion, useReducedMotion } from 'framer-motion';
+import { HiOutlineBookOpen, HiOutlineClock, HiOutlineSparkles } from 'react-icons/hi2';
 
 const TutorialCard = ({ tutorial }) => {
-    // Define animation variants for the card's entrance
-    const cardVariants = {
-        hidden: { opacity: 0, scale: 0.9, y: 20 },
-        visible: {
-            opacity: 1,
-            scale: 1,
-            y: 0,
-            transition: {
-                type: 'spring',
-                stiffness: 100,
-                damping: 10,
-            },
-        },
-    };
-
-    const cardRef = useRef(null);
-    const mouseX = useMotionValue(0.5);
-    const mouseY = useMotionValue(0.5);
-    const [isHovering, setIsHovering] = useState(false);
-
-    const handleMouseMove = (e) => {
-        if (!cardRef.current) return;
-        const { clientX, clientY } = e;
-        const { top, left, width, height } = cardRef.current.getBoundingClientRect();
-        mouseX.set((clientX - left) / width);
-        mouseY.set((clientY - top) / height);
-    };
-
-    const rotateX = useSpring(useTransform(mouseY, [0, 1], [-8, 8]), { stiffness: 250, damping: 15 });
-    const rotateY = useSpring(useTransform(mouseX, [0, 1], [8, -8]), { stiffness: 250, damping: 15 });
-    const scale = useSpring(isHovering ? 1.05 : 1, { stiffness: 300, damping: 10 });
-    const boxShadow = useSpring(useTransform(mouseX, [0, 1],
-        ["-10px 10px 20px rgba(0,0,0,0.2)", "10px 10px 20px rgba(0,0,0,0.2)"]
-    ), { stiffness: 300, damping: 10 });
-
-    // FIX: Safely access tutorial.content and use a default value if it's undefined
-    const readingTime = Math.ceil((tutorial.content?.length || 0) / 1000) || 5;
+    const shouldReduceMotion = useReducedMotion();
+    const rawReadingTime = Math.ceil((tutorial.content?.length || 0) / 1000);
+    const readingTime = rawReadingTime > 0 ? rawReadingTime : 5;
+    const chapterCount = Array.isArray(tutorial.chapters) ? tutorial.chapters.length : null;
+    const categoryLabel = tutorial.category || 'General';
+    const description = tutorial.description || 'Explore this guided tutorial to sharpen your skills.';
 
     return (
-        <Link to={`/tutorials/${tutorial.slug}`} className="block h-full">
-            <Card
-                as={motion.div}
-                ref={cardRef}
-                className="relative overflow-hidden h-full flex flex-col"
-                variants={cardVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.3 }}
-                whileHover={{
-                    scale: 1.05,
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.4)"
-                }}
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}
-                onMouseMove={handleMouseMove}
-                style={{
-                    rotateX,
-                    rotateY,
-                    perspective: 1000
-                }}
+        <Link to={`/tutorials/${tutorial.slug}`} className="group block h-full">
+            <motion.article
+                className="macos-tile flex h-full flex-col overflow-hidden"
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
+                whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.35 }}
+                whileHover={shouldReduceMotion ? undefined : { y: -6 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
             >
                 <div className="relative">
-                    <motion.img
-                        src={tutorial.thumbnail || 'https://via.placeholder.com/400x250?text=Tutorial+Thumbnail'}
+                    <img
+                        src={tutorial.thumbnail || 'https://via.placeholder.com/640x360?text=Tutorial+Preview'}
                         alt={tutorial.title}
-                        className="w-full h-48 object-cover object-center transition-transform duration-300"
-                        initial={{ scale: 1 }}
-                        whileHover={{ scale: 1.1 }}
+                        className="h-44 w-full object-cover object-center transition duration-500 group-hover:scale-[1.02]"
+                        loading="lazy"
                     />
-                    <span className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                    <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm dark:bg-slate-900/80 dark:text-slate-200">
+                        <HiOutlineClock className="h-4 w-4 text-sky-500" aria-hidden />
                         {readingTime} min read
                     </span>
                 </div>
 
-                <div className="p-4 flex flex-col flex-grow">
-                    <h2 className="text-xl font-bold line-clamp-2 text-white mb-2">{tutorial.title}</h2>
-                    <p className="text-gray-400 text-sm mt-1 line-clamp-3 flex-grow">{tutorial.description}</p>
-                    <div className="mt-4">
-                        <span className="inline-block px-3 py-1 bg-teal-600/20 text-teal-300 rounded-full text-xs font-medium uppercase tracking-wide">
-                            {tutorial.category}
+                <div className="flex flex-1 flex-col p-5">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-300">
+                        <HiOutlineSparkles className="h-4 w-4 text-sky-500" aria-hidden />
+                        {categoryLabel}
+                    </div>
+                    <h2 className="mt-3 text-xl font-semibold text-slate-900 transition group-hover:text-sky-600 dark:text-white dark:group-hover:text-sky-300">
+                        {tutorial.title}
+                    </h2>
+                    <p className="mt-2 text-sm text-slate-600 line-clamp-3 dark:text-slate-300">
+                        {description}
+                    </p>
+                    <div className="mt-auto flex items-center justify-between pt-5">
+                        <span className="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <HiOutlineBookOpen className="h-4 w-4" aria-hidden />
+                            {chapterCount ? `${chapterCount} chapters` : 'Self-paced'}
+                        </span>
+                        <span className="macos-chip text-[11px] font-semibold uppercase tracking-widest">
+                            Open tutorial
                         </span>
                     </div>
                 </div>
-            </Card>
+            </motion.article>
         </Link>
     );
 };

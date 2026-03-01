@@ -141,7 +141,7 @@ export default function TiptapEditor({ content, onChange, placeholder }) {
         if (!editor) return;
 
         try {
-            const res = await apiFetch('/api/code-snippet/create', {
+            const res = await apiFetch('/api/v1/code-snippet/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ html: '', css: '', js: '' }),

@@ -22,10 +22,6 @@ const arraysShallowEqual = (a, b) => {
 };
 
 function ClapButton({ postId, initialClaps = 0, initialClappedBy = [] }) {
-    if (!postId) {
-        return null;
-    }
-
     const { likeCount, isLiked, isLoading, handleLike } = useLike({
         postId,
         initialClaps,
@@ -33,6 +29,10 @@ function ClapButton({ postId, initialClaps = 0, initialClappedBy = [] }) {
     });
 
     const clapLabel = likeCount === 1 ? '1 clap' : `${likeCount} claps`;
+
+    if (!postId) {
+        return null;
+    }
 
     return (
         <div className="flex items-center gap-2">

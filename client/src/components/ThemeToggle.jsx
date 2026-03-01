@@ -1,7 +1,8 @@
 import { FaMoon, FaSun } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
-import { toggleTheme } from '../redux/theme/themeSlice';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { setThemeMode, toggleTheme } from '../redux/theme/themeSlice';
 
 /**
  * Small reusable button that toggles the application's theme.
@@ -12,18 +13,107 @@ import { motion } from 'framer-motion';
  */
 export default function ThemeToggle({ className = '', ...props }) {
     const dispatch = useDispatch();
-    const { theme } = useSelector((state) => state.theme);
+    const { theme, mode } = useSelector((state) => state.theme);
+    const isDark = theme === 'dark';
+
+    const thumbTarget = useMemo(() => {
+        if (mode === 'auto') return 'calc(50% - 1.35rem)';
+        return isDark ? 'calc(100% - 2.7rem)' : '0rem';
+    }, [isDark, mode]);
+
+    const modeLabel =
+        mode === 'auto'
+            ? 'Auto · Follows system'
+            : isDark
+                ? 'Nightfall · Deep slate'
+                : 'Daybreak · Soft glass';
+
+    const setMode = (nextMode) => dispatch(setThemeMode(nextMode));
+    const cycleMode = () => dispatch(toggleTheme());
 
     return (
         <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => dispatch(toggleTheme())}
-            className={`flex items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50 shadow-soft hover:shadow-elevated transition-all
-                       bg-white/80 text-ink-700 backdrop-blur dark:bg-ink-800/80 dark:text-ink-100 ${className}`}
-            aria-label="Toggle theme"
+            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.01 }}
+            onClick={cycleMode}
+            className={`macos-theme-toggle ${isDark ? 'macos-theme-toggle--dark' : 'macos-theme-toggle--light'} ${className}`}
+            aria-label={`Switch theme (current: ${mode})`}
+            aria-pressed={isDark}
             {...props}
         >
-            {theme === 'light' ? <FaMoon /> : <FaSun />}
+            <div className="macos-theme-toggle__rail" aria-hidden="true">
+                <span
+                    role="button"
+                    tabIndex={0}
+                    className={`macos-theme-toggle__chip ${mode === 'light' ? 'macos-theme-toggle__chip--active' : ''}`}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        setMode('light');
+                    }}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setMode('light');
+                        }
+                    }}
+                >
+                    <FaSun />
+                    <span>Light</span>
+                </span>
+                <span
+                    role="button"
+                    tabIndex={0}
+                    className={`macos-theme-toggle__chip ${mode === 'auto' ? 'macos-theme-toggle__chip--active' : ''}`}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        setMode('auto');
+                    }}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setMode('auto');
+                        }
+                    }}
+                >
+                    <span className="text-xs font-semibold">A</span>
+                    <span>Auto</span>
+                </span>
+                <span
+                    role="button"
+                    tabIndex={0}
+                    className={`macos-theme-toggle__chip ${mode === 'dark' ? 'macos-theme-toggle__chip--active' : ''}`}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        setMode('dark');
+                    }}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setMode('dark');
+                        }
+                    }}
+                >
+                    <FaMoon />
+                    <span>Dark</span>
+                </span>
+                <span className="macos-theme-toggle__icon macos-theme-toggle__icon--sun">
+                    <FaSun />
+                </span>
+                <span className="macos-theme-toggle__icon macos-theme-toggle__icon--moon">
+                    <FaMoon />
+                </span>
+                <motion.span
+                    className="macos-theme-toggle__thumb"
+                    layout
+                    initial={false}
+                    animate={{ x: thumbTarget }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+                />
+            </div>
+            <div className="macos-theme-toggle__labels">
+                <span className="macos-theme-toggle__title">macOS theme</span>
+                <span className="macos-theme-toggle__subtitle">{modeLabel}</span>
+            </div>
         </motion.button>
     );
 }

@@ -12,8 +12,8 @@ const API = axios.create({
  * Fetches quizzes based on query parameters.
  */
 export const getQuizzes = async (searchQuery = '') => {
-    // Use the configured API instance
-    const { data } = await API.get(`/api/quizzes?${searchQuery}`);
+    const path = searchQuery ? `/api/v1/quizzes?${searchQuery}` : '/api/v1/quizzes';
+    const { data } = await API.get(path);
     return data;
 };
 
@@ -22,7 +22,7 @@ export const getQuizzes = async (searchQuery = '') => {
  */
 export const getSingleQuizBySlug = async (quizSlug) => {
     // Use the configured API instance
-    const { data } = await API.get(`/api/quizzes/slug/${quizSlug}`);
+    const { data } = await API.get(`/api/v1/quizzes/slug/${quizSlug}`);
     return data;
 };
 
@@ -31,7 +31,7 @@ export const getSingleQuizBySlug = async (quizSlug) => {
  */
 export const getSingleQuizById = async (quizId) => {
     // Use the configured API instance
-    const { data } = await API.get(`/api/quizzes/${quizId}`);
+    const { data } = await API.get(`/api/v1/quizzes/${quizId}`);
     return data;
 };
 
@@ -40,25 +40,25 @@ export const getSingleQuizById = async (quizId) => {
  */
 export const createQuiz = async (formData) => {
     // Use the configured API instance
-    const { data } = await API.post('/api/quizzes', formData);
+    const { data } = await API.post('/api/v1/quizzes', formData);
     return data;
 };
 
 /**
  * Updates an existing quiz.
  */
-export const updateQuiz = async ({ quizId, userId, formData }) => {
+export const updateQuiz = async ({ quizId, formData }) => {
     // Use the configured API instance
-    const { data } = await API.put(`/api/quizzes/${quizId}/${userId}`, formData);
+    const { data } = await API.put(`/api/v1/quizzes/${quizId}`, formData);
     return data;
 };
 
 /**
  * Deletes a quiz.
  */
-export const deleteQuiz = async ({ quizId, userId }) => {
+export const deleteQuiz = async ({ quizId }) => {
     // Use the configured API instance
-    const { data } = await API.delete(`/api/quizzes/${quizId}/${userId}`);
+    const { data } = await API.delete(`/api/v1/quizzes/${quizId}`);
     return data;
 };
 
@@ -67,6 +67,6 @@ export const deleteQuiz = async ({ quizId, userId }) => {
  */
 export const submitQuiz = async (quizId, answers) => {
     // Use the configured API instance
-    const { data } = await API.post(`/api/quizzes/submit/${quizId}`, { answers });
+    const { data } = await API.post(`/api/v1/quizzes/submit/${quizId}`, { answers });
     return data;
 };

@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { iconComponentForType } from './windowIcons';
 
@@ -8,6 +8,7 @@ function MacWindow({
     windowData,
     isFocused,
     isDragging,
+    reduceMotion,
     renderContent,
     children,
     onPointerDown,
@@ -29,10 +30,23 @@ function MacWindow({
         allowMinimize,
         allowZoom,
         type,
-        isMain,
     } = windowData;
     const isFullScreen = Boolean(windowData.isZoomed);
     const IconComponent = windowData.iconComponent || iconComponentForType(type);
+
+    const windowClassName = useMemo(
+        () =>
+            `macos-window pointer-events-auto select-none text-slate-700 transition-all ${
+                reduceMotion ? 'duration-75' : 'duration-300'
+            } dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-100 ${
+                isFocused ? 'macos-window--focused ring-2 ring-brand-300/60 dark:ring-brand-500/60' : 'ring-0'
+            } ${isFullScreen ? 'macos-window--fullscreen' : ''} ${isDragging ? 'macos-window--dragging' : ''}`,
+        [isDragging, isFocused, isFullScreen, reduceMotion]
+    );
+
+    const motionTransition = reduceMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' };
+    const motionInitial = reduceMotion ? false : { opacity: 0, scale: 0.98, y: 12 };
+    const motionExit = reduceMotion ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, scale: 0.95, y: 12 };
 
     const handlePointerDown = (event) => {
         if (typeof onPointerDown === 'function') {
@@ -105,7 +119,7 @@ function MacWindow({
             data-window-id={id}
             data-window-type={type}
             data-focused={isFocused}
-            className={`macos-window pointer-events-auto select-none ${isFocused ? 'macos-window--focused ring-2 ring-brand-300/60 dark:ring-brand-500/60' : 'ring-0'} ${isFullScreen ? 'macos-window--fullscreen' : ''} ${isDragging ? 'macos-window--dragging' : ''}`}
+            className={windowClassName}
             style={{
                 position: 'fixed',
                 top: y,
@@ -116,11 +130,12 @@ function MacWindow({
                 cursor: 'default',
                 touchAction: 'none',
                 margin: 0,
+                borderRadius: 'var(--macos-window-radius)',
             }}
-            initial={{ opacity: 0, scale: 0.98, y: 12 }}
+            initial={motionInitial}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 12 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
+            exit={motionExit}
+            transition={motionTransition}
             onMouseDown={handleFocus}
             role="group"
             aria-label={`${title} window`}
@@ -135,7 +150,7 @@ function MacWindow({
             <div className="macos-window__resize macos-window__resize--se" onPointerDown={startResize('se')} aria-hidden="true" />
             <div className="macos-window__resize macos-window__resize--sw" onPointerDown={startResize('sw')} aria-hidden="true" />
             <div
-                className="macos-window__titlebar cursor-grab active:cursor-grabbing"
+                className="macos-window__titlebar"
                 onPointerDown={handlePointerDown}
                 onDoubleClick={handleZoom}
                 title={`Drag to move${allowZoom ? ' • Double-click to toggle full screen' : ''} • Hold Alt for power controls`}
@@ -179,16 +194,13 @@ function MacWindow({
                         <span className="macos-traffic-light__glyph macos-traffic-light__glyph--zoom" aria-hidden="true" />
                     </button>
                 </div>
-                <div className="macos-window__title">
+                <div className="macos-window__titlebar-center">
                     {IconComponent ? (
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-white/40 text-brand-600 shadow-inner">
-                            <IconComponent className="h-4 w-4" />
+                        <span className="macos-window__titlebar-icon" aria-hidden="true">
+                            <IconComponent className="h-3.5 w-3.5" aria-hidden />
                         </span>
                     ) : null}
-                    <span className="truncate">{title}</span>
-                </div>
-                <div className="hidden sm:flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-slate-400 dark:text-slate-300">
-                    {isMain ? 'Primary' : 'Utility'}
+                    <span className="macos-window__titletext">{title}</span>
                 </div>
             </div>
             <div className="macos-window__content">
@@ -214,9 +226,12 @@ MacWindow.propTypes = {
         allowZoom: PropTypes.bool,
         type: PropTypes.string.isRequired,
         isMain: PropTypes.bool,
+        appRoutePath: PropTypes.string,
+        appRouteLabel: PropTypes.string,
     }).isRequired,
     isFocused: PropTypes.bool,
     isDragging: PropTypes.bool,
+    reduceMotion: PropTypes.bool,
     renderContent: PropTypes.func,
     children: PropTypes.node,
     onPointerDown: PropTypes.func.isRequired,
@@ -230,6 +245,7 @@ MacWindow.propTypes = {
 MacWindow.defaultProps = {
     isFocused: false,
     isDragging: false,
+    reduceMotion: false,
     renderContent: null,
     children: null,
 };

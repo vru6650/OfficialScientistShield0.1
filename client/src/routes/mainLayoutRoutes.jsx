@@ -47,6 +47,7 @@ export const mainLayoutRoutes = Object.freeze([
     { path: 'search', element: <Search /> },
     { path: 'projects', element: <Projects /> },
     { path: 'tools', element: <Tools /> },
+    { path: 'tools/*', element: <Tools /> },
     { path: 'post/:postSlug', element: <PostPage /> },
     { path: 'tutorials', element: <Tutorials /> },
     { path: 'tutorials/:tutorialSlug', element: <SingleTutorialPage /> },
@@ -58,7 +59,6 @@ export const mainLayoutRoutes = Object.freeze([
     { path: 'tryit', element: <TryItPage /> },
     { path: 'algorithm-visualizer', element: <AlgorithmVisualizer /> },
     { path: 'code-visualizer', element: <CodeVisualizer /> },
-    { path: 'file-manager', element: <FileManager /> },
     { path: 'content/:slug', element: <ContentPage /> },
     {
         element: <PrivateRoute />,
@@ -78,6 +78,7 @@ export const mainLayoutRoutes = Object.freeze([
             { path: 'update-page/:pageId', element: <UpdatePage /> },
             { path: 'create-problem', element: <CreateProblem /> },
             { path: 'update-problem/:problemId', element: <UpdateProblem /> },
+            { path: 'file-manager', element: <FileManager /> },
         ],
     },
     { path: '*', element: <NotFound /> },

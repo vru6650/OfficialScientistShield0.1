@@ -1,5 +1,6 @@
 import { createElement } from 'react';
 import {
+    HiOutlineAdjustmentsHorizontal,
     HiOutlineCpuChip,
     HiOutlineListBullet,
     HiOutlineMusicalNote,
@@ -13,6 +14,7 @@ const ICON_COMPONENTS = {
     'now-playing': HiOutlineMusicalNote,
     'status': HiOutlineCpuChip,
     'queue': HiOutlineListBullet,
+    'control-center': HiOutlineAdjustmentsHorizontal,
 };
 
 export function iconComponentForType(type) {

@@ -15,7 +15,7 @@ const API = axios.create({
  * @returns {Promise<object>} The data containing the tutorials array and total counts.
  */
 export const getTutorials = async (searchQuery = '') => {
-    const { data } = await API.get(`/api/tutorial/gettutorials?${searchQuery}`);
+    const { data } = await API.get(`/api/v1/tutorial/gettutorials?${searchQuery}`);
     return data;
 };
 
@@ -25,7 +25,7 @@ export const getTutorials = async (searchQuery = '') => {
  * @returns {Promise<import('../types').Tutorial>} The created tutorial data.
  */
 export const createTutorial = async (formData) => {
-    const { data } = await API.post('/api/tutorial/create', formData);
+    const { data } = await API.post('/api/v1/tutorial/create', formData);
     return data;
 };
 
@@ -38,7 +38,7 @@ export const createTutorial = async (formData) => {
  * @returns {Promise<import('../types').Tutorial>} The updated tutorial data.
  */
 export const updateTutorial = async ({ tutorialId, userId, formData }) => {
-    const { data } = await API.put(`/api/tutorial/update/${tutorialId}/${userId}`, formData);
+    const { data } = await API.put(`/api/v1/tutorial/update/${tutorialId}/${userId}`, formData);
     return data;
 };
 
@@ -50,7 +50,7 @@ export const updateTutorial = async ({ tutorialId, userId, formData }) => {
  * @returns {Promise<string>} Success message.
  */
 export const deleteTutorial = async ({ tutorialId, userId }) => {
-    const { data } = await API.delete(`/api/tutorial/delete/${tutorialId}/${userId}`);
+    const { data } = await API.delete(`/api/v1/tutorial/delete/${tutorialId}/${userId}`);
     return data;
 };
 
@@ -67,7 +67,7 @@ export const deleteTutorial = async ({ tutorialId, userId }) => {
  * @returns {Promise<import('../types').Tutorial>} The updated tutorial data with the new chapter.
  */
 export const addChapter = async ({ tutorialId, userId, chapterData }) => {
-    const { data } = await API.post(`/api/tutorial/addchapter/${tutorialId}/${userId}`, chapterData);
+    const { data } = await API.post(`/api/v1/tutorial/addchapter/${tutorialId}/${userId}`, chapterData);
     return data;
 };
 
@@ -81,7 +81,7 @@ export const addChapter = async ({ tutorialId, userId, chapterData }) => {
  * @returns {Promise<import('../types').Tutorial>} The updated tutorial data.
  */
 export const updateChapter = async ({ tutorialId, chapterId, userId, chapterData }) => {
-    const { data } = await API.put(`/api/tutorial/updatechapter/${tutorialId}/${chapterId}/${userId}`, chapterData);
+    const { data } = await API.put(`/api/v1/tutorial/updatechapter/${tutorialId}/${chapterId}/${userId}`, chapterData);
     return data;
 };
 
@@ -94,7 +94,7 @@ export const updateChapter = async ({ tutorialId, chapterId, userId, chapterData
  * @returns {Promise<import('../types').Tutorial>} The updated tutorial data.
  */
 export const deleteChapter = async ({ tutorialId, chapterId, userId }) => {
-    const { data } = await API.delete(`/api/tutorial/deletechapter/${tutorialId}/${chapterId}/${userId}`);
+    const { data } = await API.delete(`/api/v1/tutorial/deletechapter/${tutorialId}/${chapterId}/${userId}`);
     return data;
 };
 

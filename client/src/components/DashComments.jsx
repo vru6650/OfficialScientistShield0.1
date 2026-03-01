@@ -1,75 +1,87 @@
 import { Modal, Table, Button } from 'flowbite-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { HiOutlineExclamationCircle } from 'react-icons/hi';
-import { FaCheck, FaTimes } from 'react-icons/fa';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../utils/apiFetch';
+
+const PAGE_SIZE = 9;
+
+const fetchCommentsPage = async ({ pageParam = 0 }) => {
+  const res = await apiFetch(`/api/v1/comment/getcomments?startIndex=${pageParam}&limit=${PAGE_SIZE}`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Failed to fetch comments');
+  }
+  return data;
+};
 
 export default function DashComments() {
   const { currentUser } = useSelector((state) => state.user);
-  const [comments, setComments] = useState([]);
-  const [showMore, setShowMore] = useState(true);
+  const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [commentIdToDelete, setCommentIdToDelete] = useState('');
-  useEffect(() => {
-    const fetchComments = async () => {
-      try {
-        const res = await apiFetch('/api/comment/getcomments');
-        const data = await res.json();
-        if (res.ok) {
-          setComments(data.comments);
-          if (data.comments.length < 9) {
-            setShowMore(false);
-          }
-        }
-      } catch (error) {
-        console.log(error.message);
-      }
-    };
-    if (currentUser.isAdmin) {
-      fetchComments();
-    }
-  }, [currentUser._id]);
 
-  const handleShowMore = async () => {
-    const startIndex = comments.length;
-    try {
-      const res = await apiFetch(`/api/comment/getcomments?startIndex=${startIndex}`);
-      const data = await res.json();
-      if (res.ok) {
-        setComments((prev) => [...prev, ...data.comments]);
-        if (data.comments.length < 9) {
-          setShowMore(false);
-        }
-      }
-    } catch (error) {
-      console.log(error.message);
-    }
-  };
+  const isAdmin = Boolean(currentUser?.isAdmin);
 
-  const handleDeleteComment = async () => {
-    setShowModal(false);
-    try {
-      const res = await apiFetch(`/api/comment/deleteComment/${commentIdToDelete}`, {
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['adminComments', currentUser?._id],
+    queryFn: fetchCommentsPage,
+    enabled: isAdmin,
+    getNextPageParam: (lastPage, pages) =>
+      lastPage?.comments?.length === PAGE_SIZE ? pages.length * PAGE_SIZE : undefined,
+  });
+
+  const comments = data?.pages?.flatMap((page) => page.comments) ?? [];
+
+  const deleteMutation = useMutation({
+    mutationFn: async (commentId) => {
+      const res = await apiFetch(`/api/v1/comment/deleteComment/${commentId}`, {
         method: 'DELETE',
       });
-      const data = await res.json();
-      if (res.ok) {
-        setComments((prev) =>
-          prev.filter((comment) => comment._id !== commentIdToDelete)
-        );
-        setShowModal(false);
-      } else {
-        console.log(data.message);
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(payload.message || 'Failed to delete comment');
       }
-    } catch (error) {
-      console.log(error.message);
-    }
+      return commentId;
+    },
+    onSuccess: (deletedId) => {
+      queryClient.setQueryData(['adminComments', currentUser?._id], (oldData) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            comments: page.comments.filter((comment) => comment._id !== deletedId),
+          })),
+        };
+      });
+      setShowModal(false);
+    },
+  });
+
+  const handleShowMore = () => {
+    fetchNextPage();
   };
+
+  const handleDeleteComment = () => {
+    if (!commentIdToDelete) return;
+    deleteMutation.mutate(commentIdToDelete);
+  };
+
+  const shouldShowEmpty = !isLoading && !isError && comments.length === 0;
 
   return (
     <div className='table-auto overflow-x-scroll md:mx-auto p-3 scrollbar scrollbar-track-slate-100 scrollbar-thumb-slate-300 dark:scrollbar-track-slate-700 dark:scrollbar-thumb-slate-500'>
-      {currentUser.isAdmin && comments.length > 0 ? (
+      {isAdmin && comments.length > 0 ? (
         <>
           <Table hoverable className='shadow-md'>
             <Table.Head>
@@ -105,18 +117,21 @@ export default function DashComments() {
               </Table.Body>
             ))}
           </Table>
-          {showMore && (
+          {hasNextPage && (
             <button
               onClick={handleShowMore}
               className='w-full text-teal-500 self-center text-sm py-7'
+              disabled={isFetchingNextPage}
             >
-              Show more
+              {isFetchingNextPage ? 'Loading...' : 'Show more'}
             </button>
           )}
         </>
-      ) : (
-        <p>You have no comments yet!</p>
-      )}
+      ) : null}
+      {isAdmin && isLoading && comments.length === 0 ? <p>Loading comments...</p> : null}
+      {isAdmin && isError ? <p>{error?.message || 'Failed to load comments.'}</p> : null}
+      {isAdmin && shouldShowEmpty ? <p>You have no comments yet!</p> : null}
+      {!isAdmin ? <p>You have no comments yet!</p> : null}
       <Modal
         show={showModal}
         onClose={() => setShowModal(false)}
@@ -131,7 +146,7 @@ export default function DashComments() {
               Are you sure you want to delete this comment?
             </h3>
             <div className='flex justify-center gap-4'>
-              <Button color='failure' onClick={handleDeleteComment}>
+              <Button color='failure' onClick={handleDeleteComment} disabled={deleteMutation.isLoading}>
                 Yes, I'm sure
               </Button>
               <Button color='gray' onClick={() => setShowModal(false)}>

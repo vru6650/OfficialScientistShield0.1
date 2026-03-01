@@ -3,7 +3,7 @@ import { apiFetch } from '../utils/apiFetch';
 
 // --- API Fetch Function ---
 const fetchRecentPosts = async () => {
-    const res = await apiFetch('/api/post/getposts?limit=3');
+    const res = await apiFetch('/api/v1/post/getposts?limit=3');
 
     if (!res.ok) {
         // We can choose to not throw an error for recent posts

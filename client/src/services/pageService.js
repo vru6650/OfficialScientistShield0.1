@@ -6,17 +6,17 @@ const API = axios.create({
 });
 
 export const createPage = async (payload) => {
-    const { data } = await API.post('/api/pages', payload);
+    const { data } = await API.post('/api/v1/pages', payload);
     return data;
 };
 
 export const updatePage = async ({ pageId, payload }) => {
-    const { data } = await API.patch(`/api/pages/${pageId}`, payload);
+    const { data } = await API.patch(`/api/v1/pages/${pageId}`, payload);
     return data;
 };
 
 export const deletePage = async (pageId) => {
-    const { data } = await API.delete(`/api/pages/${pageId}`);
+    const { data } = await API.delete(`/api/v1/pages/${pageId}`);
     return data;
 };
 
@@ -35,17 +35,17 @@ export const getPages = async ({ queryKey, pageParam = 0 }) => {
         params.set('searchTerm', filters.search);
     }
 
-    const { data } = await API.get(`/api/pages?${params.toString()}`);
+    const { data } = await API.get(`/api/v1/pages?${params.toString()}`);
     return data;
 };
 
 export const getPageById = async (pageId) => {
-    const { data } = await API.get(`/api/pages/${pageId}`);
+    const { data } = await API.get(`/api/v1/pages/${pageId}`);
     return data;
 };
 
 export const getPageContent = async (slug) => {
-    const { data } = await API.get(`/api/content/${slug}`);
+    const { data } = await API.get(`/api/v1/content/${slug}`);
     return data;
 };
 

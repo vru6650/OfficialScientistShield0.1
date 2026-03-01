@@ -576,7 +576,9 @@ const InteractiveReadingSurface = ({
                 try {
                     h.classList.add('heading-anchor-copied');
                     setTimeout(() => h.classList.remove('heading-anchor-copied'), 1200);
-                } catch (_) {}
+                } catch (_) {
+                    // Ignore transient DOM state changes while copying heading links.
+                }
             });
             h.appendChild(btn);
         });
@@ -1139,7 +1141,7 @@ const InteractiveReadingSurface = ({
             {typeof document !== 'undefined' && !hideUtilityBar && (readingMinutes || 0) > 0 &&
                 createPortal(
                     <div
-                        className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full border border-slate-200/70 bg-white/90 px-3 py-1.5 text-xs text-slate-700 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200"
+                        className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full border border-slate-200/70 bg-white/90 px-3 py-1.5 text-xs text-slate-700 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 lg:hidden"
                         aria-live="polite"
                     >
                         {Math.round(progress)}% · {Math.max(0, Math.ceil((readingMinutes || 0) * (1 - progress / 100)))} min left

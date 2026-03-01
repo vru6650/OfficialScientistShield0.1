@@ -3,11 +3,11 @@ import { motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import ScrollToTop from './ScrollToTop';
-import BottomNav from './BottomNav';
 import RouteProgressBar from './RouteProgressBar.jsx';
 import PageAnnouncer from './PageAnnouncer.jsx';
 import RestOverlay from './RestOverlay';
 import MacWindowManager from './desktop/MacWindowManager.jsx';
+import Dock from './Dock.jsx';
 
 export default function MainLayout() {
     const location = useLocation();
@@ -17,7 +17,7 @@ export default function MainLayout() {
     };
     const [effects, setEffects] = useState(readEffects);
     useEffect(() => {
-        const onChange = (e) => setEffects(readEffects());
+        const onChange = () => setEffects(readEffects());
         window.addEventListener('ui-effects-changed', onChange);
         window.addEventListener('storage', onChange);
         return () => {
@@ -37,7 +37,7 @@ export default function MainLayout() {
         return `Scientist Shield · ${formatted}`;
     }, [location.pathname]);
 
-    const renderMainContent = useCallback(() => <Outlet />, [location.key]);
+    const renderMainContent = useCallback(() => <Outlet />, []);
 
     return (
         <>
@@ -57,7 +57,7 @@ export default function MainLayout() {
                 id="main-content"
                 role="main"
                 tabIndex={-1}
-                className="min-h-screen pt-8 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300/70"
+                className="min-h-screen pt-8 pb-24 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300/70"
                 style={{ filter: `brightness(${effects.brightness || 1}) contrast(${effects.contrast || 1})` }}
             >
                 <MacWindowManager
@@ -65,8 +65,8 @@ export default function MainLayout() {
                     renderMainContent={renderMainContent}
                     activeLocation={location}
                 />
+                <Dock />
             </motion.main>
-            <BottomNav />
         </>
     );
 }

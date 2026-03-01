@@ -146,7 +146,7 @@ export default function UpdateProblem() {
 
     const mutation = useMutation({
         mutationFn: (payload) =>
-            updateProblem({ problemId, userId: currentUser?._id, payload }),
+            updateProblem({ problemId, payload }),
         onSuccess: (updated) => {
             navigate(`/problems/${updated.slug}`);
         },

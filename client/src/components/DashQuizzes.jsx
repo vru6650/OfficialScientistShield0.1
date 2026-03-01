@@ -66,7 +66,7 @@ export default function DashQuizzes() {
                 </Alert>
             )}
 
-            {currentUser.isAdmin && quizzes.length > 0 ? (
+            {currentUser?.isAdmin && quizzes.length > 0 ? (
                 <>
                     <Table hoverable className='shadow-md'>
                         <Table.Head>
@@ -92,7 +92,7 @@ export default function DashQuizzes() {
                                         <span
                                             onClick={() => {
                                                 setShowModal(true);
-                                                setQuizToDelete({ quizId: quiz._id, userId: quiz.createdBy }); // Pass createdBy as userId
+                                                setQuizToDelete({ quizId: quiz._id });
                                             }}
                                             className='font-medium text-red-500 hover:underline cursor-pointer'
                                         >

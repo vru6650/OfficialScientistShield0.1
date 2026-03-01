@@ -2,24 +2,29 @@ import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'rea
 
 const SlashCommandList = forwardRef((props, ref) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const items = Array.isArray(props.items) ? props.items : [];
 
-    const selectItem = index => {
-        const item = props.items[index];
+    const selectItem = (index) => {
+        const item = items[index];
         if (item) {
             props.command(item);
         }
     };
 
-    useEffect(() => setSelectedIndex(0), [props.items]);
+    useEffect(() => setSelectedIndex(0), [items]);
 
     useImperativeHandle(ref, () => ({
         onKeyDown: ({ event }) => {
+            if (!items.length) {
+                return false;
+            }
+
             if (event.key === 'ArrowUp') {
-                setSelectedIndex((selectedIndex + props.items.length - 1) % props.items.length);
+                setSelectedIndex((prev) => (prev + items.length - 1) % items.length);
                 return true;
             }
             if (event.key === 'ArrowDown') {
-                setSelectedIndex((selectedIndex + 1) % props.items.length);
+                setSelectedIndex((prev) => (prev + 1) % items.length);
                 return true;
             }
             if (event.key === 'Enter') {
@@ -32,8 +37,8 @@ const SlashCommandList = forwardRef((props, ref) => {
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2">
-            {props.items.length ? (
-                props.items.map((item, index) => (
+            {items.length ? (
+                items.map((item, index) => (
                     <button
                         key={index}
                         onClick={() => selectItem(index)}

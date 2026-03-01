@@ -282,6 +282,7 @@ export default function SingleProblemPage() {
                                 <CodeEditor
                                     language={starterDefaultLanguage ?? 'javascript'}
                                     initialCode={starterInitialCode}
+                                    workspaceId={`problem-${data?._id || data?.slug || 'default'}`}
                                 />
                             </div>
                         </section>

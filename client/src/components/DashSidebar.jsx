@@ -48,7 +48,7 @@ export default function DashSidebar() {
   const handleSignout = async () => {
     setIsSigningOut(true);
     try {
-      await apiFetch('/api/user/signout', { method: 'POST' });
+      await apiFetch('/api/v1/user/signout', { method: 'POST' });
       dispatch(signoutSuccess());
     } catch (error) {
       console.log(error.message);

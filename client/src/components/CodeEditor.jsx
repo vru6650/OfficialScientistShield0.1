@@ -80,6 +80,10 @@ const normalizeInitialCode = (initialCode, fallbackLanguage) => {
     }
 
     if (typeof initialCode === 'string') {
+        const normalizedStorageLanguage = normalizeStorageLanguage(fallbackLanguage);
+        if (normalizedStorageLanguage) {
+            return { [normalizedStorageLanguage]: initialCode };
+        }
         const normalizedLanguage = normalizeLanguage(fallbackLanguage);
         return { [normalizedLanguage]: initialCode };
     }
@@ -179,7 +183,7 @@ const languageMeta = {
     csharp: { label: 'C#', Icon: SiCsharp, badge: 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white' },
 };
 
-export default function CodeEditor({ initialCode = {}, language = 'javascript', snippetId }) {
+export default function CodeEditor({ initialCode = {}, language = 'javascript', snippetId, workspaceId }) {
     const { theme } = useSelector((state) => state.theme);
     const editorRef = useRef(null);
     const outputRef = useRef(null);
@@ -192,10 +196,33 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
     const { snippet, isLoading: isSnippetLoading, error: snippetError } = useCodeSnippet(snippetId);
 
     const normalizedInitialLanguage = normalizeLanguage(language);
-    const storageKey = useMemo(() => `code-editor:v2:${snippetId || 'default'}`, [snippetId]);
+    const storageKey = useMemo(
+        () => `code-editor:v2:${workspaceId || snippetId || 'default'}`,
+        [workspaceId, snippetId]
+    );
     const normalizedInitialCode = useMemo(
-        () => normalizeInitialCode(initialCode, normalizedInitialLanguage),
-        [initialCode, normalizedInitialLanguage]
+        () => normalizeInitialCode(initialCode, language),
+        [initialCode, language]
+    );
+    const initialStorageLanguage = useMemo(() => normalizeStorageLanguage(language), [language]);
+    const initialWebTab = useMemo(() => {
+        if (initialStorageLanguage === 'html' || initialStorageLanguage === 'css') {
+            return initialStorageLanguage;
+        }
+        if (normalizedInitialCode.html) {
+            return 'html';
+        }
+        if (normalizedInitialCode.css) {
+            return 'css';
+        }
+        return 'javascript';
+    }, [initialStorageLanguage, normalizedInitialCode.html, normalizedInitialCode.css]);
+    const initialWebMode = useMemo(
+        () =>
+            initialStorageLanguage === 'html' ||
+            initialStorageLanguage === 'css' ||
+            Boolean(normalizedInitialCode.html || normalizedInitialCode.css),
+        [initialStorageLanguage, normalizedInitialCode.html, normalizedInitialCode.css]
     );
 
 
@@ -211,8 +238,8 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
     });
 
     const [selectedLanguage, setSelectedLanguage] = useState(normalizedInitialLanguage);
-    const [isWebMode, setIsWebMode] = useState(false);
-    const [webTab, setWebTab] = useState('javascript');
+    const [isWebMode, setIsWebMode] = useState(initialWebMode);
+    const [webTab, setWebTab] = useState(initialWebTab);
     const [consoleOutput, setConsoleOutput] = useState('');
     const [isRunning, setIsRunning] = useState(false);
     const [runError, setRunError] = useState(null);
@@ -366,11 +393,11 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
         setConsoleOutput('');
 
         const endpointMap = {
-            javascript: '/api/code/run-js',
-            cpp: '/api/code/run-cpp',
-            python: '/api/code/run-python',
-            java: '/api/code/run-java',
-            csharp: '/api/code/run-csharp',
+            javascript: '/api/v1/code/run-js',
+            cpp: '/api/v1/code/run-cpp',
+            python: '/api/v1/code/run-python',
+            java: '/api/v1/code/run-java',
+            csharp: '/api/v1/code/run-csharp',
         };
 
         const endpoint = endpointMap[selectedLanguage];
@@ -628,6 +655,8 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
             return;
         }
 
+        const snippetHasHtml = typeof snippet.html === 'string' && snippet.html.trim().length > 0;
+        const snippetHasCss = typeof snippet.css === 'string' && snippet.css.trim().length > 0;
         const preferredLanguage = (() => {
             if (language) {
                 return normalizeLanguage(language);
@@ -661,6 +690,10 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
             csharp: snippet.csharp || prevCodes.csharp || defaultCodes.csharp,
         }));
         setSelectedLanguage(supportedLanguages.includes(preferredLanguage) ? preferredLanguage : 'javascript');
+        if (snippetHasHtml || snippetHasCss) {
+            setIsWebMode(true);
+            setWebTab(snippetHasHtml ? 'html' : 'css');
+        }
         setHasAppliedSnippet(true);
     }, [snippetId, snippet, hasAppliedSnippet, language, selectedLanguage]);
 

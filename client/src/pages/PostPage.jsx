@@ -7,7 +7,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import hljs from 'highlight.js';
 import ImageViewer from 'react-simple-image-viewer';
 import { Helmet } from 'react-helmet-async';
-import { FaClock, FaBookOpen, FaCalendarAlt, FaArrowRight, FaCommentDots, FaChevronUp, FaChevronLeft, FaChevronRight, FaLink, FaPrint, FaQuestionCircle } from 'react-icons/fa';
+import { FaClock, FaBookOpen, FaCalendarAlt, FaArrowRight, FaCommentDots, FaChevronUp, FaChevronLeft, FaChevronRight, FaLink, FaPrint, FaQuestionCircle, FaTimes } from 'react-icons/fa';
 import { HiOutlineSparkles } from 'react-icons/hi';
 import { apiFetch } from '../utils/apiFetch';
 
@@ -28,7 +28,7 @@ import '../Tiptap.css';
 
 // --- API fetching functions ---
 const fetchPostBySlug = async (postSlug) => {
-    const res = await apiFetch(`/api/post/getposts?slug=${postSlug}`);
+    const res = await apiFetch(`/api/v1/post/getposts?slug=${postSlug}`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Failed to fetch post.');
     if (data.posts.length === 0) throw new Error('Post not found.');
@@ -38,7 +38,7 @@ const fetchPostBySlug = async (postSlug) => {
 const fetchRelatedPosts = async (category) => {
     if (!category) return [];
     try {
-        const res = await apiFetch(`/api/post/getposts?category=${category}&limit=3`);
+        const res = await apiFetch(`/api/v1/post/getposts?category=${category}&limit=3`);
         if (!res.ok) return [];
         const data = await res.json();
         return data.posts;
@@ -125,11 +125,20 @@ export default function PostPage() {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = sanitizedContent;
         const headingNodes = tempDiv.querySelectorAll('h2, h3');
-        return Array.from(headingNodes).map(node => ({
-            id: generateSlug(node.innerText),
-            text: node.innerText,
-            level: node.tagName.toLowerCase(),
-        }));
+        const slugCounts = {};
+
+        return Array.from(headingNodes).map((node) => {
+            const baseId = generateSlug(node.innerText);
+            const count = slugCounts[baseId] || 0;
+            slugCounts[baseId] = count + 1;
+            const id = count === 0 ? baseId : `${baseId}-${count + 1}`;
+
+            return {
+                id,
+                text: node.innerText,
+                level: node.tagName.toLowerCase(),
+            };
+        });
     }, [sanitizedContent]);
 
     const imagesInPost = useMemo(() => {
@@ -168,6 +177,22 @@ export default function PostPage() {
         setCurrentImage(0);
         setIsViewerOpen(false);
     };
+
+    useEffect(() => {
+        if (!headings.length) return;
+        const contentRoot = document.querySelector('.post-content');
+        if (!contentRoot) return;
+
+        const renderedHeadings = contentRoot.querySelectorAll('h2, h3');
+        if (!renderedHeadings.length) return;
+
+        headings.forEach((heading, index) => {
+            const node = renderedHeadings[index];
+            if (node && node.id !== heading.id) {
+                node.id = heading.id;
+            }
+        });
+    }, [headings]);
 
     useEffect(() => {
         if (!post?.content) return;
@@ -854,7 +879,7 @@ export default function PostPage() {
             </div>
 
             {/* Floating quick actions: Back to top, Discuss, and TOC on mobile */}
-            <div className='fixed bottom-6 right-6 z-40 flex flex-col gap-3'>
+            <div className='fixed bottom-6 right-6 z-40 flex flex-col gap-3 lg:hidden'>
                 <button
                     aria-label='Back to top'
                     onClick={handleScrollTop}
@@ -913,7 +938,7 @@ export default function PostPage() {
 
             {/* Resume reading prompt */}
             {resumeProgress !== null && resumeProgress > 0.05 && resumeProgress < 0.98 && (
-                <div className='fixed bottom-6 left-6 z-40 rounded-full border border-slate-200/70 bg-white/95 px-4 py-2 text-sm text-slate-700 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200'>
+                <div className='fixed bottom-6 left-6 z-40 rounded-full border border-slate-200/70 bg-white/95 px-4 py-2 text-sm text-slate-700 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 lg:hidden'>
                     <button
                         onClick={() => {
                             const c = document.querySelector('[data-reading-surface="true"]');

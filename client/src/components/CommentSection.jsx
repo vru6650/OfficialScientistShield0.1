@@ -1,115 +1,148 @@
-import { Alert, Button, Modal, TextInput, Textarea } from 'flowbite-react';
-import { useEffect, useState } from 'react';
+import { Alert, Button, Modal, Textarea } from 'flowbite-react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Comment from './Comment';
 import { HiOutlineExclamationCircle } from 'react-icons/hi';
 import { apiFetch } from '../utils/apiFetch';
 
+const fetchPostComments = async (postId) => {
+  const res = await apiFetch(`/api/v1/comment/getPostComments/${postId}`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Failed to fetch comments');
+  }
+  return data;
+};
+
 export default function CommentSection({ postId }) {
   const { currentUser } = useSelector((state) => state.user);
+  const queryClient = useQueryClient();
   const [comment, setComment] = useState('');
   const [commentError, setCommentError] = useState(null);
-  const [comments, setComments] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
   const navigate = useNavigate();
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (comment.length > 200) {
-      return;
-    }
-    try {
-      const res = await apiFetch('/api/comment/create', {
+
+  const {
+    data: commentsData,
+    isLoading: commentsLoading,
+    isError: commentsError,
+    error: commentsErrorMessage,
+  } = useQuery({
+    queryKey: ['postComments', postId],
+    queryFn: () => fetchPostComments(postId),
+    enabled: Boolean(postId),
+  });
+
+  const comments = Array.isArray(commentsData) ? commentsData : [];
+
+  const createMutation = useMutation({
+    mutationFn: async ({ content, postId: targetPostId }) => {
+      const res = await apiFetch('/api/v1/comment/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          content: comment,
-          postId,
+          content,
+          postId: targetPostId,
         }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        setComment('');
-        setCommentError(null);
-        setComments([data, ...comments]);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to create comment');
       }
-    } catch (error) {
-      setCommentError(error.message);
-    }
-  };
+      return data;
+    },
+    onSuccess: (newComment) => {
+      queryClient.setQueryData(['postComments', postId], (old = []) => [newComment, ...old]);
+      setComment('');
+      setCommentError(null);
+    },
+    onError: (err) => {
+      setCommentError(err.message);
+    },
+  });
 
-  useEffect(() => {
-    const getComments = async () => {
-      try {
-        const res = await apiFetch(`/api/comment/getPostComments/${postId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setComments(data);
-        }
-      } catch (error) {
-        console.log(error.message);
-      }
-    };
-    getComments();
-  }, [postId]);
-
-  const handleLike = async (commentId) => {
-    try {
-      if (!currentUser) {
-        navigate('/sign-in');
-        return;
-      }
-      const res = await apiFetch(`/api/comment/likeComment/${commentId}`, {
+  const likeMutation = useMutation({
+    mutationFn: async (commentId) => {
+      const res = await apiFetch(`/api/v1/comment/likeComment/${commentId}`, {
         method: 'PUT',
       });
-      if (res.ok) {
-        const data = await res.json();
-        setComments(
-            comments.map((comment) =>
-                comment._id === commentId
-                    ? {
-                      ...comment,
-                      likes: data.likes,
-                      numberOfLikes: data.likes.length,
-                    }
-                    : comment
-            )
-        );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to like comment');
       }
-    } catch (error) {
-      console.log(error.message);
+      return data;
+    },
+    onSuccess: (updatedComment) => {
+      queryClient.setQueryData(['postComments', postId], (old = []) =>
+        old.map((item) =>
+          item._id === updatedComment._id
+            ? {
+              ...item,
+              likes: updatedComment.likes,
+              numberOfLikes: updatedComment.numberOfLikes,
+            }
+            : item
+        )
+      );
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (commentId) => {
+      const res = await apiFetch(`/api/v1/comment/deleteComment/${commentId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to delete comment');
+      }
+      return commentId;
+    },
+    onSuccess: (deletedId) => {
+      queryClient.setQueryData(['postComments', postId], (old = []) =>
+        old.filter((item) => item._id !== deletedId)
+      );
+      setShowModal(false);
+    },
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (comment.length > 200) {
+      return;
     }
+    createMutation.mutate({ content: comment, postId });
   };
 
-  const handleEdit = async (comment, editedContent) => {
-    setComments(
-        comments.map((c) =>
-            c._id === comment._id ? { ...c, content: editedContent } : c
-        )
+  const handleLike = async (commentId) => {
+    if (!currentUser) {
+      navigate('/sign-in');
+      return;
+    }
+    likeMutation.mutate(commentId);
+  };
+
+  const handleEdit = async (targetComment, editedContent) => {
+    queryClient.setQueryData(['postComments', postId], (old = []) =>
+      old.map((item) =>
+        item._id === targetComment._id ? { ...item, content: editedContent } : item
+      )
     );
   };
 
   const handleDelete = async (commentId) => {
-    setShowModal(false);
-    try {
-      if (!currentUser) {
-        navigate('/sign-in');
-        return;
-      }
-      const res = await apiFetch(`/api/comment/deleteComment/${commentId}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setComments(comments.filter((comment) => comment._id !== commentId));
-      }
-    } catch (error) {
-      console.log(error.message);
+    if (!currentUser) {
+      navigate('/sign-in');
+      return;
     }
+    deleteMutation.mutate(commentId);
   };
+
   return (
       <div className='max-w-2xl mx-auto w-full p-3'>
         {currentUser ? (
@@ -151,8 +184,8 @@ export default function CommentSection({ postId }) {
                 <p className='text-gray-500 dark:text-gray-400 text-xs'>
                   {200 - comment.length} characters remaining
                 </p>
-                <Button outline gradientDuoTone='purpleToBlue' type='submit'>
-                  Submit
+                <Button outline gradientDuoTone='purpleToBlue' type='submit' disabled={createMutation.isLoading}>
+                  {createMutation.isLoading ? 'Submitting...' : 'Submit'}
                 </Button>
               </div>
               {commentError && (
@@ -162,7 +195,13 @@ export default function CommentSection({ postId }) {
               )}
             </form>
         )}
-        {comments.length === 0 ? (
+        {commentsLoading ? (
+            <p className='text-sm my-5 text-gray-600 dark:text-gray-300'>Loading comments...</p>
+        ) : commentsError ? (
+            <p className='text-sm my-5 text-gray-600 dark:text-gray-300'>
+              {commentsErrorMessage?.message || 'Failed to load comments.'}
+            </p>
+        ) : comments.length === 0 ? (
             <p className='text-sm my-5 text-gray-600 dark:text-gray-300'>No comments yet!</p>
         ) : (
             <>
@@ -172,10 +211,10 @@ export default function CommentSection({ postId }) {
                   <p>{comments.length}</p>
                 </div>
               </div>
-              {comments.map((comment) => (
+              {comments.map((commentItem) => (
                   <Comment
-                      key={comment._id}
-                      comment={comment}
+                      key={commentItem._id}
+                      comment={commentItem}
                       onLike={handleLike}
                       onEdit={handleEdit}
                       onDelete={(commentId) => {
@@ -203,6 +242,7 @@ export default function CommentSection({ postId }) {
                 <Button
                     color='failure'
                     onClick={() => handleDelete(commentToDelete)}
+                    disabled={deleteMutation.isLoading}
                 >
                   Yes, I'm sure
                 </Button>

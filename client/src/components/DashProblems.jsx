@@ -117,7 +117,7 @@ export default function DashProblems() {
                                         <button
                                             type="button"
                                             className="text-sm font-semibold text-red-500 hover:underline"
-                                            onClick={() => setPendingDelete({ problemId: problem._id, userId: currentUser?._id })}
+                                            onClick={() => setPendingDelete({ problemId: problem._id })}
                                         >
                                             Delete
                                         </button>

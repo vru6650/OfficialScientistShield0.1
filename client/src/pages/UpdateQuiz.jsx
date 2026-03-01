@@ -129,7 +129,11 @@ export default function UpdateQuiz() {
     const { currentUser } = useSelector((state) => state.user);
 
     // Fetch existing quiz data
-    const { data: quizData, isLoading: quizLoading, isError: quizError } = useQuery({
+    const {
+        isLoading: quizLoading,
+        isError: quizIsError,
+        error: quizError,
+    } = useQuery({
         queryKey: ['quizToUpdate', quizId],
         // CORRECT FUNCTION CALL: Use getSingleQuizById
         queryFn: () => getSingleQuizService(quizId),
@@ -260,7 +264,6 @@ export default function UpdateQuiz() {
 
         updateQuizMutation.mutate({
             quizId,
-            userId: currentUser._id, // Assuming currentUser has _id for authorization
             formData: state.formData
         });
     };
@@ -273,10 +276,10 @@ export default function UpdateQuiz() {
         );
     }
 
-    if (quizError) {
+    if (quizIsError) {
         return (
             <Alert color='failure' className='mt-5'>
-                Error loading quiz: {quizError.message}
+                Error loading quiz: {quizError?.message || 'Something went wrong while loading the quiz.'}
             </Alert>
         );
     }

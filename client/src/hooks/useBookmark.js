@@ -13,7 +13,7 @@ const bookmarkPost = async (postId, token) => {
         headers.Authorization = `Bearer ${token}`;
     }
 
-    const res = await apiFetch(`/api/post/${postId}/bookmark`, {
+    const res = await apiFetch(`/api/v1/post/${postId}/bookmark`, {
         method: 'PUT',
         headers,
     });

@@ -1,52 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../utils/apiFetch';
 
-// A simple in-memory cache to store fetched user data
-const userCache = new Map();
+const fetchUser = async (userId) => {
+    const res = await apiFetch(`/api/v1/user/${userId}`);
+    const data = await res.json();
+    if (!res.ok) {
+        throw new Error(data.message || 'Failed to fetch user');
+    }
+    return data;
+};
 
 export default function useUser(userId) {
-    const [user, setUser] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const query = useQuery({
+        queryKey: ['user', userId],
+        queryFn: () => fetchUser(userId),
+        enabled: Boolean(userId),
+        staleTime: 1000 * 60 * 5,
+    });
 
-    useEffect(() => {
-        if (!userId) {
-            setIsLoading(false);
-            return;
-        }
-
-        const getUser = async () => {
-            // 1. Check if user is already in our cache
-            if (userCache.has(userId)) {
-                setUser(userCache.get(userId));
-                setIsLoading(false);
-                return;
-            }
-
-            // 2. If not in cache, fetch from the API
-            try {
-                setIsLoading(true);
-                setError(null);
-                const res = await apiFetch(`/api/user/${userId}`);
-                const data = await res.json();
-
-                if (res.ok) {
-                    // 3. Store the new user data in the cache
-                    userCache.set(userId, data);
-                    setUser(data);
-                } else {
-                    throw new Error(data.message || 'Failed to fetch user');
-                }
-            } catch (error) {
-                setError(error.message);
-                console.error("Failed to fetch user:", error.message);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        getUser();
-    }, [userId]); // This effect re-runs only if the userId prop changes
-
-    return { user, isLoading, error };
+    return {
+        user: query.data ?? null,
+        isLoading: query.isLoading,
+        error: query.error?.message ?? null,
+    };
 }

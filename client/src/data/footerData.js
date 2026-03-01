@@ -2,33 +2,41 @@ import { BsFacebook, BsInstagram, BsTwitter, BsGithub, BsDribbble } from 'react-
 
 export const footerLinks = [
     {
-        title: 'About',
+        title: 'Platform',
         links: [
-            { name: '100 JS Projects', href: 'https://www.100jsprojects.com' },
-            { name: "Sahand's Blog", href: '/about' },
+            { name: 'Home', href: '/' },
+            { name: 'Tutorials', href: '/tutorials' },
             { name: 'Problem Solving Hub', href: '/problems' },
         ],
     },
     {
-        title: 'Follow us',
+        title: 'Explore',
+        links: [
+            { name: 'Projects', href: '/projects' },
+            { name: 'Quizzes', href: '/quizzes' },
+            { name: 'About ScientistShield', href: '/about' },
+        ],
+    },
+    {
+        title: 'Community',
         links: [
             { name: 'Github', href: 'https://github.com/sahandghavidel' },
-            { name: 'Discord', href: '#' },
+            { name: 'Search articles', href: '/search' },
         ],
     },
     {
         title: 'Legal',
         links: [
-            { name: 'Privacy Policy', href: '#' },
-            { name: 'Terms & Conditions', href: '#' },
+            { name: 'Privacy', href: '/content/privacy-policy' },
+            { name: 'Terms', href: '/content/terms-and-conditions' },
         ],
     },
 ];
 
 export const socialMediaLinks = [
-    { name: 'Facebook', href: '#', icon: BsFacebook },
-    { name: 'Instagram', href: '#', icon: BsInstagram },
-    { name: 'Twitter', href: '#', icon: BsTwitter },
+    { name: 'Facebook', href: 'https://www.facebook.com', icon: BsFacebook },
+    { name: 'Instagram', href: 'https://www.instagram.com', icon: BsInstagram },
+    { name: 'Twitter', href: 'https://www.twitter.com', icon: BsTwitter },
     { name: 'Github', href: 'https://github.com/sahandghavidel', icon: BsGithub },
-    { name: 'Dribbble', href: '#', icon: BsDribbble },
+    { name: 'Dribbble', href: 'https://dribbble.com', icon: BsDribbble },
 ];
