@@ -1,0 +1,66 @@
+{
+  "version": 3,
+  "targets": {
+    "net8.0": {}
+  },
+  "libraries": {},
+  "projectFileDependencyGroups": {
+    "net8.0": []
+  },
+  "packageFolders": {
+    "/home/scientistshield/.nuget/packages/": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "/home/scientistshield/Documents/finalDock3/ScientistShield2.0-mainNewssingleWindows9/ScientistShield2.0-mainNews1/ScientistShield2.0-mainNews/temp/546ac1b1-5d92-4266-89a7-2c441a32abc2/App.csproj",
+      "projectName": "App",
+      "projectPath": "/home/scientistshield/Documents/finalDock3/ScientistShield2.0-mainNewssingleWindows9/ScientistShield2.0-mainNews1/ScientistShield2.0-mainNews/temp/546ac1b1-5d92-4266-89a7-2c441a32abc2/App.csproj",
+      "packagesPath": "/home/scientistshield/.nuget/packages/",
+      "outputPath": "/home/scientistshield/Documents/finalDock3/ScientistShield2.0-mainNewssingleWindows9/ScientistShield2.0-mainNews1/ScientistShield2.0-mainNews/temp/546ac1b1-5d92-4266-89a7-2c441a32abc2/obj/",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "/home/scientistshield/.nuget/NuGet/NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net8.0"
+      ],
+      "sources": {
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "projectReferences": {}
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      }
+    },
+    "frameworks": {
+      "net8.0": {
+        "targetAlias": "net8.0",
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.120/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

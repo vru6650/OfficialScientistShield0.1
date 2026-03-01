@@ -55,8 +55,8 @@ npm start       # serves API + static client bundle
 ## Tech Stack
 | Area | Choices |
 | ---- | ------- |
-| Frontend | React 18, Vite, Redux Toolkit, Tailwind, TipTap, Framer Motion (add Next.js only when SSR/SEO truly helps) |
-| Backend | Express, Mongoose, JWT auth, cookie sessions, centralized error handling |
+| Frontend | React 18, Vite SPA (Redux Toolkit) • Next.js 16 App Router (SSR/RSC) with Tailwind v4 + shadcn/ui primitives, Zustand stores for auth/theme |
+| Backend | Express, Mongoose, JWT auth, cookie sessions, centralized error handling; **migration path** to NestJS + PostgreSQL (Prisma) with Redis cache |
 | Search | Optional Elasticsearch; graceful in-app fallback if disabled |
 | Runtimes | JS/TS, Python, C/C++, Java, C# code runners with safety timeouts |
 | Tooling | Nodemon, Node test runner, UUID utilities |
@@ -122,15 +122,11 @@ Client-side `.env` (`client/.env`) only needs `VITE_API_URL` when you are not us
 - Run `npm run dev` for the API (nodemon) and `npm run dev --prefix client` for the Vite SPA.
 - Vite proxies `/api/*` to `http://localhost:3000` so CORS stays simple.
 
-**Optional Next.js front-end (use only when SSR/SEO is the best fit)**
-- Next.js is not bundled here; keep the Vite SPA unless you specifically need SSR/SSG, edge caching, or stronger SEO. If that’s the case, scaffold a sibling app (recommended name: `client-next`) with Tailwind:
-
-```bash
-npx create-next-app@latest client-next --typescript --eslint --tailwind --app
-```
-
-- Point API calls to the same Express server by setting `NEXT_PUBLIC_API_URL=http://localhost:3000` in `client-next/.env.local`.
-- Run with two terminals: `npm run dev` (API) and `npm run dev --prefix client-next` (Next.js). Use `npm run build --prefix client-next && npm start --prefix client-next` for production builds, or deploy the Next app separately while keeping the API at `/api/*`.
+**Next.js front-end (App Router, SSR/SEO-first)**
+- A Next.js App Router frontend now ships in `client-next` for edge-friendly, server-rendered pages (tutorials/problems) with React Server Components.
+- Set `NEXT_PUBLIC_API_URL=http://localhost:3000` in `client-next/.env.local` to point at the Express API.
+- Run with two terminals: `npm run dev` (API on 3000) and `npm run dev:next` (Next.js on 3001). For production, use `npm run build:next && npm run start:next` or deploy the Next app separately while keeping the API at `/api/*`.
+- Tailwind CSS v4 is wired with shadcn/ui primitives (button, card, badge, input) and a `components.json` manifest for adding more blocks with the shadcn CLI.
 
 **Production / Preview**
 - `npm run build` (reinstalls deps as written, then builds the client into `client/dist`).
@@ -142,11 +138,18 @@ npx create-next-app@latest client-next --typescript --eslint --tailwind --app
 | ------- | -------- | ----------- |
 | `npm run dev` | root | Start Express with nodemon + ts-node/register style reloading. |
 | `npm run dev --prefix client` | root | Launch Vite dev server with HMR. |
+| `npm run dev:next` | root | Launch Next.js App Router dev server on port 3001 (`client-next`). |
 | `npm run build` | root | Reinstalls deps, then builds the React app to `client/dist`. |
+| `npm run build:next` | root | Build the Next.js app for production. |
 | `npm start` | root | Serve Express in production mode and host the built client. |
+| `npm run start:next` | root | Start the built Next.js app on port 3001. |
 | `npm test` | root | Run backend unit/integration tests via Node's native test runner (`api/**/*.test.js`). |
 
 Run commands from the repository root unless noted.
+
+## Frontend State Management
+- Vite SPA keeps Redux Toolkit + redux-persist for backwards compatibility.
+- Next.js app (`client-next`) uses lightweight Zustand stores for auth (`useAuthStore`) and theme (`useThemeStore`); prefer these for new client work to reduce boilerplate.
 
 ## API Surface
 - **Auth & Users**: `/api/auth` (signup/signin), `/api/user`
@@ -173,6 +176,12 @@ Runtimes are optional. When missing, endpoints respond with user-friendly guidan
 - Backend tests live beside controllers in `api/**/*.test.js`.
 - Run `npm test` from the root; covers controllers, routes, services, and utilities.
 - Add fixtures under `temp/` when needed; keep them out of version control.
+
+## Backend Evolution Roadmap (recommended)
+- **Framework**: NestJS with modular DI, class-validator pipes, and OpenAPI docs. Start as an Express adapter; swap to Fastify later if desired.
+- **Database**: PostgreSQL via Prisma for relational data (users/roles/quizzes/submissions). Keep MongoDB for unstructured tutorial/problem content; keep Elasticsearch for search.
+- **Caching & rate limits**: Redis for sessions, response caching (tutorial/problem lists), and runner rate limiting (e.g., `@nestjs/throttler` with Redis store).
+- **Observability**: Add health checks via `@nestjs/terminus`, structured logging (pino), and request IDs across services.
 
 ## Troubleshooting
 - **MongoDB connection failures**: verify `MONGO_URI` and that the database is reachable.
