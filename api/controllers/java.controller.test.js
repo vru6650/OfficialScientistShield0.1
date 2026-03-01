@@ -104,3 +104,24 @@ test('runJavaCode executes provided Java and returns stdout', async () => {
     assert.equal(res.statusCode, 200);
     assert.deepEqual(res.body, { output: 'Hello from Java!\n', error: false });
 });
+
+test('runJavaCode normalizes Buffer outputs to strings', async () => {
+    const execStub = async (command) => {
+        if (command === 'javac') {
+            return { stdout: Buffer.from('') };
+        }
+        if (command === 'java') {
+            return { stdout: Buffer.from('Buffered Hello\n') };
+        }
+        throw new Error(`Unexpected command: ${command}`);
+    };
+
+    const runJavaCode = createRunJavaCode({ execFile: execStub });
+    const req = { body: { code: 'public class Main { public static void main(String[] args) {} }' } };
+    const res = createResponseDouble();
+
+    await runJavaCode(req, res, () => {});
+
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(res.body, { output: 'Buffered Hello\n', error: false });
+});

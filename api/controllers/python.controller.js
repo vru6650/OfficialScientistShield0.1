@@ -3,60 +3,111 @@ import { execFile } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
-import { v4 as uuidv4 } from 'uuid';
 import { errorHandler } from '../utils/error.js';
-
-const __dirname = path.resolve();
-const TEMP_DIR = path.join(__dirname, 'temp');
+import {
+    cleanupWorkspace,
+    createWorkspace,
+    detectDocker,
+    resolveRunnerMode,
+    runDocker,
+    TEMP_DIR,
+} from '../services/codeRunnerSandbox.service.js';
 
 const execFileAsync = promisify(execFile);
 
-const getPythonCommand = async () => {
-    try {
-        await execFileAsync('python3', ['--version']);
-        return 'python3';
-    } catch {
+export const missingPythonRuntimeMessage =
+    'Python runtime is not available. Please install Python 3 to run Python code.';
+export const missingPythonDockerMessage =
+    'Docker sandbox is not available for Python execution. Install Docker and set CODE_RUNNER_DOCKER_IMAGE_PYTHON, or set CODE_RUNNER_MODE=local to use the host runtime.';
+
+const LOCAL_TIMEOUT_MS = 5000;
+const DOCKER_TIMEOUT_MS = 7000;
+
+const detectPythonCommand = async (exec = execFileAsync) => {
+    const candidates = ['python3', 'python'];
+
+    for (const command of candidates) {
         try {
-            await execFileAsync('python', ['--version']);
-            return 'python';
-        } catch {
-            return null;
+            await exec(command, ['--version']);
+            return command;
+        } catch (error) {
+            if (error?.code !== 'ENOENT') {
+                // Keep searching other candidates
+                continue;
+            }
         }
     }
+
+    return null;
 };
 
-export const runPythonCode = async (req, res, next) => {
-    const { code } = req.body;
-    if (!code) {
-        return next(errorHandler(400, 'Python code is required.'));
-    }
+export const createRunPythonCode = ({
+    execFile: exec = execFileAsync,
+    fs: fsModule = fs,
+    tempDir = TEMP_DIR,
+    detectPython = detectPythonCommand,
+    detectDockerRuntime = detectDocker,
+    runDockerCommand = runDocker,
+    dockerImage = process.env.CODE_RUNNER_DOCKER_IMAGE_PYTHON,
+    runnerMode = resolveRunnerMode(),
+} = {}) => {
+    return async (req, res, next) => {
+        const { code } = req.body ?? {};
 
-    await fs.promises.mkdir(TEMP_DIR, { recursive: true });
-
-    const pythonCommand = await getPythonCommand();
-    if (!pythonCommand) {
-        return next(errorHandler(500, 'Python executable not found on the server.'));
-    }
-
-    const uniqueId = uuidv4();
-    const filePath = path.join(TEMP_DIR, `${uniqueId}.py`);
-
-    try {
-        await fs.promises.writeFile(filePath, code);
-
-        const { stdout } = await execFileAsync(pythonCommand, [filePath], {
-            timeout: 5000,
-        });
-
-        res.status(200).json({ output: stdout, error: false });
-    } catch (err) {
-        const output = err?.stderr || err?.message || String(err);
-        res.status(200).json({ output, error: true });
-    } finally {
-        try {
-            await fs.promises.unlink(filePath);
-        } catch (e) {
-            // Ignore cleanup errors
+        if (typeof code !== 'string' || !code.trim()) {
+            return next(errorHandler(400, 'Python code is required.'));
         }
-    }
+
+        let workDir;
+
+        try {
+            ({ workDir } = await createWorkspace({ fsModule, tempDir }));
+
+            if (runnerMode === 'docker') {
+                const dockerReady = await detectDockerRuntime(exec);
+                if (!dockerReady || !dockerImage) {
+                    return res.status(200).json({ output: missingPythonDockerMessage, error: true });
+                }
+
+                const filePath = path.join(workDir, 'main.py');
+                await fsModule.promises.writeFile(filePath, code);
+
+                const { stdout } = await runDockerCommand({
+                    execFile: exec,
+                    image: dockerImage,
+                    workDir,
+                    command: ['python3', 'main.py'],
+                    timeoutMs: DOCKER_TIMEOUT_MS,
+                });
+
+                return res.status(200).json({ output: stdout, error: false });
+            }
+
+            const pythonCommand = await detectPython(exec);
+            if (!pythonCommand) {
+                return res.status(200).json({ output: missingPythonRuntimeMessage, error: true });
+            }
+
+            const filePath = path.join(workDir, 'main.py');
+            await fsModule.promises.writeFile(filePath, code);
+
+            const { stdout } = await exec(pythonCommand, [filePath], {
+                timeout: LOCAL_TIMEOUT_MS,
+                encoding: 'utf8',
+            });
+
+            return res.status(200).json({ output: stdout, error: false });
+        } catch (err) {
+            const output = err?.stderr || err?.stdout || err?.message || String(err);
+            return res.status(200).json({ output, error: true });
+        } finally {
+            try {
+                await cleanupWorkspace({ fsModule, workDir });
+            } catch {
+                // Ignore cleanup errors
+            }
+        }
+    };
 };
+
+export const runPythonCode = createRunPythonCode();

@@ -1,72 +1,40 @@
-import { errorHandler } from '../utils/error.js';
 import { normalizePagination } from '../utils/pagination.js';
 import {
-  countAllUsers,
-  countUsersCreatedAfter,
-  deleteUserById,
-  findUsersWithPagination,
-  getUserById,
-  updateUserById,
+    countAllUsers,
+    countUsersCreatedAfter,
+    deleteUserById,
+    findUsersWithPagination,
+    getUserById,
+    updateUserById,
 } from '../services/user.service.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const test = (req, res) => {
-  res.json({ message: 'API is working!' });
+    res.json({ message: 'API is working!' });
 };
 
-// --- Upgraded updateUser Function ---
-export const updateUser = async (req, res, next) => {
-  if (req.user.id !== req.params.userId) {
-    return next(errorHandler(403, 'You are not allowed to update this user'));
-  }
-
-  try {
+export const updateUser = asyncHandler(async (req, res) => {
     const updatedUser = await updateUserById(req.params.userId, req.body);
-    if (!updatedUser) {
-      return next(errorHandler(404, 'User not found'));
-    }
-
     const { password, ...rest } = updatedUser._doc;
     res.status(200).json(rest);
-  } catch (error) {
-    // Mongoose validation errors will be caught here
-    next(error);
-  }
-};
+});
 
-// --- deleteUser Function (already good) ---
-export const deleteUser = async (req, res, next) => {
-  if (!req.user.isAdmin && req.user.id !== req.params.userId) {
-    return next(errorHandler(403, 'You are not allowed to delete this user'));
-  }
-  try {
+export const deleteUser = asyncHandler(async (req, res) => {
     await deleteUserById(req.params.userId);
     res.status(200).json('User has been deleted');
-  } catch (error) {
-    next(error);
-  }
-};
+});
 
-// --- signout Function (already good) ---
-export const signout = (req, res, next) => {
-  try {
+export const signout = asyncHandler(async (req, res) => {
     res
         .clearCookie('access_token')
         .status(200)
         .json('User has been signed out');
-  } catch (error) {
-    next(error);
-  }
-};
+});
 
-// --- Upgraded getUsers Function ---
-export const getUsers = async (req, res, next) => {
-  if (!req.user.isAdmin) {
-    return next(errorHandler(403, 'You are not allowed to see all users'));
-  }
-  try {
+export const getUsers = asyncHandler(async (req, res) => {
     const { startIndex, limit } = normalizePagination(req.query, {
-      defaultLimit: 9,
-      maxLimit: 50,
+        defaultLimit: 9,
+        maxLimit: 50,
     });
     const sortDirection = req.query.sort === 'asc' ? 1 : -1;
 
@@ -83,24 +51,13 @@ export const getUsers = async (req, res, next) => {
     const lastMonthUsers = await countUsersCreatedAfter(oneMonthAgo);
 
     res.status(200).json({
-      users, // The password is already excluded
-      totalUsers,
-      lastMonthUsers,
+        users,
+        totalUsers,
+        lastMonthUsers,
     });
-  } catch (error) {
-    next(error);
-  }
-};
+});
 
-// --- Upgraded getUser Function ---
-export const getUser = async (req, res, next) => {
-  try {
+export const getUser = asyncHandler(async (req, res) => {
     const user = await getUserById(req.params.userId, { excludePassword: true });
-    if (!user) {
-      return next(errorHandler(404, 'User not found'));
-    }
     res.status(200).json(user);
-  } catch (error) {
-    next(error);
-  }
-};
+});

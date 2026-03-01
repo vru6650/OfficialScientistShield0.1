@@ -1,4 +1,5 @@
 import User from '../models/user.model.js';
+import { errorHandler } from '../utils/error.js';
 
 /**
  * Creates and persists a new user document.
@@ -8,7 +9,15 @@ import User from '../models/user.model.js';
  */
 export const createUser = async (userData) => {
   const newUser = new User(userData);
-  return await newUser.save();
+  try {
+    return await newUser.save();
+  } catch (error) {
+    if (error?.code === 11000) {
+      const field = Object.keys(error?.keyPattern || {})[0] || 'field';
+      throw errorHandler(409, `A user with this ${field} already exists`);
+    }
+    throw error;
+  }
 };
 
 /**

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createQuiz, submitQuiz } from './quiz.controller.js';
 import Quiz from '../models/quiz.model.js';
+import { errorHandler } from '../utils/error.js';
 
 const mockResponse = () => {
     const res = {};
@@ -59,6 +60,49 @@ test('createQuiz returns 400 error when questions array is empty', async () => {
     );
 });
 
+test('submitQuiz ignores questions without ids when scoring', async () => {
+    const originalFindById = Quiz.findById;
+
+    const questions = [
+        {
+            _id: 'q1',
+            questionType: 'mcq',
+            questionText: 'Pick A',
+            options: [{ text: 'A', isCorrect: true }],
+            explanation: 'A is correct',
+        },
+        {
+            // Intentionally missing _id to mimic malformed data
+            questionType: 'mcq',
+            questionText: 'Pick B',
+            options: [{ text: 'B', isCorrect: true }],
+        },
+    ];
+    questions.id = (id) => questions.find((item) => String(item._id) === String(id));
+
+    Quiz.findById = () => Promise.resolve({ questions });
+
+    const req = {
+        params: { quizId: '507f1f77bcf86cd799439011' },
+        body: { answers: [{ questionId: 'q1', userAnswer: 'A' }] },
+    };
+    const res = createResponseDouble();
+
+    let forwardedError;
+    try {
+        await submitQuiz(req, res, (err) => {
+            forwardedError = err;
+        });
+    } finally {
+        Quiz.findById = originalFindById;
+    }
+
+    assert.equal(forwardedError, undefined);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.payload.totalQuestions, 1, 'should only count questions with ids');
+    assert.equal(res.payload.score, 1, 'should score based on counted questions');
+});
+
 const createResponseDouble = () => {
     return {
         statusCode: 0,
@@ -93,7 +137,7 @@ test('submitQuiz returns correct answers for fill-in-the-blank questions without
     });
 
     const req = {
-        params: { quizId: 'quiz-123' },
+        params: { quizId: '507f191e810c19729de860ea' },
         body: {
             answers: [
                 {

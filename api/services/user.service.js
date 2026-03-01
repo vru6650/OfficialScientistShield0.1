@@ -1,5 +1,6 @@
 import bcryptjs from 'bcryptjs';
 import User from '../models/user.model.js';
+import { errorHandler } from '../utils/error.js';
 
 /**
  * Retrieves a user by ID.
@@ -9,12 +10,16 @@ import User from '../models/user.model.js';
  * @param {boolean} [options.excludePassword=false] - Exclude the password field from the result.
  * @returns {Promise<Object|null>} The user document or null if not found.
  */
-export const getUserById = (userId, { excludePassword = false } = {}) => {
-  const query = User.findById(userId);
-  if (excludePassword) {
-    query.select('-password');
-  }
-  return query;
+export const getUserById = async (userId, { excludePassword = false } = {}) => {
+    const query = User.findById(userId);
+    if (excludePassword) {
+        query.select('-password');
+    }
+    const user = await query;
+    if (!user) {
+        throw errorHandler(404, 'User not found');
+    }
+    return user;
 };
 
 /**
@@ -24,26 +29,41 @@ export const getUserById = (userId, { excludePassword = false } = {}) => {
  * @param {Object} updates - Fields to update.
  * @returns {Promise<Object|null>} The updated user document or null if not found.
  */
-export const updateUserById = async (userId, updates) => {
-  const userToUpdate = await User.findById(userId);
-  if (!userToUpdate) {
-    return null;
-  }
+export const updateUserById = async (userId, updates = {}) => {
+    const userToUpdate = await User.findById(userId);
+    if (!userToUpdate) {
+        throw errorHandler(404, 'User not found');
+    }
 
-  if (updates.username) {
-    userToUpdate.username = updates.username;
-  }
-  if (updates.email) {
-    userToUpdate.email = updates.email;
-  }
-  if (typeof updates.password === 'string' && updates.password.trim() !== '') {
-    userToUpdate.password = await bcryptjs.hash(updates.password, 10);
-  }
-  if (updates.profilePicture) {
-    userToUpdate.profilePicture = updates.profilePicture;
-  }
+    const { username, email, password, profilePicture } = updates;
 
-  return await userToUpdate.save();
+    if (username) {
+        userToUpdate.username = username;
+    }
+    if (email) {
+        userToUpdate.email = email;
+    }
+    if (typeof password === 'string' && password.trim() !== '') {
+        if (typeof userToUpdate.isModified === 'function') {
+            // Let Mongoose middleware hash the password to avoid double hashing
+            userToUpdate.password = password;
+        } else {
+            userToUpdate.password = await bcryptjs.hash(password, 10);
+        }
+    }
+    if (profilePicture) {
+        userToUpdate.profilePicture = profilePicture;
+    }
+
+    try {
+        return await userToUpdate.save();
+    } catch (error) {
+        if (error?.code === 11000) {
+            const field = Object.keys(error?.keyPattern || {})[0] || 'field';
+            throw errorHandler(409, `A user with this ${field} already exists`);
+        }
+        throw error;
+    }
 };
 
 /**
@@ -52,8 +72,12 @@ export const updateUserById = async (userId, updates) => {
  * @param {string} userId - The user identifier.
  * @returns {Promise<Object|null>} The result of the deletion operation.
  */
-export const deleteUserById = (userId) => {
-  return User.findByIdAndDelete(userId);
+export const deleteUserById = async (userId) => {
+    const deleted = await User.findByIdAndDelete(userId);
+    if (!deleted) {
+        throw errorHandler(404, 'User not found');
+    }
+    return deleted;
 };
 
 /**
@@ -65,11 +89,11 @@ export const deleteUserById = (userId) => {
  * @returns {Promise<Array>} The list of users.
  */
 export const findUsersWithPagination = (startIndex, limit, sortDirection) => {
-  return User.find()
-      .sort({ createdAt: sortDirection })
-      .skip(startIndex)
-      .limit(limit)
-      .select('-password');
+    return User.find()
+        .sort({ createdAt: sortDirection })
+        .skip(startIndex)
+        .limit(limit)
+        .select('-password');
 };
 
 /**
@@ -78,7 +102,7 @@ export const findUsersWithPagination = (startIndex, limit, sortDirection) => {
  * @returns {Promise<number>} The number of users.
  */
 export const countAllUsers = () => {
-  return User.countDocuments();
+    return User.countDocuments();
 };
 
 /**
@@ -88,7 +112,7 @@ export const countAllUsers = () => {
  * @returns {Promise<number>} The number of users created after the date.
  */
 export const countUsersCreatedAfter = (date) => {
-  return User.countDocuments({
-    createdAt: { $gte: date },
-  });
+    return User.countDocuments({
+        createdAt: { $gte: date },
+    });
 };

@@ -1,6 +1,6 @@
-// api/routes/quiz.route.js
 import express from 'express';
-import { verifyToken } from '../utils/verifyUser.js'; // Ensure path is correct
+import { z } from 'zod';
+import { verifyToken } from '../utils/verifyUser.js';
 import {
     createQuiz,
     getQuizzes,
@@ -10,30 +10,94 @@ import {
     deleteQuiz,
     submitQuiz,
 } from '../controllers/quiz.controller.js';
+import { requireAdmin } from '../utils/authorize.js';
+import { validateRequest } from '../utils/validate.js';
+import { nonEmptyStringSchema, objectIdSchema, paginationQuerySchema, slugSchema } from '../validators/common.js';
 
 const router = express.Router();
 
-// -- RESTful API Routes for Quizzes --
+const createQuizBody = z
+    .object({
+        title: nonEmptyStringSchema,
+        questions: z.array(z.any()).min(1, 'At least one question is required'),
+        description: z.string().optional(),
+        category: z.string().optional(),
+        relatedTutorials: z.array(z.any()).optional(),
+    })
+    .passthrough();
 
-// CREATE a new quiz (Admin-only)
-router.post('/quizzes', verifyToken, createQuiz);
+const updateQuizBody = z
+    .object({
+        title: z.string().trim().optional(),
+        description: z.string().optional(),
+        category: z.string().optional(),
+        questions: z.array(z.any()).optional(),
+        relatedTutorials: z.array(z.any()).optional(),
+    })
+    .passthrough();
 
-// GET all quizzes (Public)
-router.get('/quizzes', getQuizzes);
+const submitQuizBody = z.object({
+    answers: z.array(z.any()),
+});
 
-// GET a single quiz by slug (Public)
-router.get('/quizzes/slug/:quizSlug', getSingleQuizBySlug);
+const quizIdParams = z.object({
+    quizId: objectIdSchema,
+});
 
-// GET a single quiz by ID (Public)
-router.get('/quizzes/:quizId([a-fA-F0-9]{24})', getSingleQuizById);
+const quizSlugParams = z.object({
+    quizSlug: slugSchema,
+});
 
-// UPDATE a quiz (Admin-only)
-router.put('/quizzes/:quizId/:userId', verifyToken, updateQuiz);
+const getQuizzesQuery = paginationQuerySchema.extend({
+    sort: z.enum(['asc', 'desc']).optional(),
+    quizId: objectIdSchema.optional(),
+    relatedTutorialId: objectIdSchema.optional(),
+    slug: z.string().optional(),
+    category: z.string().optional(),
+    searchTerm: z.string().optional(),
+}).partial();
 
-// DELETE a quiz (Admin-only)
-router.delete('/quizzes/:quizId/:userId', verifyToken, deleteQuiz);
+router.post(
+    '/quizzes',
+    verifyToken,
+    requireAdmin('You are not allowed to create a quiz'),
+    validateRequest({ body: createQuizBody }),
+    createQuiz
+);
 
-// SUBMIT quiz answers (User-only)
-router.post('/quizzes/submit/:quizId', verifyToken, submitQuiz);
+router.get('/quizzes', validateRequest({ query: getQuizzesQuery }), getQuizzes);
+
+router.get(
+    '/quizzes/slug/:quizSlug',
+    validateRequest({ params: quizSlugParams }),
+    getSingleQuizBySlug
+);
+
+router.get(
+    '/quizzes/:quizId([a-fA-F0-9]{24})',
+    validateRequest({ params: quizIdParams }),
+    getSingleQuizById
+);
+
+router.put(
+    '/quizzes/:quizId',
+    verifyToken,
+    validateRequest({ params: quizIdParams, body: updateQuizBody }),
+    updateQuiz
+);
+
+router.delete(
+    '/quizzes/:quizId',
+    verifyToken,
+    validateRequest({ params: quizIdParams }),
+    deleteQuiz
+);
+
+router.post(
+    '/quizzes/submit/:quizId',
+    verifyToken,
+    validateRequest({ params: quizIdParams, body: submitQuizBody }),
+    submitQuiz
+);
 
 export default router;

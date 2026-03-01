@@ -59,3 +59,19 @@ test('runJavascriptCode executes provided JavaScript and returns stdout', async 
     assert.equal(res.statusCode, 200);
     assert.deepEqual(res.body, { output: 'Hello from tests!\n', error: false });
 });
+
+test('runJavascriptCode returns error payload without triggering global handler', async () => {
+    const req = { body: { code: "console.log('before'); throw new Error('boom');" } };
+    const res = createResponseDouble();
+    let forwardedError;
+
+    await runJavascriptCode(req, res, (err) => {
+        forwardedError = err;
+    });
+
+    assert.equal(forwardedError, undefined, 'unexpected error forwarded to global handler');
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.error, true);
+    assert.match(res.body.output, /before/);
+    assert.match(res.body.output, /boom/);
+});

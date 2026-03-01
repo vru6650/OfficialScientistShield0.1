@@ -3,7 +3,13 @@ import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import { execFile } from 'child_process';
-import { v4 as uuidv4 } from 'uuid';
+import {
+    cleanupWorkspace,
+    createWorkspace,
+    detectDocker,
+    resolveRunnerMode,
+    runDocker,
+} from './codeRunnerSandbox.service.js';
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.resolve();
@@ -11,10 +17,10 @@ const TEMP_DIR = path.join(__dirname, 'temp', 'visualizer');
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-
-const ensureTempDir = async () => {
-    await fs.promises.mkdir(TEMP_DIR, { recursive: true });
-};
+const PYTHON_LOCAL_TIMEOUT_MS = 5000;
+const PYTHON_DOCKER_TIMEOUT_MS = 7000;
+const MISSING_PYTHON_DOCKER_MESSAGE =
+    'Docker sandbox is not available for Python visualizer execution. Install Docker and set CODE_RUNNER_DOCKER_IMAGE_PYTHON, or set CODE_RUNNER_MODE=local to use the host runtime.';
 
 const createSortingConfig = (size) => {
     const length = clamp(size ?? 10, 4, 32);
@@ -803,16 +809,10 @@ const getPythonCommand = async () => {
 };
 
 const runPythonSandbox = async (code, config) => {
-    const pythonCommand = await getPythonCommand();
-    if (!pythonCommand) {
-        return { error: 'Python runtime is not available on the server.' };
-    }
+    const runnerMode = resolveRunnerMode();
+    const dockerImage = process.env.CODE_RUNNER_DOCKER_IMAGE_PYTHON;
 
-    await ensureTempDir();
-
-    const fileId = uuidv4();
-    const filePath = path.join(TEMP_DIR, `${fileId}.py`);
-
+    let workDir;
     const script = `import json\nsteps = []\n\nconfig = json.loads(${JSON.stringify(JSON.stringify(config))})\n\n` +
         `${code}\n\n` +
         `if 'run_algorithm' not in globals():\n` +
@@ -825,8 +825,38 @@ const runPythonSandbox = async (code, config) => {
         `print(json.dumps({'type': 'summary', 'payload': summary}), flush=True)\n`;
 
     try {
+        ({ workDir } = await createWorkspace({ fsModule: fs, tempDir: TEMP_DIR }));
+        const filePath = path.join(workDir, 'visualizer.py');
         await fs.promises.writeFile(filePath, script);
-        const { stdout } = await execFileAsync(pythonCommand, ['-I', '-u', filePath], { timeout: 5000 });
+
+        let stdout = '';
+        if (runnerMode === 'docker') {
+            const dockerReady = await detectDocker(execFileAsync);
+            if (!dockerReady || !dockerImage) {
+                return { error: MISSING_PYTHON_DOCKER_MESSAGE };
+            }
+
+            const result = await runDocker({
+                execFile: execFileAsync,
+                image: dockerImage,
+                workDir,
+                command: ['python3', '-I', '-u', 'visualizer.py'],
+                timeoutMs: PYTHON_DOCKER_TIMEOUT_MS,
+            });
+            stdout = result?.stdout || '';
+        } else {
+            const pythonCommand = await getPythonCommand();
+            if (!pythonCommand) {
+                return { error: 'Python runtime is not available on the server.' };
+            }
+
+            const result = await execFileAsync(pythonCommand, ['-I', '-u', filePath], {
+                timeout: PYTHON_LOCAL_TIMEOUT_MS,
+                encoding: 'utf8',
+            });
+            stdout = result?.stdout || '';
+        }
+
         const steps = [];
         let summary = {};
         stdout
@@ -850,7 +880,7 @@ const runPythonSandbox = async (code, config) => {
         return { error: error?.stderr?.toString() || error.message };
     } finally {
         try {
-            await fs.promises.unlink(filePath);
+            await cleanupWorkspace({ fsModule: fs, workDir });
         } catch (error) {
             // Ignore cleanup errors
         }
@@ -924,4 +954,3 @@ export const runAlgorithmVisualization = async ({ algorithmId, language, code, p
         config,
     };
 };
-

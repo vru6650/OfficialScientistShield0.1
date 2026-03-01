@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer';
+import { errorHandler } from '../utils/error.js';
 
 const {
     ELASTICSEARCH_NODE,
@@ -61,7 +62,7 @@ const buildHeaders = (customHeaders = {}) => {
 
 const request = async (path, { method = 'GET', headers = {}, body, signal } = {}) => {
     if (!BASE_URL) {
-        throw new Error('Elasticsearch is not configured');
+        throw errorHandler(503, 'Elasticsearch is not configured');
     }
 
     const url = new URL(path.startsWith('/') ? path.slice(1) : path, BASE_URL);
@@ -75,7 +76,8 @@ const request = async (path, { method = 'GET', headers = {}, body, signal } = {}
             signal,
         });
     } catch (error) {
-        const networkError = new Error(
+        const networkError = errorHandler(
+            503,
             `Unable to reach Elasticsearch at ${BASE_URL}: ${error.message}`
         );
         networkError.code = 'ELASTICSEARCH_NETWORK_ERROR';
@@ -85,7 +87,8 @@ const request = async (path, { method = 'GET', headers = {}, body, signal } = {}
 
     if (!response.ok) {
         const errorPayload = await response.text();
-        throw new Error(
+        throw errorHandler(
+            502,
             `Elasticsearch request failed: ${response.status} ${response.statusText} - ${errorPayload}`
         );
     }
@@ -103,6 +106,7 @@ const request = async (path, { method = 'GET', headers = {}, body, signal } = {}
 };
 
 export const isSearchEnabled = () => Boolean(BASE_URL);
+export const isElasticsearchDisabled = () => shouldDisableElasticsearch();
 
 const stripHtml = (value = '') =>
     value
@@ -354,7 +358,7 @@ const mapSearchHit = (hit) => {
 
 export const searchDocuments = async ({ term, limit = 20, sort = 'relevance', types = [] }) => {
     if (!isSearchEnabled()) {
-        throw new Error('Elasticsearch is not configured');
+        throw errorHandler(503, 'Elasticsearch is not configured');
     }
 
     const queryTypes = types.length

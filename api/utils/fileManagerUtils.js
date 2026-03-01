@@ -73,5 +73,5 @@ export const deleteDirectoryIfExists = async (absolutePath) => {
 
 export const streamableUrlForNode = (node) => {
     if (!node || node.type !== 'file') return null;
-    return `/api/files/${node._id}/download`;
+    return `/api/v1/files/${node._id}/download`;
 };

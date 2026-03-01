@@ -1,43 +1,24 @@
-import CodeSnippet from '../models/CodeSnippet.model.js';
-import { errorHandler } from '../utils/error.js';
+import {
+    createCodeSnippet as createCodeSnippetService,
+    getCodeSnippet as getCodeSnippetService,
+} from '../services/codeSnippet.service.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 /**
  * Creates a new code snippet.
  */
-export const createCodeSnippet = async (req, res, next) => {
-    if (!req.user.isAdmin) {
-        return next(errorHandler(403, 'You are not allowed to create a code snippet'));
-    }
-    const {
-        html = '',
-        css = '',
-        js = '',
-        cpp = '',
-        python = '',
-        java = '',
-        csharp = '',
-    } = req.body;
-    const newSnippet = new CodeSnippet({ html, css, js, cpp, python, java, csharp });
-
-    try {
-        const savedSnippet = await newSnippet.save();
-        res.status(201).json(savedSnippet);
-    } catch (error) {
-        next(error);
-    }
-};
+export const createCodeSnippet = asyncHandler(async (req, res) => {
+    const savedSnippet = await createCodeSnippetService({
+        body: req.body,
+        isAdmin: Boolean(req.user?.isAdmin),
+    });
+    res.status(201).json(savedSnippet);
+});
 
 /**
  * Gets a code snippet by its ID.
  */
-export const getCodeSnippet = async (req, res, next) => {
-    try {
-        const snippet = await CodeSnippet.findById(req.params.snippetId);
-        if (!snippet) {
-            return next(errorHandler(404, 'Code snippet not found.'));
-        }
-        res.status(200).json(snippet);
-    } catch (error) {
-        next(error);
-    }
-};
+export const getCodeSnippet = asyncHandler(async (req, res) => {
+    const snippet = await getCodeSnippetService({ snippetId: req.params.snippetId });
+    res.status(200).json(snippet);
+});

@@ -1,8 +1,15 @@
 import express from 'express';
+import { z } from 'zod';
 import { runPythonCode } from '../controllers/python.controller.js';
+import { validateRequest } from '../utils/validate.js';
+import { nonEmptyStringSchema } from '../validators/common.js';
 
 const router = express.Router();
 
-router.post('/run-python', runPythonCode);
+const runCodeBody = z.object({
+    code: nonEmptyStringSchema,
+});
+
+router.post('/run-python', validateRequest({ body: runCodeBody }), runPythonCode);
 
 export default router;

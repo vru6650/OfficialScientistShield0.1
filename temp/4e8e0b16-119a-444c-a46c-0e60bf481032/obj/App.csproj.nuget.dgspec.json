@@ -1,0 +1,61 @@
+{
+  "format": 1,
+  "restore": {
+    "/home/scientistshield/Downloads/ScientistShield2.0-main (9)/ScientistShield2.0-main7/ScientistShield2.0-mainyo/ScientistShield2.0-mainNews/temp/4e8e0b16-119a-444c-a46c-0e60bf481032/App.csproj": {}
+  },
+  "projects": {
+    "/home/scientistshield/Downloads/ScientistShield2.0-main (9)/ScientistShield2.0-main7/ScientistShield2.0-mainyo/ScientistShield2.0-mainNews/temp/4e8e0b16-119a-444c-a46c-0e60bf481032/App.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/scientistshield/Downloads/ScientistShield2.0-main (9)/ScientistShield2.0-main7/ScientistShield2.0-mainyo/ScientistShield2.0-mainNews/temp/4e8e0b16-119a-444c-a46c-0e60bf481032/App.csproj",
+        "projectName": "App",
+        "projectPath": "/home/scientistshield/Downloads/ScientistShield2.0-main (9)/ScientistShield2.0-main7/ScientistShield2.0-mainyo/ScientistShield2.0-mainNews/temp/4e8e0b16-119a-444c-a46c-0e60bf481032/App.csproj",
+        "packagesPath": "/home/scientistshield/.nuget/packages/",
+        "outputPath": "/home/scientistshield/Downloads/ScientistShield2.0-main (9)/ScientistShield2.0-main7/ScientistShield2.0-mainyo/ScientistShield2.0-mainNews/temp/4e8e0b16-119a-444c-a46c-0e60bf481032/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/scientistshield/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.120/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

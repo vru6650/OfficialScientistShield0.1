@@ -59,6 +59,7 @@ mongoose
     });
 
 const __dirname = path.resolve();
+const CLIENT_DIST_DIR = path.join(__dirname, 'client', 'dist');
 
 const app = express();
 
@@ -78,27 +79,53 @@ server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}!`);
 });
 
-app.use('/api/user', userRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/post', postRoutes);
-app.use('/api/comment', commentRoutes);
-app.use('/api/tutorial', tutorialRoutes);
-app.use('/api/code-snippet', codeSnippetRoutes);
-app.use('/api', quizRoutes);
-app.use('/api', problemRoutes);
-app.use('/api/code', cppRoutes); // NEW: Use the new C++ route
-app.use('/api/code', pythonRoutes); // NEW: Use the new Python route
-app.use('/api/code', javascriptRoutes);
-app.use('/api/code', javaRoutes);
-app.use('/api/code', csharpRoutes);
-app.use('/api', pageRoutes);
-app.use('/api/search', searchRoutes);
-app.use('/api/files', fileManagerRoutes);
+const API_VERSION = 'v1';
+const API_PREFIX = `/api/${API_VERSION}`;
+const LEGACY_API_PREFIX = '/api';
 
-app.use(express.static(path.join(__dirname, '/client/dist')));
+const registerApiRoutes = (prefix) => {
+    app.use(`${prefix}/user`, userRoutes);
+    app.use(`${prefix}/auth`, authRoutes);
+    app.use(`${prefix}/post`, postRoutes);
+    app.use(`${prefix}/comment`, commentRoutes);
+    app.use(`${prefix}/tutorial`, tutorialRoutes);
+    app.use(`${prefix}/code-snippet`, codeSnippetRoutes);
+    app.use(prefix, quizRoutes);
+    app.use(prefix, problemRoutes);
+    app.use(`${prefix}/code`, cppRoutes);
+    app.use(`${prefix}/code`, pythonRoutes);
+    app.use(`${prefix}/code`, javascriptRoutes);
+    app.use(`${prefix}/code`, javaRoutes);
+    app.use(`${prefix}/code`, csharpRoutes);
+    app.use(prefix, pageRoutes);
+    app.use(`${prefix}/search`, searchRoutes);
+    app.use(`${prefix}/files`, fileManagerRoutes);
+};
 
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+const registerApiNotFound = (prefix) => {
+    app.use(prefix, (req, res) => {
+        res.status(404).json({
+            success: false,
+            statusCode: 404,
+            message: 'API route not found',
+            path: req.originalUrl,
+        });
+    });
+};
+
+registerApiRoutes(API_PREFIX);
+registerApiRoutes(LEGACY_API_PREFIX);
+registerApiNotFound(API_PREFIX);
+registerApiNotFound(LEGACY_API_PREFIX);
+
+// Serve the built client assets. Avoid an absolute "/client/dist" path, which
+// would point to the filesystem root instead of this project directory.
+app.use(express.static(CLIENT_DIST_DIR));
+
+// Only serve the SPA for non-API GET requests; let API 404s fall through
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(CLIENT_DIST_DIR, 'index.html'));
 });
 
 app.use((err, req, res, next) => {

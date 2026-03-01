@@ -6,39 +6,45 @@ import { errorHandler } from '../utils/error.js';
 // Executes user-provided JavaScript in a restricted VM context
 // Captures console output and returns it as the response
 export const runJavascriptCode = async (req, res, next) => {
-  const { code } = req.body ?? {};
+    const { code } = req.body ?? {};
 
-  if (!code || typeof code !== 'string') {
-    return next(errorHandler(400, 'JavaScript code is required.'));
-  }
+    if (typeof code !== 'string' || !code.trim()) {
+        return next(errorHandler(400, 'JavaScript code is required.'));
+    }
 
-  // Capture console output
-  let output = '';
-  const sandboxConsole = {
-    log: (...args) => {
-      output += `${args.map(String).join(' ')}\n`;
-    },
-    error: (...args) => {
-      output += `${args.map(String).join(' ')}\n`;
-    },
-    warn: (...args) => {
-      output += `${args.map(String).join(' ')}\n`;
-    },
-    info: (...args) => {
-      output += `${args.map(String).join(' ')}\n`;
-    },
-  };
+    // Capture console output
+    let output = '';
+    const sandboxConsole = {
+        log: (...args) => {
+            output += `${args.map(String).join(' ')}\n`;
+        },
+        error: (...args) => {
+            output += `${args.map(String).join(' ')}\n`;
+        },
+        warn: (...args) => {
+            output += `${args.map(String).join(' ')}\n`;
+        },
+        info: (...args) => {
+            output += `${args.map(String).join(' ')}\n`;
+        },
+    };
 
-  // Minimal, locked-down global context
-  const context = vm.createContext({ console: sandboxConsole });
+    // Minimal, locked-down global context
+    const context = vm.createContext({ console: sandboxConsole });
 
-  try {
-    const script = new vm.Script(code, { displayErrors: true });
-    // Limit execution time and disable async require/import
-    script.runInContext(context, { timeout: 1000 });
-  } catch (err) {
-    return next(errorHandler(400, String(err && err.message ? err.message : err)));
-  }
+    try {
+        const script = new vm.Script(code, { displayErrors: true });
+        // Limit execution time and disable async require/import
+        script.runInContext(context, { timeout: 1000 });
+    } catch (err) {
+        const rawMessage = err?.message ?? err;
+        const errorMessage = typeof rawMessage === 'string' ? rawMessage : String(rawMessage);
+        const combinedOutput = output ? `${output}${errorMessage}` : errorMessage;
 
-  return res.status(200).json({ output, error: false });
+        // Keep the response shape consistent with other runtimes so the client can
+        // render the failure message without relying on the global error handler.
+        return res.status(200).json({ output: combinedOutput, error: true });
+    }
+
+    return res.status(200).json({ output, error: false });
 };
