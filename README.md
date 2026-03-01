@@ -223,3 +223,4 @@ The client UI follows a WhiteSur (macOS Big Sur) inspired theme with frosted gla
 ## Version History
 ScientistShield_0.1 · ScientistShield0.2 · ScientistShield1.0 · ScientistShield2.0 · finaldock2
 # OfficialScientistShield0.1
+# OfficialScientistShield0.1
