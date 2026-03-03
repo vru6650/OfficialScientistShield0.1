@@ -30,12 +30,10 @@ body {
     system-ui,
     sans-serif;
   transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
-  color-scheme: light;
-  background: radial-gradient(1400px 880px at 12% -12%, rgba(61, 225, 255, 0.38), transparent 58%),
-    radial-gradient(1200px 760px at 88% -6%, rgba(255, 189, 94, 0.22), transparent 62%),
-    radial-gradient(1040px 720px at 18% 112%, rgba(96, 225, 212, 0.26), transparent 70%),
-    radial-gradient(980px 660px at 78% 122%, rgba(255, 255, 255, 0.32), transparent 74%),
-    linear-gradient(180deg, #ecf8ff 0%, #e8f2ff 32%, #e7efff 100%);
+  color: var(--color-text-primary);
+  color-scheme: var(--color-scheme, light);
+  background: var(--app-body-bg);
+  background-attachment: fixed;
   position: relative;
 }
 
@@ -44,13 +42,9 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background:
-    radial-gradient(680px 420px at 18% 18%, rgba(255, 255, 255, 0.24), transparent 60%),
-    radial-gradient(860px 520px at 82% 12%, rgba(34, 211, 238, 0.14), transparent 66%),
-    radial-gradient(760px 520px at 42% 86%, rgba(251, 191, 36, 0.12), transparent 70%),
-    linear-gradient(120deg, rgba(255, 255, 255, 0.08), rgba(34, 197, 235, 0.08), rgba(16, 185, 129, 0.06));
+  background: var(--app-body-overlay);
   mix-blend-mode: screen;
-  opacity: 0.85;
+  opacity: var(--app-body-overlay-opacity, 0.85);
   filter: saturate(110%) blur(14px);
   z-index: 0;
 }
@@ -60,11 +54,9 @@ body::after {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 120px 120px, 120px 120px;
-  opacity: 0.35;
+  background-image: var(--app-body-grid);
+  background-size: var(--app-body-grid-size, 120px 120px), var(--app-body-grid-size, 120px 120px);
+  opacity: var(--app-body-grid-opacity, 0.35);
   z-index: 0;
 }
 
@@ -102,6 +94,249 @@ html {
   scroll-behavior: smooth;
 }
 
+/*
+ * --- Liquid Glass 2.0 Stage ---
+ * Adds softly animated blobs, mesh, and noise behind the macOS desktop layer.
+ */
+.liquid-stage {
+  isolation: isolate;
+}
+
+.liquid-stage__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.liquid-stage__blob {
+  position: absolute;
+  width: clamp(380px, 36vw, 720px);
+  height: clamp(380px, 36vw, 720px);
+  filter: blur(42px) saturate(130%);
+  opacity: 0.58;
+  mix-blend-mode: screen;
+  transform-origin: center;
+  animation: liquid-blob-drift 26s ease-in-out infinite alternate;
+}
+
+.liquid-stage__blob--cyan {
+  top: -6%;
+  left: 8%;
+  background: radial-gradient(circle at 30% 30%, rgba(90, 208, 255, 0.8), rgba(90, 208, 255, 0) 62%),
+    radial-gradient(circle at 70% 60%, rgba(34, 197, 235, 0.45), transparent 68%);
+}
+
+.liquid-stage__blob--violet {
+  top: 18%;
+  right: -6%;
+  width: clamp(420px, 40vw, 760px);
+  height: clamp(420px, 40vw, 760px);
+  animation-delay: 6s;
+  background: radial-gradient(circle at 60% 32%, rgba(148, 163, 255, 0.62), rgba(148, 163, 255, 0) 68%),
+    radial-gradient(circle at 40% 70%, rgba(129, 140, 248, 0.4), transparent 72%);
+}
+
+.liquid-stage__blob--amber {
+  bottom: -12%;
+  left: 32%;
+  width: clamp(340px, 32vw, 640px);
+  height: clamp(340px, 32vw, 640px);
+  animation-delay: 12s;
+  background: radial-gradient(circle at 40% 40%, rgba(251, 191, 36, 0.4), rgba(251, 191, 36, 0) 70%),
+    radial-gradient(circle at 70% 70%, rgba(249, 115, 22, 0.32), transparent 72%);
+}
+
+.liquid-stage__mesh {
+  position: absolute;
+  inset: -20% -10% -10% -20%;
+  background:
+    conic-gradient(from 180deg at 50% 50%, rgba(255, 255, 255, 0.14), rgba(59, 130, 246, 0.08), rgba(255, 255, 255, 0.12), rgba(16, 185, 129, 0.08), rgba(255, 255, 255, 0.14));
+  mask-image: radial-gradient(80% 80% at 50% 50%, rgba(255, 255, 255, 0.7), transparent 72%);
+  opacity: 0.32;
+  mix-blend-mode: soft-light;
+  filter: blur(28px);
+  animation: liquid-mesh-pan 40s linear infinite;
+}
+
+.liquid-stage__glint {
+  position: absolute;
+  inset: -8%;
+  background:
+    conic-gradient(from 90deg at 40% 20%, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0)),
+    radial-gradient(50% 40% at 65% 24%, rgba(255, 255, 255, 0.24), transparent 62%);
+  opacity: 0.32;
+  mix-blend-mode: screen;
+  filter: blur(26px);
+  animation: liquid-glint-rotate 28s ease-in-out infinite;
+}
+
+.liquid-stage__noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.08;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'>\
+  <filter id='n'>\
+    <feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' seed='7'/>\
+  </filter>\
+  <rect width='180' height='180' filter='url(%23n)' opacity='0.8'/>\
+</svg>");
+  animation: liquid-noise-pulse 18s ease-in-out infinite;
+}
+
+.dark .liquid-stage__blob {
+  opacity: 0.42;
+  mix-blend-mode: color-dodge;
+}
+
+.dark .liquid-stage__mesh {
+  opacity: 0.28;
+  filter: blur(32px) saturate(120%);
+}
+
+.dark .liquid-stage__glint {
+  opacity: 0.26;
+}
+
+@keyframes liquid-blob-drift {
+  0% { transform: translate3d(-6px, 4px, 0) scale(1); }
+  50% { transform: translate3d(10px, -12px, 0) scale(1.04); }
+  100% { transform: translate3d(-8px, 10px, 0) scale(1.02); }
+}
+
+@keyframes liquid-mesh-pan {
+  0% { transform: rotate(0deg) translate3d(0, 0, 0); }
+  50% { transform: rotate(8deg) translate3d(6px, -12px, 0); }
+  100% { transform: rotate(16deg) translate3d(-4px, 8px, 0); }
+}
+
+@keyframes liquid-glint-rotate {
+  0% { transform: rotate(0deg) scale(1); opacity: 0.28; }
+  50% { transform: rotate(8deg) scale(1.04); opacity: 0.4; }
+  100% { transform: rotate(16deg) scale(1.01); opacity: 0.3; }
+}
+
+@keyframes liquid-noise-pulse {
+  0%, 100% { opacity: 0.06; }
+  50% { opacity: 0.12; }
+}
+
+/*
+ * --- Liquid Glass x Glassmorphism Hybrid Utilities ---
+ * Opt-in utilities so components can adopt the hybrid surface quickly.
+ */
+.lg-glass {
+  background: linear-gradient(145deg, var(--lg-surface), rgba(255, 255, 255, 0.62));
+  border: var(--lg-border);
+  box-shadow: var(--lg-shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(var(--lg-blur-md)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--lg-blur-md)) saturate(180%);
+  position: relative;
+  overflow: hidden;
+}
+.dark .lg-glass {
+  background: linear-gradient(150deg, var(--lg-surface-dark), var(--lg-surface-dark-strong));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.lg-glass-strong {
+  background:
+    radial-gradient(120% 120% at 12% 8%, rgba(255, 255, 255, 0.28), transparent 62%),
+    linear-gradient(150deg, var(--lg-surface-strong), rgba(255, 255, 255, 0.72));
+  border: var(--lg-border-strong);
+  box-shadow: var(--lg-shadow-strong), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+.dark .lg-glass-strong {
+  background:
+    radial-gradient(120% 120% at 12% 8%, rgba(148, 163, 255, 0.18), transparent 62%),
+    linear-gradient(150deg, var(--lg-surface-dark-strong), var(--lg-surface-dark));
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.lg-sheen::after {
+  content: '';
+  position: absolute;
+  inset: -8%;
+  pointer-events: none;
+  background: var(--lg-specular);
+  opacity: 0.45;
+  mix-blend-mode: screen;
+  filter: blur(12px);
+}
+
+.lg-refraction {
+  border: var(--lg-border-strong);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.18)),
+    linear-gradient(120deg, color-mix(in srgb, var(--lg-cyan) 28%, rgba(255, 255, 255, 0.35)), transparent);
+}
+
+.lg-depth-1 { box-shadow: var(--lg-shadow-soft); }
+.lg-depth-2 { box-shadow: var(--lg-shadow-strong); }
+.lg-blur-sm { backdrop-filter: blur(var(--lg-blur-sm)); -webkit-backdrop-filter: blur(var(--lg-blur-sm)); }
+.lg-blur-lg { backdrop-filter: blur(var(--lg-blur-lg)); -webkit-backdrop-filter: blur(var(--lg-blur-lg)); }
+.lg-o-35 { opacity: var(--lg-opacity-35); }
+.lg-o-55 { opacity: var(--lg-opacity-55); }
+.lg-pressable:active { transform: scale(var(--lg-press-scale)); }
+.lg-transition { transition: all var(--lg-dur) var(--lg-ease-out); }
+
+/* Button hybrid */
+.lg-btn-hybrid {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.7rem 1.1rem;
+  border-radius: 14px;
+  color: var(--lg-ink-900);
+  border: var(--lg-border);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--lg-cyan) 42%, #ffffff 24%), rgba(255, 255, 255, 0.55)),
+    var(--lg-ribbon);
+  box-shadow: var(--lg-shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(var(--lg-blur-xs)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--lg-blur-xs)) saturate(150%);
+  transition: all var(--lg-dur) var(--lg-ease-out);
+}
+.lg-btn-hybrid:hover { transform: translateY(-1px); box-shadow: var(--lg-shadow-strong); }
+.lg-btn-hybrid:active { transform: scale(var(--lg-press-scale)); box-shadow: var(--lg-shadow-soft); }
+.lg-btn-hybrid:focus-visible { outline: var(--lg-outline-focus); outline-offset: 2px; }
+.dark .lg-btn-hybrid { color: var(--lg-ink-100); border-color: rgba(255, 255, 255, 0.22); }
+
+/* Glass tile utility for quick adoption on panels */
+.lg-tile {
+  border-radius: 18px;
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.64)),
+    radial-gradient(120% 120% at 18% 10%, rgba(255, 255, 255, 0.28), transparent 62%);
+  border: var(--lg-border);
+  box-shadow:
+    var(--lg-shadow-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(var(--lg-blur-md)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--lg-blur-md)) saturate(170%);
+}
+.dark .lg-tile {
+  background:
+    linear-gradient(165deg, var(--lg-surface-dark), var(--lg-surface-dark-strong)),
+    radial-gradient(120% 120% at 18% 10%, rgba(125, 211, 252, 0.16), transparent 64%);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+/* Backdrop filter fallback */
+.no-backdrop .lg-glass,
+.no-backdrop .lg-glass-strong,
+.no-backdrop .lg-tile,
+.no-backdrop .lg-btn-hybrid {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: color-mix(in srgb, var(--lg-cyan) 12%, #ffffff 88%);
+}
+
 /* Accessible skip link for keyboard users */
 .skip-link {
   position: fixed;
@@ -124,10 +359,10 @@ html {
 
 /* Modern selection color */
 ::selection {
-  background: rgba(10, 132, 255, 0.22);
+  background: color-mix(in srgb, var(--color-accent) 24%, transparent);
 }
 .dark ::selection {
-  background: rgba(10, 132, 255, 0.32);
+  background: color-mix(in srgb, var(--color-accent) 32%, transparent);
 }
 
 /* Consistent, subtle scrollbar styling */
@@ -158,7 +393,7 @@ html {
 /* Accessible baseline focus for links/buttons without custom styles */
 a:focus-visible,
 button:focus-visible {
-  outline: 2px solid rgba(10, 132, 255, 0.55);
+  outline: 2px solid var(--theme-focus-ring, rgba(10, 132, 255, 0.55));
   outline-offset: 2px;
 }
 
@@ -178,11 +413,48 @@ button:focus-visible {
   --color-amber: #fbbf24;
   --color-accent-gradient: linear-gradient(135deg, #22d3ee 0%, #38bdf8 50%, #34d399 100%);
   --color-border: rgba(148, 163, 184, 0.35);
+  --color-scheme: light;
+  --theme-focus-ring: color-mix(in srgb, var(--color-accent) 62%, rgba(255, 255, 255, 0.28));
+  --theme-focus-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 24%, rgba(255, 255, 255, 0.12));
+  --theme-primary-top: color-mix(in srgb, var(--color-accent) 88%, #ffffff 12%);
+  --theme-primary-bottom: color-mix(in srgb, var(--color-accent-strong) 78%, #0f172a 22%);
+  --theme-primary-shadow: 0 12px 28px -14px color-mix(in srgb, var(--color-accent) 46%, rgba(15, 23, 42, 0.44));
+  --theme-control-border: color-mix(in srgb, var(--color-accent) 18%, rgba(148, 163, 184, 0.46));
+  --theme-control-focus: color-mix(in srgb, var(--color-accent) 50%, rgba(255, 255, 255, 0.2));
+
+  /* Global body background tokens consumed near the top of this file */
+  --app-body-bg: var(--macos-wallpaper);
+  --app-body-overlay: var(--macos-aurora-primary), var(--macos-aurora-secondary), var(--macos-waves);
+  --app-body-overlay-opacity: 0.82;
+  --app-body-grid:
+    linear-gradient(120deg, color-mix(in srgb, var(--macos-grid-color) 64%, transparent) 1px, transparent 1px),
+    linear-gradient(0deg, color-mix(in srgb, var(--macos-grid-color) 52%, transparent) 1px, transparent 1px);
+  --app-body-grid-size: 120px 120px;
+  --app-body-grid-opacity: 0.32;
 
   /* Glass/vibrancy controls (overridable via Control Center) */
   --glass-bg-alpha: 0.58; /* toolbar/card background alpha */
   --glass-border-alpha: 0.32; /* toolbar/card border alpha */
   --glass-blur: 24px; /* backdrop blur radius */
+
+  /* Hybrid liquid glass tokens */
+  --glass-sheen: rgba(255, 255, 255, 0.48);
+  --glass-rim: rgba(255, 255, 255, 0.32);
+  --glass-ink: rgba(15, 23, 42, 0.16);
+  --glass-depth-shadow: 0 36px 110px -72px rgba(15, 23, 42, 0.48);
+  --liquid-accent: #5ad0ff;
+  --liquid-accent-secondary: #9aa8ff;
+  --liquid-amber: #fbbf24;
+  --liquid-surface: rgba(255, 255, 255, 0.64);
+  --liquid-surface-strong: rgba(255, 255, 255, 0.86);
+  --liquid-surface-soft: rgba(255, 255, 255, 0.46);
+  --liquid-border: rgba(255, 255, 255, 0.56);
+  --liquid-border-strong: rgba(255, 255, 255, 0.74);
+  --liquid-shadow: 0 32px 96px -60px rgba(15, 23, 42, 0.48);
+  --liquid-shadow-soft: 0 18px 56px -38px rgba(15, 23, 42, 0.32);
+  --liquid-outline: color-mix(in srgb, var(--color-accent) 34%, rgba(255, 255, 255, 0.42));
+  --liquid-caustic: conic-gradient(from 120deg at 52% 48%, rgba(90, 208, 255, 0.28), rgba(255, 255, 255, 0.16), rgba(164, 196, 255, 0.24), rgba(45, 212, 191, 0.18), rgba(90, 208, 255, 0.28));
+  --liquid-caustic-dark: conic-gradient(from 120deg at 52% 48%, rgba(93, 210, 255, 0.18), rgba(148, 163, 184, 0.12), rgba(118, 96, 210, 0.24), rgba(56, 189, 248, 0.18), rgba(93, 210, 255, 0.18));
 
   /* Sidebar variables for light mode */
   --color-sidebar-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(241, 245, 249, 0.55) 100%);
@@ -238,53 +510,155 @@ button:focus-visible {
 
   /* System accent for form controls */
   accent-color: var(--color-accent);
+
+  /*
+   * Liquid Glass + Glassmorphism hybrid tokens
+   * Keep values centralized so utilities/components can opt-in without
+   * disturbing the macOS theme defaults.
+   */
+  --lg-cyan: #5ad0ff;
+  --lg-mint: #2dd4bf;
+  --lg-violet: #9aa8ff;
+  --lg-amber: #fbbf24;
+  --lg-ink-900: #0f172a;
+  --lg-ink-50: #f8fafc;
+  --lg-ink-100: #e2e8f0;
+  --lg-surface: rgba(255, 255, 255, 0.8);
+  --lg-surface-strong: rgba(255, 255, 255, 0.94);
+  --lg-surface-dark: rgba(12, 18, 32, 0.82);
+  --lg-surface-dark-strong: rgba(6, 10, 22, 0.9);
+  --lg-aurora: conic-gradient(
+    from 120deg at 52% 48%,
+    rgba(90, 208, 255, 0.32),
+    rgba(255, 255, 255, 0.18),
+    rgba(154, 168, 255, 0.26),
+    rgba(45, 212, 191, 0.22),
+    rgba(90, 208, 255, 0.32)
+  );
+  --lg-ribbon: linear-gradient(135deg, #5ad0ff, #9aa8ff, #2dd4bf);
+  --lg-blur-xs: 8px;
+  --lg-blur-sm: 14px;
+  --lg-blur-md: 22px;
+  --lg-blur-lg: 32px;
+  --lg-blur-xl: 42px;
+  --lg-opacity-20: 0.2;
+  --lg-opacity-35: 0.35;
+  --lg-opacity-55: 0.55;
+  --lg-opacity-70: 0.7;
+  --lg-shadow-soft: 0 14px 36px -20px rgba(15, 23, 42, 0.38);
+  --lg-shadow-strong: 0 36px 110px -68px rgba(15, 23, 42, 0.62);
+  --lg-shadow-glow: 0 0 0 8px color-mix(in srgb, #5ad0ff 35%, rgba(255, 255, 255, 0.55));
+  --lg-border: 1px solid rgba(255, 255, 255, 0.42);
+  --lg-border-strong: 1px solid rgba(255, 255, 255, 0.65);
+  --lg-outline-focus: 2px solid color-mix(in srgb, #5ad0ff 55%, rgba(255, 255, 255, 0.4));
+  --lg-specular: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08));
+  --lg-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --lg-ease-in-out: cubic-bezier(0.45, 0, 0.1, 1);
+  --lg-dur-fast: 140ms;
+  --lg-dur: 220ms;
+  --lg-dur-slow: 420ms;
+  --lg-press-scale: 0.985;
 }
 
 /*
  * --- White Big Sur Utilities ---
  * Reusable classes for macOS Big Sur white style.
  */
+.btn-theme-primary,
 .btn-aqua {
-  /* Aqua-style primary button */
-  background-image: linear-gradient(180deg, #0A84FF 0%, #007aff 100%);
+  /* Accent-driven primary action button */
+  background-image: linear-gradient(180deg, var(--theme-primary-top) 0%, var(--theme-primary-bottom) 100%);
   color: #ffffff;
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 10px 24px -12px rgba(10, 132, 255, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 38%, rgba(255, 255, 255, 0.46));
+  box-shadow: var(--theme-primary-shadow), inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
   backdrop-filter: saturate(180%) blur(10px);
   -webkit-backdrop-filter: saturate(180%) blur(10px);
   transition: transform 0.12s ease, filter 0.2s ease, background 0.2s ease;
 }
+.btn-aqua {
+  border-radius: 9999px;
+}
+.btn-theme-primary:hover,
 .btn-aqua:hover {
   transform: translateY(-1px);
-  background-image: linear-gradient(180deg, #3395ff 0%, #0070f3 100%);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--theme-primary-top) 90%, #ffffff 10%) 0%,
+    color-mix(in srgb, var(--theme-primary-bottom) 90%, #0b1220 10%) 100%
+  );
   filter: saturate(110%);
 }
+.btn-theme-primary:active,
 .btn-aqua:active {
   transform: translateY(0);
   filter: saturate(100%);
 }
+.btn-theme-primary:focus-visible,
 .btn-aqua:focus-visible {
-  outline: 2px solid rgba(10, 132, 255, 0.55);
+  outline: 2px solid var(--theme-focus-ring);
   outline-offset: 2px;
+  box-shadow: var(--theme-focus-shadow), var(--theme-primary-shadow), inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
 }
+.dark .btn-theme-primary,
 .dark .btn-aqua {
-  border-color: rgba(148, 163, 184, 0.35);
-  box-shadow: 0 10px 24px -12px rgba(2, 132, 199, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  border-color: color-mix(in srgb, var(--color-accent) 28%, rgba(148, 163, 184, 0.38));
+  box-shadow: var(--theme-primary-shadow), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+.btn-glass-secondary {
+  color: color-mix(in srgb, var(--color-accent-strong) 60%, #0f172a 40%);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(246, 249, 255, 0.56)),
+    radial-gradient(120% 150% at 12% 8%, color-mix(in srgb, var(--color-accent) 20%, rgba(255, 255, 255, 0.42)), transparent 56%);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 24%, rgba(255, 255, 255, 0.64));
+  box-shadow: 0 16px 36px -26px rgba(15, 23, 42, 0.46), inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+.btn-glass-secondary:hover {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(248, 251, 255, 0.64)),
+    radial-gradient(120% 150% at 12% 8%, color-mix(in srgb, var(--color-accent) 24%, rgba(255, 255, 255, 0.45)), transparent 56%);
+}
+.btn-glass-secondary:focus-visible {
+  outline: 2px solid var(--theme-focus-ring);
+  outline-offset: 2px;
+  box-shadow: var(--theme-focus-shadow), 0 16px 36px -26px rgba(15, 23, 42, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+.dark .btn-glass-secondary {
+  color: color-mix(in srgb, var(--color-accent) 48%, rgba(226, 232, 240, 0.95));
+  background:
+    linear-gradient(155deg, rgba(12, 18, 32, 0.8), rgba(8, 14, 28, 0.72)),
+    radial-gradient(130% 150% at 12% 10%, color-mix(in srgb, var(--color-accent) 20%, rgba(148, 163, 184, 0.12)), transparent 58%);
+  border-color: color-mix(in srgb, var(--color-accent) 20%, rgba(148, 163, 184, 0.34));
+  box-shadow: 0 18px 40px -26px rgba(0, 0, 0, 0.72), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.theme-control-input {
+  border-color: var(--theme-control-border);
+}
+.theme-control-input:focus {
+  border-color: var(--theme-control-focus);
+  box-shadow: var(--theme-focus-shadow);
 }
 
 .card-surface {
   /* Big Sur frosted surface */
-  background: rgba(255, 255, 255, calc(var(--glass-bg-alpha) + 0.12));
-  border: 1px solid rgba(255, 255, 255, calc(var(--glass-border-alpha) + 0.04));
+  background: linear-gradient(145deg, var(--liquid-surface), var(--liquid-surface-strong));
+  border: 1px solid var(--liquid-border);
   border-radius: 1rem;
   backdrop-filter: saturate(180%) blur(var(--glass-blur));
   -webkit-backdrop-filter: saturate(180%) blur(var(--glass-blur));
-  box-shadow: 0 30px 80px -40px rgba(15, 23, 42, 0.28);
+  box-shadow:
+    var(--liquid-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 0 0 1px var(--glass-rim);
 }
 .dark .card-surface {
-  background: rgba(15, 23, 42, calc(var(--glass-bg-alpha) + 0.0));
-  border-color: rgba(148, 163, 184, calc(var(--glass-border-alpha) + 0.0));
+  background: linear-gradient(160deg, var(--liquid-surface), var(--liquid-surface-strong));
+  border-color: var(--liquid-border);
+  box-shadow:
+    var(--liquid-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px var(--glass-rim);
 }
 
 /*
@@ -583,11 +957,16 @@ button:focus-visible {
 .macos-panel {
   position: relative;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow: 0 45px 120px -64px rgba(15, 23, 42, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  backdrop-filter: saturate(180%) blur(28px);
-  -webkit-backdrop-filter: saturate(180%) blur(28px);
+  background:
+    linear-gradient(165deg, var(--liquid-surface-strong), var(--liquid-surface-soft)),
+    radial-gradient(120% 120% at 18% 12%, var(--glass-sheen), transparent 52%);
+  border: 1px solid var(--liquid-border);
+  box-shadow:
+    var(--glass-depth-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 0 0 1px var(--glass-rim);
+  backdrop-filter: saturate(190%) blur(calc(var(--glass-blur) * 0.9));
+  -webkit-backdrop-filter: saturate(190%) blur(calc(var(--glass-blur) * 0.9));
   overflow: hidden;
 }
 
@@ -595,15 +974,22 @@ button:focus-visible {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(120% 120% at 20% 10%, rgba(10, 132, 255, 0.12), transparent 45%);
-  opacity: 0.8;
+  background:
+    radial-gradient(120% 120% at 20% 10%, color-mix(in srgb, var(--liquid-accent) 28%, transparent), transparent 50%),
+    var(--liquid-caustic);
+  opacity: 0.9;
   pointer-events: none;
 }
 
 .dark .macos-panel {
-  background: rgba(12, 18, 32, 0.88);
-  border-color: rgba(148, 163, 184, 0.3);
-  box-shadow: 0 45px 120px -68px rgba(2, 6, 23, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(165deg, var(--liquid-surface), var(--liquid-surface-strong)),
+    radial-gradient(120% 120% at 20% 10%, color-mix(in srgb, var(--liquid-accent) 16%, transparent), transparent 54%);
+  border-color: var(--liquid-border);
+  box-shadow:
+    var(--glass-depth-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px var(--glass-rim);
 }
 
 .macos-panel--wide {
@@ -956,9 +1342,9 @@ button:focus-visible {
   position: absolute;
   inset: -18%;
   background:
-    radial-gradient(42% 38% at var(--macos-highlight-x) calc(var(--macos-highlight-y) - 6%), rgba(93, 210, 255, 0.28), transparent 65%),
+    radial-gradient(42% 38% at var(--macos-highlight-x) calc(var(--macos-highlight-y) - 6%), color-mix(in srgb, var(--liquid-accent) 85%, transparent), transparent 65%),
     radial-gradient(28% 24% at calc(var(--macos-highlight-x) - 14%) calc(var(--macos-highlight-y) + 8%), rgba(255, 255, 255, 0.18), transparent 70%),
-    conic-gradient(from 120deg at var(--macos-highlight-x) var(--macos-highlight-y), rgba(129, 140, 248, 0.16), rgba(45, 212, 191, 0.12), rgba(93, 210, 255, 0.16), rgba(129, 140, 248, 0.16));
+    conic-gradient(from 120deg at var(--macos-highlight-x) var(--macos-highlight-y), rgba(129, 140, 248, 0.16), rgba(45, 212, 191, 0.12), color-mix(in srgb, var(--liquid-accent-secondary) 60%, transparent), rgba(129, 140, 248, 0.16));
   opacity: 0.55;
   filter: blur(38px) saturate(135%);
   mix-blend-mode: screen;
@@ -969,8 +1355,8 @@ button:focus-visible {
 .dark .macos-wallpaper__caustics {
   opacity: 0.45;
   background:
-    radial-gradient(42% 38% at var(--macos-highlight-x) calc(var(--macos-highlight-y) - 4%), rgba(115, 195, 255, 0.28), transparent 65%),
-    radial-gradient(32% 26% at calc(var(--macos-highlight-x) - 10%) calc(var(--macos-highlight-y) + 10%), rgba(140, 180, 255, 0.2), transparent 70%),
+    radial-gradient(42% 38% at var(--macos-highlight-x) calc(var(--macos-highlight-y) - 4%), color-mix(in srgb, var(--liquid-accent) 70%, transparent), transparent 65%),
+    radial-gradient(32% 26% at calc(var(--macos-highlight-x) - 10%) calc(var(--macos-highlight-y) + 10%), color-mix(in srgb, var(--liquid-accent-secondary) 70%, transparent), transparent 70%),
     conic-gradient(from 120deg at var(--macos-highlight-x) var(--macos-highlight-y), rgba(118, 96, 210, 0.2), rgba(45, 212, 191, 0.15), rgba(93, 210, 255, 0.24), rgba(118, 96, 210, 0.2));
   mix-blend-mode: color-dodge;
 }
@@ -1444,21 +1830,25 @@ button:focus-visible {
 }
 
 [data-theme="liquid-glass"] {
-  background: linear-gradient(150deg, rgba(255,255,255,0.9), rgba(242,247,255,0.78)) !important;
-  border-color: rgba(255,255,255,0.55) !important;
+  background:
+    linear-gradient(150deg, var(--liquid-surface-strong), var(--liquid-surface)),
+    radial-gradient(120% 120% at 14% 8%, var(--glass-sheen), transparent 50%);
+  border-color: var(--liquid-border-strong) !important;
   box-shadow:
-    0 32px 96px -52px rgba(15,23,42,0.78),
+    var(--liquid-shadow),
     inset 0 1px 0 rgba(255,255,255,0.9),
-    inset 0 0 0 1px rgba(255,255,255,0.18) !important;
+    inset 0 0 0 1px var(--glass-rim) !important;
 }
 
 .dark [data-theme="liquid-glass"] {
-  background: linear-gradient(150deg, rgba(12,16,30,0.9), rgba(6,10,22,0.82)) !important;
-  border-color: rgba(255,255,255,0.12) !important;
+  background:
+    linear-gradient(150deg, var(--liquid-surface), var(--liquid-surface-strong)),
+    radial-gradient(120% 120% at 14% 8%, var(--glass-sheen), transparent 52%);
+  border-color: var(--liquid-border) !important;
   box-shadow:
-    0 32px 96px -52px rgba(0,0,0,0.86),
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    inset 0 0 0 1px rgba(255,255,255,0.05) !important;
+    var(--liquid-shadow),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 0 0 1px var(--glass-rim) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3229,6 +3619,76 @@ button:focus-visible {
   box-shadow: 0 14px 36px -18px rgba(59, 130, 246, 0.38);
 }
 
+.macos-control-center__surface-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 0.45rem;
+}
+
+.macos-control-center__surface {
+  width: 100%;
+  display: grid;
+  gap: 0.24rem;
+  align-content: flex-start;
+  padding: 0.52rem 0.56rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(226, 232, 240, 0.86);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 14px 34px -22px rgba(15, 23, 42, 0.35);
+  text-align: left;
+  transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.12s ease;
+}
+
+.macos-control-center__surface:hover {
+  transform: translateY(-1px);
+  border-color: rgba(14, 165, 233, 0.5);
+  box-shadow: 0 18px 42px -22px rgba(59, 130, 246, 0.32);
+}
+
+.macos-control-center__surface--active {
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 20px 44px -22px rgba(59, 130, 246, 0.42);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(237, 246, 255, 0.84));
+}
+
+.macos-control-center__surface-preview {
+  display: block;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 20px -12px rgba(15, 23, 42, 0.4);
+}
+
+.macos-control-center__surface-preview--liquid {
+  background:
+    radial-gradient(90% 110% at 12% 0%, rgba(255, 255, 255, 0.54), transparent 52%),
+    linear-gradient(120deg, rgba(90, 208, 255, 0.9), rgba(14, 165, 233, 0.75), rgba(52, 211, 153, 0.72));
+}
+
+.macos-control-center__surface-preview--sequoia {
+  background:
+    radial-gradient(90% 110% at 12% 0%, rgba(255, 255, 255, 0.6), transparent 52%),
+    linear-gradient(120deg, rgba(56, 189, 248, 0.78), rgba(167, 139, 250, 0.7), rgba(129, 140, 248, 0.78));
+}
+
+.macos-control-center__surface-preview--graphite {
+  background:
+    radial-gradient(90% 110% at 12% 0%, rgba(255, 255, 255, 0.44), transparent 52%),
+    linear-gradient(120deg, rgba(51, 65, 85, 0.9), rgba(30, 41, 59, 0.9), rgba(71, 85, 105, 0.84));
+}
+
+.macos-control-center__surface-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.macos-control-center__surface-sub {
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.25;
+}
+
 .macos-control-center__swatches {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -3315,6 +3775,26 @@ button:focus-visible {
   background: linear-gradient(180deg, rgba(30, 41, 59, 0.9), rgba(12, 18, 32, 0.9));
   border-color: rgba(71, 85, 105, 0.8);
   box-shadow: 0 12px 30px -18px rgba(3, 7, 18, 0.75);
+}
+
+.dark .macos-control-center__surface {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.9), rgba(12, 18, 32, 0.9));
+  border-color: rgba(71, 85, 105, 0.8);
+  box-shadow: 0 12px 30px -18px rgba(3, 7, 18, 0.8);
+}
+
+.dark .macos-control-center__surface--active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.16), rgba(14, 165, 233, 0.18));
+  border-color: rgba(125, 211, 252, 0.62);
+  box-shadow: 0 16px 40px -20px rgba(59, 130, 246, 0.48);
+}
+
+.dark .macos-control-center__surface-label {
+  color: #e2e8f0;
+}
+
+.dark .macos-control-center__surface-sub {
+  color: #cbd5e1;
 }
 
 .dark .macos-control-center__chip--ghost {
@@ -3489,8 +3969,17 @@ button:focus-visible {
   --color-text-primary: #e5e7eb; /* gray-200 */
   --color-text-secondary: #94a3b8; /* slate-400 */
   --color-accent: #0A84FF; /* same accent */
+  --color-accent-strong: #1d4ed8;
   --color-accent-gradient: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
   --color-border: #334155; /* slate-700 */
+  --color-scheme: dark;
+  --theme-focus-ring: color-mix(in srgb, var(--color-accent) 72%, rgba(148, 163, 184, 0.4));
+  --theme-focus-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 28%, rgba(15, 23, 42, 0.5));
+  --theme-primary-top: color-mix(in srgb, var(--color-accent) 84%, #60a5fa 16%);
+  --theme-primary-bottom: color-mix(in srgb, var(--color-accent-strong) 74%, #030712 26%);
+  --theme-primary-shadow: 0 14px 32px -16px color-mix(in srgb, var(--color-accent) 44%, rgba(0, 0, 0, 0.76));
+  --theme-control-border: color-mix(in srgb, var(--color-accent) 18%, rgba(100, 116, 139, 0.56));
+  --theme-control-focus: color-mix(in srgb, var(--color-accent) 58%, rgba(148, 163, 184, 0.2));
 
   /* Sidebar variables for dark mode */
   --color-sidebar-bg: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.75) 100%);
@@ -3518,6 +4007,26 @@ button:focus-visible {
   --macos-dock-bg: linear-gradient(135deg, rgba(14, 20, 35, 0.82), rgba(10, 14, 26, 0.8));
   --macos-dock-border: rgba(148, 163, 184, 0.18);
   --macos-glass-shadow: 0 24px 80px -46px rgba(0, 0, 0, 0.72);
+
+  /* Hybrid liquid glass tokens (dark) */
+  --glass-sheen: rgba(255, 255, 255, 0.16);
+  --glass-rim: rgba(255, 255, 255, 0.08);
+  --glass-ink: rgba(3, 7, 18, 0.48);
+  --glass-depth-shadow: 0 36px 110px -72px rgba(0, 0, 0, 0.8);
+  --liquid-accent: #7fd4ff;
+  --liquid-accent-secondary: #8ea3ff;
+  --liquid-amber: #f59e0b;
+  --liquid-surface: rgba(10, 16, 30, 0.78);
+  --liquid-surface-strong: rgba(10, 16, 30, 0.9);
+  --liquid-surface-soft: rgba(10, 16, 30, 0.62);
+  --liquid-border: rgba(148, 163, 184, 0.28);
+  --liquid-border-strong: rgba(148, 163, 184, 0.46);
+  --liquid-shadow: 0 36px 110px -72px rgba(0, 0, 0, 0.82);
+  --liquid-shadow-soft: 0 20px 60px -40px rgba(0, 0, 0, 0.66);
+  --liquid-outline: color-mix(in srgb, var(--color-accent) 28%, rgba(255, 255, 255, 0.12));
+  --liquid-caustic: var(--liquid-caustic-dark);
+  --app-body-overlay-opacity: 0.9;
+  --app-body-grid-opacity: 0.26;
 
   color-scheme: dark;
   accent-color: var(--color-accent);
@@ -3621,6 +4130,7 @@ button:focus-visible {
   --color-text-primary: #0a1026;
   --color-text-secondary: #4a5770;
   --color-accent: #5ad0ff;
+  --color-accent-strong: #0284c7;
   --glass-bg-alpha: 0.82;
   --glass-border-alpha: 0.44;
   --glass-blur: 28px;
@@ -3685,6 +4195,7 @@ button:focus-visible {
   --color-text-primary: #e5ebf5;
   --color-text-secondary: #9fb3d6;
   --color-accent: #7fd4ff;
+  --color-accent-strong: #2563eb;
   --glass-bg-alpha: 0.72;
   --glass-border-alpha: 0.36;
   --glass-blur: 28px;
@@ -3727,6 +4238,122 @@ button:focus-visible {
   accent-color: var(--color-accent);
 }
 
+:root.macos-graphite {
+  --color-bg-primary: #f2f5fa;
+  --color-bg-secondary: #e6ebf2;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-accent: #3b82f6;
+  --color-accent-strong: #1d4ed8;
+  --color-accent-gradient: linear-gradient(135deg, #3b82f6 0%, #38bdf8 56%, #1d4ed8 100%);
+  --glass-bg-alpha: 0.7;
+  --glass-border-alpha: 0.42;
+  --glass-blur: 26px;
+  --liquid-surface: rgba(247, 250, 255, 0.74);
+  --liquid-surface-strong: rgba(254, 255, 255, 0.9);
+  --liquid-surface-soft: rgba(240, 245, 252, 0.58);
+  --liquid-border: rgba(226, 232, 240, 0.82);
+  --liquid-border-strong: rgba(203, 213, 225, 0.88);
+  --liquid-shadow: 0 36px 98px -62px rgba(15, 23, 42, 0.44);
+  --liquid-shadow-soft: 0 20px 52px -38px rgba(15, 23, 42, 0.28);
+  --liquid-highlight: rgba(255, 255, 255, 0.76);
+  --liquid-backdrop: blur(18px) saturate(135%);
+
+  --macos-wallpaper-light: radial-gradient(1360px 820px at 12% -16%, rgba(150, 177, 214, 0.36), transparent 56%), radial-gradient(1200px 740px at 88% -10%, rgba(186, 200, 219, 0.34), transparent 62%), radial-gradient(1040px 620px at 20% 112%, rgba(206, 219, 238, 0.28), transparent 72%), radial-gradient(980px 620px at 76% 118%, rgba(130, 156, 194, 0.26), transparent 72%), linear-gradient(180deg, rgba(245, 248, 253, 0.98), rgba(232, 238, 247, 0.92));
+  --macos-wallpaper-dark: radial-gradient(1460px 880px at 12% -20%, rgba(52, 78, 118, 0.32), transparent 58%), radial-gradient(1240px 760px at 86% -14%, rgba(37, 52, 86, 0.36), transparent 66%), radial-gradient(1060px 640px at 24% 114%, rgba(58, 84, 128, 0.28), transparent 74%), radial-gradient(920px 600px at 76% 120%, rgba(26, 44, 78, 0.28), transparent 74%), linear-gradient(180deg, rgba(6, 10, 18, 0.98), rgba(12, 18, 30, 0.95));
+  --macos-aurora-primary-light: radial-gradient(760px 520px at 12% 4%, rgba(104, 144, 205, 0.24), transparent 74%);
+  --macos-aurora-secondary-light: radial-gradient(820px 520px at 88% 16%, rgba(133, 170, 222, 0.2), transparent 76%);
+  --macos-aurora-primary-dark: radial-gradient(720px 520px at 10% -2%, rgba(79, 118, 186, 0.3), transparent 76%);
+  --macos-aurora-secondary-dark: radial-gradient(780px 520px at 88% 14%, rgba(74, 110, 174, 0.28), transparent 76%);
+  --macos-waves-light: radial-gradient(820px 560px at 48% 116%, rgba(120, 164, 222, 0.18), transparent 72%);
+  --macos-waves-dark: radial-gradient(820px 560px at 48% 116%, rgba(72, 110, 170, 0.24), transparent 74%);
+  --macos-grid-color-light: rgba(148, 163, 184, 0.16);
+  --macos-grid-color-dark: rgba(100, 116, 139, 0.22);
+  --macos-noise-opacity-light: 0.09;
+  --macos-noise-opacity-dark: 0.18;
+  --macos-orb-top-light: rgba(255, 255, 255, 0.56);
+  --macos-orb-bottom-light: rgba(148, 163, 184, 0.34);
+  --macos-orb-top-dark: rgba(148, 163, 184, 0.3);
+  --macos-orb-bottom-dark: rgba(96, 165, 250, 0.22);
+  --macos-horizon-light: radial-gradient(150% 200% at 48% 92%, rgba(148, 163, 184, 0.22), transparent 62%), radial-gradient(120% 140% at 18% 94%, rgba(255, 255, 255, 0.2), transparent 74%);
+  --macos-horizon-dark: radial-gradient(150% 200% at 48% 94%, rgba(59, 130, 246, 0.2), transparent 64%), radial-gradient(120% 140% at 16% 94%, rgba(51, 65, 85, 0.3), transparent 72%);
+  --macos-wallpaper: var(--macos-wallpaper-light);
+  --macos-aurora-primary: var(--macos-aurora-primary-light);
+  --macos-aurora-secondary: var(--macos-aurora-secondary-light);
+  --macos-waves: var(--macos-waves-light);
+  --macos-grid-color: var(--macos-grid-color-light);
+  --macos-noise-opacity: var(--macos-noise-opacity-light);
+  --macos-orb-top: var(--macos-orb-top-light);
+  --macos-orb-bottom: var(--macos-orb-bottom-light);
+  --macos-horizon: var(--macos-horizon-light);
+
+  --macos-window-radius: 24px;
+  --macos-window-bg: linear-gradient(160deg, rgba(250, 252, 255, 0.84), rgba(236, 242, 250, 0.74));
+  --macos-window-border: rgba(203, 213, 225, 0.7);
+  --macos-window-outline: rgba(59, 130, 246, 0.2);
+  --macos-window-shadow: 0 56px 130px -78px rgba(15, 23, 42, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.44);
+  --macos-window-shadow-focused: 0 66px 150px -82px rgba(59, 130, 246, 0.34), 0 22px 54px -42px rgba(37, 99, 235, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.52);
+  --macos-window-glow: 0 74px 156px -94px rgba(59, 130, 246, 0.3);
+  --macos-titlebar-bg: linear-gradient(178deg, rgba(252, 254, 255, 0.92), rgba(240, 245, 252, 0.8));
+  --macos-titlebar-border: rgba(203, 213, 225, 0.8);
+  --macos-resizer-hover: rgba(59, 130, 246, 0.2);
+  --macos-menubar-bg: linear-gradient(150deg, rgba(248, 251, 255, 0.84), rgba(239, 244, 252, 0.76));
+  --macos-menubar-border: rgba(203, 213, 225, 0.7);
+  --macos-dock-bg: linear-gradient(150deg, rgba(248, 251, 255, 0.78), rgba(236, 242, 250, 0.72));
+  --macos-dock-border: rgba(203, 213, 225, 0.64);
+  --macos-glass-shadow: 0 30px 96px -62px rgba(15, 23, 42, 0.52);
+}
+
+:root.dark.macos-graphite {
+  --color-bg-primary: #050912;
+  --color-bg-secondary: #0b1220;
+  --color-text-primary: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-accent: #60a5fa;
+  --color-accent-strong: #2563eb;
+  --color-accent-gradient: linear-gradient(135deg, #60a5fa 0%, #38bdf8 55%, #3b82f6 100%);
+  --glass-bg-alpha: 0.66;
+  --glass-border-alpha: 0.32;
+  --glass-blur: 26px;
+  --liquid-surface: rgba(10, 16, 28, 0.8);
+  --liquid-surface-strong: rgba(8, 12, 24, 0.92);
+  --liquid-surface-soft: rgba(10, 16, 28, 0.64);
+  --liquid-border: rgba(100, 116, 139, 0.42);
+  --liquid-border-strong: rgba(100, 116, 139, 0.56);
+  --liquid-shadow: 0 40px 130px -78px rgba(0, 0, 0, 0.84);
+  --liquid-shadow-soft: 0 22px 58px -38px rgba(0, 0, 0, 0.68);
+  --liquid-highlight: rgba(148, 163, 184, 0.18);
+  --liquid-backdrop: blur(18px) saturate(130%);
+
+  --macos-wallpaper: var(--macos-wallpaper-dark);
+  --macos-aurora-primary: var(--macos-aurora-primary-dark);
+  --macos-aurora-secondary: var(--macos-aurora-secondary-dark);
+  --macos-waves: var(--macos-waves-dark);
+  --macos-grid-color: var(--macos-grid-color-dark);
+  --macos-noise-opacity: var(--macos-noise-opacity-dark);
+  --macos-orb-top: var(--macos-orb-top-dark);
+  --macos-orb-bottom: var(--macos-orb-bottom-dark);
+  --macos-horizon: var(--macos-horizon-dark);
+
+  --macos-window-bg: linear-gradient(160deg, rgba(8, 14, 24, 0.9), rgba(4, 8, 18, 0.84));
+  --macos-window-border: rgba(71, 85, 105, 0.48);
+  --macos-window-outline: rgba(96, 165, 250, 0.24);
+  --macos-window-shadow: 0 68px 150px -88px rgba(0, 0, 0, 0.82), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --macos-window-shadow-focused: 0 82px 172px -94px rgba(59, 130, 246, 0.42), 0 28px 64px -46px rgba(30, 64, 175, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --macos-window-glow: 0 84px 182px -102px rgba(59, 130, 246, 0.4);
+  --macos-titlebar-bg: linear-gradient(176deg, rgba(10, 16, 28, 0.9), rgba(6, 10, 20, 0.86));
+  --macos-titlebar-border: rgba(71, 85, 105, 0.58);
+  --macos-resizer-hover: rgba(96, 165, 250, 0.26);
+  --macos-menubar-bg: linear-gradient(150deg, rgba(10, 16, 28, 0.9), rgba(6, 10, 20, 0.9));
+  --macos-menubar-border: rgba(100, 116, 139, 0.28);
+  --macos-dock-bg: linear-gradient(150deg, rgba(8, 12, 24, 0.9), rgba(4, 8, 16, 0.88));
+  --macos-dock-border: rgba(100, 116, 139, 0.26);
+  --macos-glass-shadow: 0 40px 130px -78px rgba(0, 0, 0, 0.84);
+
+  color-scheme: dark;
+  accent-color: var(--color-accent);
+}
+
 /*
  * --- Liquid Glass Global Theme ---
  * makeOS-style translucency and fluid lighting across the app.
@@ -3740,17 +4367,19 @@ html.liquid-glass body::before {
   background:
     var(--macos-aurora-primary),
     var(--macos-aurora-secondary),
-    var(--macos-horizon);
-  opacity: 0.9;
-  filter: blur(22px) saturate(140%);
+    var(--macos-horizon),
+    var(--liquid-caustic);
+  opacity: 0.94;
+  filter: blur(20px) saturate(160%) brightness(1.02);
 }
 
 html.liquid-glass body::after {
   background-image:
-    linear-gradient(120deg, color-mix(in srgb, var(--macos-grid-color) 55%, transparent) 1px, transparent 1px),
-    linear-gradient(0deg, color-mix(in srgb, var(--macos-grid-color) 45%, transparent) 1px, transparent 1px);
-  background-size: 120px 120px, 120px 120px;
-  opacity: 0.28;
+    linear-gradient(120deg, color-mix(in srgb, var(--macos-grid-color) 60%, transparent) 1px, transparent 1px),
+    linear-gradient(0deg, color-mix(in srgb, var(--macos-grid-color) 52%, transparent) 1px, transparent 1px),
+    radial-gradient(24% 18% at 50% 18%, var(--glass-sheen), transparent 60%);
+  background-size: 120px 120px, 120px 120px, 220% 160%;
+  opacity: 0.32;
   mix-blend-mode: soft-light;
 }
 
@@ -3758,9 +4387,10 @@ html.liquid-glass .macos-desktop::before {
   background:
     var(--macos-waves),
     var(--macos-aurora-primary),
-    var(--macos-aurora-secondary);
-  opacity: 0.68;
-  filter: saturate(120%);
+    var(--macos-aurora-secondary),
+    var(--liquid-caustic);
+  opacity: 0.7;
+  filter: saturate(140%);
 }
 
 html.liquid-glass .macos-desktop::after {
@@ -3780,25 +4410,42 @@ html.liquid-glass :where(.glass-effect, .card-surface) {
 html.liquid-glass :where(input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="url"], input[type="number"], textarea, select) {
   background-color: var(--liquid-surface-soft);
   border-color: var(--liquid-border);
-  box-shadow: inset 0 1px 0 var(--liquid-highlight), var(--liquid-shadow-soft);
+  box-shadow:
+    inset 0 1px 0 var(--liquid-highlight),
+    var(--liquid-shadow-soft);
   color: var(--color-text-primary);
   backdrop-filter: var(--liquid-backdrop);
   -webkit-backdrop-filter: var(--liquid-backdrop);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+html.liquid-glass :where(input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="url"], input[type="number"], textarea, select):focus-visible {
+  border-color: color-mix(in srgb, var(--color-accent) 70%, #fff 20%);
+  box-shadow:
+    0 12px 28px -16px color-mix(in srgb, var(--color-accent) 45%, rgba(15, 23, 42, 0.18)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 55%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+  outline-offset: 0;
 }
 
 html.liquid-glass :where(button, [role="button"]) {
   backdrop-filter: var(--liquid-backdrop);
   -webkit-backdrop-filter: var(--liquid-backdrop);
-  box-shadow: var(--liquid-shadow-soft);
+  box-shadow:
+    var(--liquid-shadow-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--liquid-border);
+  background: linear-gradient(135deg, var(--liquid-surface-strong), var(--liquid-surface));
 }
 
 html.liquid-glass.dark body::before {
-  opacity: 0.82;
-  filter: blur(24px) saturate(130%);
+  opacity: 0.88;
+  filter: blur(22px) saturate(150%) brightness(0.96);
 }
 
 html.liquid-glass.dark body::after {
-  opacity: 0.24;
+  opacity: 0.28;
 }
 
 html.liquid-glass.dark .macos-desktop::before {
@@ -3973,13 +4620,57 @@ html.liquid-glass.dark .macos-desktop::after {
   isolation: isolate;
 }
 
+/* Hybrid enhancement without disturbing existing macOS skin */
+.macos-window.lg-hybrid-window {
+  border-color: color-mix(in srgb, var(--lg-cyan) 18%, var(--macos-window-border));
+  box-shadow:
+    var(--macos-window-shadow),
+    var(--macos-window-glow),
+    0 32px 96px -70px color-mix(in srgb, var(--lg-cyan) 36%, rgba(15, 23, 42, 0.46));
+}
+.macos-window.lg-hybrid-window .macos-window__titlebar {
+  background:
+    linear-gradient(140deg, color-mix(in srgb, var(--lg-surface-strong) 70%, var(--liquid-surface) 30%), var(--liquid-surface)),
+    radial-gradient(120% 120% at 6% 0%, color-mix(in srgb, var(--lg-cyan) 28%, transparent), transparent 62%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+.macos-window.lg-hybrid-window .macos-window__content {
+  background:
+    linear-gradient(165deg, color-mix(in srgb, var(--lg-surface) 70%, var(--liquid-surface) 30%), var(--liquid-surface-strong)),
+    radial-gradient(120% 120% at 18% 10%, rgba(255, 255, 255, 0.24), transparent 62%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 0 0 1px color-mix(in srgb, var(--liquid-border) 65%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.dark .macos-window.lg-hybrid-window {
+  border-color: color-mix(in srgb, var(--lg-violet) 22%, rgba(255, 255, 255, 0.16));
+  box-shadow:
+    var(--macos-window-shadow),
+    var(--macos-window-glow),
+    0 32px 96px -70px color-mix(in srgb, var(--lg-violet) 28%, rgba(0, 0, 0, 0.7));
+}
+.dark .macos-window.lg-hybrid-window .macos-window__titlebar {
+  background:
+    linear-gradient(140deg, color-mix(in srgb, var(--lg-surface-dark-strong) 70%, var(--liquid-surface) 30%), var(--lg-surface-dark)),
+    radial-gradient(120% 120% at 6% 0%, color-mix(in srgb, var(--lg-violet) 24%, transparent), transparent 62%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.dark .macos-window.lg-hybrid-window .macos-window__content {
+  background:
+    linear-gradient(165deg, color-mix(in srgb, var(--lg-surface-dark) 70%, var(--liquid-surface) 30%), var(--lg-surface-dark-strong)),
+    radial-gradient(120% 120% at 18% 10%, rgba(125, 211, 252, 0.14), transparent 64%);
+}
+
 .macos-window::before {
   content: '';
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.3), color-mix(in srgb, #5ad0ff 28%, transparent));
-  opacity: 0.35;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.26), color-mix(in srgb, var(--liquid-accent) 24%, transparent)),
+    var(--liquid-caustic);
+  opacity: 0.4;
   pointer-events: none;
   z-index: 0;
 }
@@ -4139,11 +4830,16 @@ html.liquid-glass.dark .macos-desktop::after {
   gap: 0.75rem;
   padding: 0.55rem 0.95rem;
   min-height: 44px;
-  border-bottom: 1px solid var(--macos-titlebar-border);
-  background: var(--macos-titlebar-bg);
-  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.32);
-  backdrop-filter: saturate(170%) blur(calc(var(--glass-blur) * 0.55));
-  -webkit-backdrop-filter: saturate(170%) blur(calc(var(--glass-blur) * 0.55));
+  border-bottom: 1px solid var(--liquid-border);
+  background:
+    linear-gradient(140deg, var(--liquid-surface-strong), var(--liquid-surface)),
+    radial-gradient(120% 120% at 6% 0%, color-mix(in srgb, var(--liquid-accent) 28%, transparent), transparent 62%);
+  box-shadow:
+    var(--liquid-shadow-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: saturate(190%) blur(calc(var(--glass-blur) * 0.55));
+  -webkit-backdrop-filter: saturate(190%) blur(calc(var(--glass-blur) * 0.55));
   border-top-left-radius: inherit;
   border-top-right-radius: inherit;
   cursor: grab;
@@ -4154,8 +4850,8 @@ html.liquid-glass.dark .macos-desktop::after {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0));
-  opacity: 0.35;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.02));
+  opacity: 0.4;
 }
 
 .macos-window__titlebar::before {
@@ -4163,8 +4859,10 @@ html.liquid-glass.dark .macos-desktop::after {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(120% 120% at 0% 0%, rgba(90, 208, 255, 0.12), transparent 55%);
-  opacity: 0.28;
+  background:
+    radial-gradient(120% 120% at 6% 0%, color-mix(in srgb, var(--liquid-accent) 24%, transparent), transparent 62%),
+    radial-gradient(140% 120% at 90% 0%, color-mix(in srgb, var(--liquid-accent-secondary) 16%, transparent), transparent 65%);
+  opacity: 0.4;
 }
 
 .macos-window__titlebar:active {
@@ -4406,7 +5104,13 @@ html.liquid-glass.dark .macos-desktop::after {
   position: relative;
   z-index: 1;
   padding: clamp(1.25rem, 2vw + 1rem, 2.75rem);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.65));
+  background:
+    linear-gradient(165deg, var(--liquid-surface-strong), var(--liquid-surface)),
+    radial-gradient(120% 120% at 18% 10%, var(--glass-sheen), transparent 62%);
+  border-top: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 0 0 1px var(--glass-rim);
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -4414,7 +5118,12 @@ html.liquid-glass.dark .macos-desktop::after {
 }
 
 .dark .macos-window__content {
-  background: linear-gradient(180deg, rgba(10, 16, 30, 0.5), rgba(6, 12, 24, 0.66));
+  background:
+    linear-gradient(165deg, var(--liquid-surface), var(--liquid-surface-strong)),
+    radial-gradient(120% 120% at 18% 10%, var(--glass-sheen), transparent 64%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px var(--glass-rim);
 }
 
 /*
@@ -4584,6 +5293,11 @@ html.liquid-glass.dark .macos-desktop::after {
   min-height: 0;
   overflow-y: auto;
   padding-right: 0.85rem;
+  border-radius: 18px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--liquid-surface) 80%, transparent), transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 0 1px color-mix(in srgb, var(--liquid-border) 65%, transparent);
 }
 
 .macos-window__body::-webkit-scrollbar {

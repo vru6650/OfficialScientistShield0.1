@@ -47,6 +47,7 @@ const DEFAULT_EFFECTS = Object.freeze({
     veil: 0,
     reduceMotion: false,
     autoHideMenuBar: true,
+    surfacePreset: 'liquid',
     accentPreset: 'system',
     wallpaperMode: 'liquid',
 });
@@ -109,15 +110,68 @@ const DRAG_POINTER_OFFSET_X = 28;
 const DRAG_POINTER_OFFSET_Y = -56;
 
 const ACCENT_PRESETS = Object.freeze([
-    { key: 'system', label: 'App accent', gradient: null, color: '#0A84FF' },
-    { key: 'blue', label: 'macOS Blue', gradient: 'linear-gradient(135deg, rgba(14,116,244,0.9), rgba(56,189,248,0.7))', color: '#0A84FF' },
-    { key: 'pink', label: 'Pink', gradient: 'linear-gradient(135deg, rgba(236,72,153,0.9), rgba(168,85,247,0.72))', color: '#EC4899' },
-    { key: 'mint', label: 'Mint', gradient: 'linear-gradient(135deg, rgba(16,185,129,0.9), rgba(59,130,246,0.65))', color: '#0FB583' },
-    { key: 'amber', label: 'Gold', gradient: 'linear-gradient(135deg, rgba(245,158,11,0.92), rgba(249,115,22,0.8))', color: '#F59E0B' },
-    { key: 'graphite', label: 'Graphite', gradient: 'linear-gradient(135deg, rgba(30,41,59,0.95), rgba(15,23,42,0.9))', color: '#111827' },
+    {
+        key: 'system',
+        label: 'App accent',
+        gradient: null,
+        color: '#0A84FF',
+        strong: '#0064D1',
+        mood: 'Matches the active workspace',
+    },
+    {
+        key: 'blue',
+        label: 'macOS Blue',
+        gradient: 'linear-gradient(135deg, rgba(14,116,244,0.9), rgba(56,189,248,0.7))',
+        color: '#0A84FF',
+        strong: '#0369D4',
+        mood: 'Classic and crisp',
+    },
+    {
+        key: 'pink',
+        label: 'Pink',
+        gradient: 'linear-gradient(135deg, rgba(236,72,153,0.9), rgba(168,85,247,0.72))',
+        color: '#EC4899',
+        strong: '#DB2777',
+        mood: 'Vivid and energetic',
+    },
+    {
+        key: 'mint',
+        label: 'Mint',
+        gradient: 'linear-gradient(135deg, rgba(16,185,129,0.9), rgba(59,130,246,0.65))',
+        color: '#0FB583',
+        strong: '#0F766E',
+        mood: 'Calm and focused',
+    },
+    {
+        key: 'amber',
+        label: 'Gold',
+        gradient: 'linear-gradient(135deg, rgba(245,158,11,0.92), rgba(249,115,22,0.8))',
+        color: '#F59E0B',
+        strong: '#C2410C',
+        mood: 'Warm and luminous',
+    },
+    {
+        key: 'graphite',
+        label: 'Graphite',
+        gradient: 'linear-gradient(135deg, rgba(30,41,59,0.95), rgba(15,23,42,0.9))',
+        color: '#111827',
+        strong: '#0F172A',
+        mood: 'Low-key and professional',
+    },
 ]);
 
 const ACCENT_PRESET_MAP = ACCENT_PRESETS.reduce((map, preset) => {
+    map[preset.key] = preset;
+    return map;
+}, {});
+
+const SURFACE_PRESETS = Object.freeze([
+    { key: 'liquid', label: 'Liquid Glass', helper: 'Fluid caustics and vibrant translucency' },
+    { key: 'sequoia', label: 'Sequoia Frost', helper: 'Balanced frost with subtle chroma glow' },
+    { key: 'graphite', label: 'Graphite Pro', helper: 'Neutral chrome with deeper contrast' },
+]);
+
+const SURFACE_PRESET_MAP = SURFACE_PRESETS.reduce((map, preset) => {
     map[preset.key] = preset;
     return map;
 }, {});
@@ -182,6 +236,7 @@ const sanitizeEffects = (value = {}) => {
     const reduceMotion = Boolean(merged.reduceMotion);
     const autoHideMenuBar = merged.autoHideMenuBar !== false;
 
+    const surfacePreset = SURFACE_PRESET_MAP[merged.surfacePreset]?.key ?? DEFAULT_EFFECTS.surfacePreset;
     const accentPreset = ACCENT_PRESET_MAP[merged.accentPreset]?.key ?? DEFAULT_EFFECTS.accentPreset;
     const wallpaperMode = WALLPAPER_MODES.includes(merged.wallpaperMode)
         ? merged.wallpaperMode
@@ -193,6 +248,7 @@ const sanitizeEffects = (value = {}) => {
         veil,
         reduceMotion,
         autoHideMenuBar,
+        surfacePreset,
         accentPreset,
         wallpaperMode,
     };
@@ -1473,6 +1529,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
     }, []);
 
     const accentPresetKey = effects?.accentPreset || DEFAULT_EFFECTS.accentPreset;
+    const surfacePresetKey = effects?.surfacePreset || DEFAULT_EFFECTS.surfacePreset;
     const accentPreset = useMemo(
         () => ACCENT_PRESET_MAP[accentPresetKey] || ACCENT_PRESET_MAP.system,
         [accentPresetKey]
@@ -1484,12 +1541,16 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         if (typeof document === 'undefined') return undefined;
         const root = document.documentElement;
         const accentColor = accentPreset?.color || '#0A84FF';
+        const accentStrong = accentPreset?.strong || accentColor;
+        root.setAttribute('data-accent-preset', accentPresetKey);
 
         if (accentPresetKey === 'system') {
             root.style.removeProperty('--color-accent');
+            root.style.removeProperty('--color-accent-strong');
             root.style.removeProperty('--color-accent-gradient');
         } else {
             root.style.setProperty('--color-accent', accentColor);
+            root.style.setProperty('--color-accent-strong', accentStrong);
             if (accentPresetGradient) {
                 root.style.setProperty('--color-accent-gradient', accentPresetGradient);
             } else {
@@ -1498,7 +1559,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         }
 
         return undefined;
-    }, [accentPreset?.color, accentPresetGradient, accentPresetKey]);
+    }, [accentPreset?.color, accentPreset?.strong, accentPresetGradient, accentPresetKey]);
 
     const appWindowSummaries = useMemo(
         () =>
@@ -4388,10 +4449,13 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                     effects={effects}
                     focusMode={focusMode}
                     theme={theme}
+                    surfacePreset={surfacePresetKey}
                     accentPreset={accentPresetKey}
                     wallpaperMode={wallpaperMode}
+                    surfacePresets={SURFACE_PRESETS}
                     accentPresets={ACCENT_PRESETS}
                     wallpaperOptions={WALLPAPER_OPTIONS}
+                    onSelectSurfacePreset={(presetKey) => persistEffects({ ...effects, surfacePreset: presetKey })}
                     onSelectAccentPreset={(presetKey) => persistEffects({ ...effects, accentPreset: presetKey })}
                     onSelectWallpaperMode={(mode) => persistEffects({ ...effects, wallpaperMode: mode })}
                     onClose={closeControlCenter}

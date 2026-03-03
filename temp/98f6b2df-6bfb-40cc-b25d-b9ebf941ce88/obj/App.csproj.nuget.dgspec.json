@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/scientistshield/Downloads/ScientistShield2.0-main (7)/ScientistShield2.0-mainPageReade/ScientistShield2.0-main/temp/98f6b2df-6bfb-40cc-b25d-b9ebf941ce88/App.csproj": {}
+    "/home/scientistshield/Documents/finalDock3/ScientistShield2.0-mainNewssingleWindows9/ScientistShield2.0-mainNews1/ScientistShield2.0-mainNews/temp/98f6b2df-6bfb-40cc-b25d-b9ebf941ce88/App.csproj": {}
   },
   "projects": {
-    "/home/scientistshield/Downloads/ScientistShield2.0-main (7)/ScientistShield2.0-mainPageReade/ScientistShield2.0-main/temp/98f6b2df-6bfb-40cc-b25d-b9ebf941ce88/App.csproj": {
+    "/home/scientistshield/Documents/finalDock3/ScientistShield2.0-mainNewssingleWindows9/ScientistShield2.0-mainNews1/ScientistShield2.0-mainNews/temp/98f6b2df-6bfb-40cc-b25d-b9ebf941ce88/App.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/scientistshield/Downloads/ScientistShield2.0-main (7)/ScientistShield2.0-mainPageReade/ScientistShield2.0-main/temp/98f6b2df-6bfb-40cc-b25d-b9ebf941ce88/App.csproj",
+        "projectUniqueName": "/home/scientistshield/Documents/finalDock3/ScientistShield2.0-mainNewssingleWindows9/ScientistShield2.0-mainNews1/ScientistShield2.0-mainNews/temp/98f6b2df-6bfb-40cc-b25d-b9ebf941ce88/App.csproj",
         "projectName": "App",
-        "projectPath": "/home/scientistshield/Downloads/ScientistShield2.0-main (7)/ScientistShield2.0-mainPageReade/ScientistShield2.0-main/temp/98f6b2df-6bfb-40cc-b25d-b9ebf941ce88/App.csproj",
+        "projectPath": "/home/scientistshield/Documents/finalDock3/ScientistShield2.0-mainNewssingleWindows9/ScientistShield2.0-mainNews1/ScientistShield2.0-mainNews/temp/98f6b2df-6bfb-40cc-b25d-b9ebf941ce88/App.csproj",
         "packagesPath": "/home/scientistshield/.nuget/packages/",
-        "outputPath": "/home/scientistshield/Downloads/ScientistShield2.0-main (7)/ScientistShield2.0-mainPageReade/ScientistShield2.0-main/temp/98f6b2df-6bfb-40cc-b25d-b9ebf941ce88/obj/",
+        "outputPath": "/home/scientistshield/Documents/finalDock3/ScientistShield2.0-mainNewssingleWindows9/ScientistShield2.0-mainNews1/ScientistShield2.0-mainNews/temp/98f6b2df-6bfb-40cc-b25d-b9ebf941ce88/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/scientistshield/.nuget/NuGet/NuGet.Config"

@@ -7,20 +7,20 @@ export const customFlowbiteTheme = {
     base:
       'group inline-flex items-center justify-center font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-radius-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed',
     color: {
-      // Primary maps to new WhiteSur brand accent
+      // Primary now follows dynamic accent tokens from Control Center presets.
       primary:
-        'text-white shadow-[0_16px_32px_-18px_rgba(10,132,255,0.65)] bg-[linear-gradient(180deg,#0A84FF_0%,#0071E3_100%)] border border-white/40 hover:brightness-105 active:scale-[0.985] transition-transform focus-visible:ring-brand-300 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900',
+        'btn-theme-primary text-white hover:brightness-105 active:scale-[0.985] transition-transform focus-visible:ring-[var(--theme-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900',
       secondary:
-        'text-ink-800 bg-white/70 border border-white/60 shadow-[0_18px_38px_-24px_rgba(15,23,42,0.35)] backdrop-blur-lg hover:bg-white/80 hover:shadow-[0_18px_44px_-22px_rgba(37,99,235,0.25)] focus-visible:ring-brand-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:text-ink-100 dark:bg-ink-900/60 dark:border-white/15 dark:hover:bg-ink-900/70 dark:focus-visible:ring-brand-400/60',
+        'btn-glass-secondary focus-visible:ring-[var(--theme-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900',
       light:
-        'text-ink-700 bg-white/65 border border-white/55 hover:bg-white/75 focus-visible:ring-ink-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:text-ink-100 dark:bg-ink-900/55 dark:border-white/10 dark:hover:bg-ink-900/65 dark:focus-visible:ring-ink-500/60',
+        'text-ink-700 bg-white/65 border border-white/55 hover:bg-white/75 focus-visible:ring-[var(--theme-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:text-ink-100 dark:bg-ink-900/55 dark:border-white/10 dark:hover:bg-ink-900/65 dark:focus-visible:ring-offset-slate-900',
       danger: 'text-white bg-red-600 hover:bg-red-700 focus-visible:ring-red-300',
       success:
         'text-white bg-green-600 hover:bg-green-700 focus-visible:ring-green-300',
       // Accent option
-      teal: 'text-white bg-accent-teal hover:bg-teal-500 focus-visible:ring-teal-300',
+      teal: 'text-white bg-accent-teal hover:bg-teal-500 focus-visible:ring-[var(--theme-focus-ring)]',
       aqua:
-        'btn-aqua text-white shadow-[0_22px_40px_-24px_rgba(10,132,255,0.65)] focus-visible:ring-brand-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-brand-500/60',
+        'btn-aqua text-white focus-visible:ring-[var(--theme-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900',
     },
     size: {
       xs: 'h-7 px-2.5 text-xs',
@@ -37,7 +37,7 @@ export const customFlowbiteTheme = {
   navbar: {
     link: {
       base:
-        'flex items-center gap-2 py-2 px-3 rounded-radius-md text-ink-700 dark:text-ink-100 hover:bg-ink-100 dark:hover:bg-ink-800/60 focus-visible:ring-2 focus-visible:ring-brand-400',
+        'flex items-center gap-2 py-2 px-3 rounded-radius-md text-ink-700 dark:text-ink-100 hover:bg-ink-100 dark:hover:bg-ink-800/60 focus-visible:ring-2 focus-visible:ring-[var(--theme-focus-ring)]',
       active: {
         on: 'bg-ink-100 dark:bg-ink-800/60 text-ink-900 dark:text-white',
         off: '',
@@ -65,7 +65,7 @@ export const customFlowbiteTheme = {
       title: 'text-base font-semibold text-ink-800 dark:text-ink-100',
       close: {
         base:
-          'ml-auto inline-flex items-center rounded-radius-md p-1.5 text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-700/60 hover:text-ink-700 focus-visible:ring-2 focus-visible:ring-brand-400',
+          'ml-auto inline-flex items-center rounded-radius-md p-1.5 text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-700/60 hover:text-ink-700 focus-visible:ring-2 focus-visible:ring-[var(--theme-focus-ring)]',
         icon: 'w-5 h-5',
       },
     },
@@ -81,7 +81,7 @@ export const customFlowbiteTheme = {
       base: 'relative w-full',
       input: {
         base:
-          'block w-full rounded-radius-md border border-ink-300 bg-white text-ink-900 placeholder-ink-400 focus:border-brand-400 focus:ring-brand-400 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700 dark:placeholder-ink-500',
+          'theme-control-input block w-full rounded-radius-md border border-ink-300 bg-white text-ink-900 placeholder-ink-400 focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700 dark:placeholder-ink-500',
         colors: {
           gray: '',
         },
@@ -100,7 +100,7 @@ export const customFlowbiteTheme = {
       base: 'relative w-full',
       select: {
         base:
-          'block w-full rounded-radius-md border border-ink-300 bg-white text-ink-900 focus:border-brand-400 focus:ring-brand-400 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700',
+          'theme-control-input block w-full rounded-radius-md border border-ink-300 bg-white text-ink-900 focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700',
         sizes: {
           sm: 'p-2 text-sm',
           md: 'p-2.5 text-sm',
@@ -140,7 +140,7 @@ export const customFlowbiteTheme = {
   },
   spinner: {
     color: {
-      primary: 'fill-brand-500 text-ink-200',
+      primary: 'fill-[var(--color-accent)] text-ink-200',
       gray: 'fill-ink-500 text-ink-200',
     },
   },

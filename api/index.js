@@ -75,6 +75,21 @@ app.use(cookieParser());
 
 setupVisualizerSocket(server);
 
+server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use. Stop the existing process or set a different PORT.`);
+        process.exit(1);
+    }
+
+    if (error.code === 'EACCES') {
+        console.error(`Port ${PORT} requires elevated permissions. Use a higher port (for example, 3000).`);
+        process.exit(1);
+    }
+
+    console.error('Failed to start HTTP server:', error);
+    process.exit(1);
+});
+
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}!`);
 });

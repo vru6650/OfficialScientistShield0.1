@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/scientistshield/Downloads/ScientistShield2.0-main (3)/ScientistShield2.0-main/temp/eef64ec3-13a4-47ec-9a6c-aaa54d860439/App.csproj",
+      "projectUniqueName": "/home/scientistshield/Documents/finalDock3/ScientistShield2.0-mainNewssingleWindows9/ScientistShield2.0-mainNews1/ScientistShield2.0-mainNews/temp/eef64ec3-13a4-47ec-9a6c-aaa54d860439/App.csproj",
       "projectName": "App",
-      "projectPath": "/home/scientistshield/Downloads/ScientistShield2.0-main (3)/ScientistShield2.0-main/temp/eef64ec3-13a4-47ec-9a6c-aaa54d860439/App.csproj",
+      "projectPath": "/home/scientistshield/Documents/finalDock3/ScientistShield2.0-mainNewssingleWindows9/ScientistShield2.0-mainNews1/ScientistShield2.0-mainNews/temp/eef64ec3-13a4-47ec-9a6c-aaa54d860439/App.csproj",
       "packagesPath": "/home/scientistshield/.nuget/packages/",
-      "outputPath": "/home/scientistshield/Downloads/ScientistShield2.0-main (3)/ScientistShield2.0-main/temp/eef64ec3-13a4-47ec-9a6c-aaa54d860439/obj/",
+      "outputPath": "/home/scientistshield/Documents/finalDock3/ScientistShield2.0-mainNewssingleWindows9/ScientistShield2.0-mainNews1/ScientistShield2.0-mainNews/temp/eef64ec3-13a4-47ec-9a6c-aaa54d860439/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/home/scientistshield/.nuget/NuGet/NuGet.Config"

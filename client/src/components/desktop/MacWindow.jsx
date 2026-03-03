@@ -36,7 +36,7 @@ function MacWindow({
 
     const windowClassName = useMemo(
         () =>
-            `macos-window pointer-events-auto select-none text-slate-700 transition-all ${
+            `macos-window lg-hybrid-window pointer-events-auto select-none text-slate-700 transition-all ${
                 reduceMotion ? 'duration-75' : 'duration-300'
             } dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-100 ${
                 isFocused ? 'macos-window--focused ring-2 ring-brand-300/60 dark:ring-brand-500/60' : 'ring-0'

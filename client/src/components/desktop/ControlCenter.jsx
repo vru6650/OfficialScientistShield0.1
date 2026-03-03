@@ -28,14 +28,17 @@ export default function ControlCenter({
     effects,
     focusMode,
     theme,
+    surfacePreset,
     onClose,
     onChangeEffects,
     onToggleFocusMode,
     onToggleTheme,
+    surfacePresets,
     accentPreset,
     wallpaperMode,
     accentPresets,
     wallpaperOptions,
+    onSelectSurfacePreset,
     onSelectAccentPreset,
     onSelectWallpaperMode,
     onOpenMissionControl,
@@ -52,13 +55,18 @@ export default function ControlCenter({
     const veil = clamp(Number(effects?.veil ?? 0), 0, 0.75);
     const reduceMotion = Boolean(effects?.reduceMotion);
     const autoHideMenuBar = effects?.autoHideMenuBar !== false;
+    const selectedSurfacePreset = useMemo(
+        () => surfacePresets.find((preset) => preset.key === surfacePreset) || surfacePresets[0] || null,
+        [surfacePreset, surfacePresets]
+    );
 
     const statusLabel = useMemo(() => {
         const focus = focusMode ? 'Focus on' : 'Focus off';
         const motion = reduceMotion ? 'Motion reduced' : 'Motion fluid';
         const themeLabel = theme === 'dark' ? 'Dark' : 'Light';
-        return `${focus} • ${motion} • ${themeLabel} mode`;
-    }, [focusMode, reduceMotion, theme]);
+        const surface = selectedSurfacePreset?.label || 'Liquid Glass';
+        return `${focus} • ${motion} • ${themeLabel} • ${surface}`;
+    }, [focusMode, reduceMotion, selectedSurfacePreset?.label, theme]);
 
     const quickToggleItems = useMemo(
         () => [
@@ -430,15 +438,34 @@ export default function ControlCenter({
                                 <div className="macos-control-center__tile-head">
                                     <div>
                                         <p className="macos-control-center__tile-title">Appearance</p>
-                                        <p className="macos-control-center__tile-sub">Accent & highlight</p>
+                                        <p className="macos-control-center__tile-sub">Surface style, accent, and highlight</p>
                                     </div>
                                     <HiOutlineSwatch className="h-5 w-5 text-slate-400 dark:text-slate-300" />
                                 </div>
-                        <div className="macos-control-center__swatches" role="group" aria-label="Accent color">
-                            {accentPresets.map((preset) => (
-                                <button
-                                    key={preset.key}
-                                    type="button"
+                                <div className="macos-control-center__surface-grid" role="group" aria-label="Surface style">
+                                    {surfacePresets.map((preset) => (
+                                        <button
+                                            key={preset.key}
+                                            type="button"
+                                            className={`macos-control-center__surface ${
+                                                surfacePreset === preset.key ? 'macos-control-center__surface--active' : ''
+                                            }`}
+                                            onClick={() => onSelectSurfacePreset(preset.key)}
+                                            aria-pressed={surfacePreset === preset.key}
+                                        >
+                                            <span className={`macos-control-center__surface-preview macos-control-center__surface-preview--${preset.key}`} />
+                                            <span className="macos-control-center__surface-label">{preset.label}</span>
+                                            {preset.helper ? (
+                                                <span className="macos-control-center__surface-sub">{preset.helper}</span>
+                                            ) : null}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="macos-control-center__swatches" role="group" aria-label="Accent color">
+                                    {accentPresets.map((preset) => (
+                                        <button
+                                            key={preset.key}
+                                            type="button"
                                             className={`macos-control-center__swatch ${accentPreset === preset.key ? 'macos-control-center__swatch--active' : ''}`}
                                             onClick={() => onSelectAccentPreset(preset.key)}
                                             aria-pressed={accentPreset === preset.key}
@@ -452,7 +479,7 @@ export default function ControlCenter({
                                             <div className="macos-control-center__swatch-text">
                                                 <span className="macos-control-center__swatch-label">{preset.label}</span>
                                                 <span className="macos-control-center__swatch-sub">
-                                                    {preset.key === 'system' ? 'Follow active app' : 'Static accent'}
+                                                    {preset.mood || (preset.key === 'system' ? 'Follow active app' : 'Static accent')}
                                                 </span>
                                             </div>
                                         </button>
@@ -701,13 +728,22 @@ ControlCenter.propTypes = {
         veil: PropTypes.number,
         reduceMotion: PropTypes.bool,
         autoHideMenuBar: PropTypes.bool,
+        surfacePreset: PropTypes.string,
     }).isRequired,
     focusMode: PropTypes.bool.isRequired,
     theme: PropTypes.string.isRequired,
+    surfacePreset: PropTypes.string.isRequired,
     onClose: PropTypes.func.isRequired,
     onChangeEffects: PropTypes.func.isRequired,
     onToggleFocusMode: PropTypes.func.isRequired,
     onToggleTheme: PropTypes.func.isRequired,
+    surfacePresets: PropTypes.arrayOf(
+        PropTypes.shape({
+            key: PropTypes.string.isRequired,
+            label: PropTypes.string.isRequired,
+            helper: PropTypes.string,
+        })
+    ).isRequired,
     accentPreset: PropTypes.string.isRequired,
     wallpaperMode: PropTypes.string.isRequired,
     accentPresets: PropTypes.arrayOf(
@@ -715,6 +751,8 @@ ControlCenter.propTypes = {
             key: PropTypes.string.isRequired,
             label: PropTypes.string.isRequired,
             gradient: PropTypes.string,
+            strong: PropTypes.string,
+            mood: PropTypes.string,
         })
     ).isRequired,
     wallpaperOptions: PropTypes.arrayOf(
@@ -724,6 +762,7 @@ ControlCenter.propTypes = {
             helper: PropTypes.string,
         })
     ).isRequired,
+    onSelectSurfacePreset: PropTypes.func.isRequired,
     onSelectAccentPreset: PropTypes.func.isRequired,
     onSelectWallpaperMode: PropTypes.func.isRequired,
     onOpenMissionControl: PropTypes.func.isRequired,

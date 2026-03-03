@@ -1,4 +1,5 @@
 import homeIcon from '../assets/dock/home.svg';
+import aboutIcon from '../assets/dock/about.svg';
 import tutorialsIcon from '../assets/dock/tutorials.svg';
 import quizzesIcon from '../assets/dock/quizzes.svg';
 import toolsIcon from '../assets/dock/tools.svg';
@@ -39,6 +40,15 @@ export const baseDockItems = [
         fallbackIconSrc: homeIcon,
         iconAlt: 'Home dock icon',
         match: (path) => path === '/',
+    },
+    {
+        key: 'about',
+        to: '/about',
+        label: 'About',
+        iconSrc: buildIconSrc('about', aboutIcon),
+        fallbackIconSrc: aboutIcon,
+        iconAlt: 'About dock icon',
+        match: (path) => path.startsWith('/about'),
     },
     {
         key: 'tutorials',
