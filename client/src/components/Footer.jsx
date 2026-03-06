@@ -38,9 +38,9 @@ export default function FooterCom() {
     };
 
     return (
-        <footer className="relative mt-24">
+        <footer className="liquid-app-shell relative mt-24">
             <FooterWave />
-            <div className="relative overflow-hidden border-t border-slate-200/70 bg-white/70 backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-950/70">
+            <div className="liquid-hybrid-panel liquid-hybrid-band relative overflow-hidden border-t border-slate-200/70 bg-white/70 backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-950/70">
                 <div className="pointer-events-none absolute inset-0" aria-hidden>
                     <div className="absolute left-0 top-0 h-56 w-56 rounded-full bg-sky-400/15 blur-3xl" />
                     <div className="absolute right-0 top-14 h-64 w-64 rounded-full bg-indigo-400/15 blur-3xl" />
@@ -51,7 +51,7 @@ export default function FooterCom() {
                         <section className="space-y-6">
                             <Link
                                 to="/"
-                                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-700 shadow-sm transition hover:border-sky-300 hover:text-sky-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-sky-400/50 dark:hover:text-sky-300"
+                                className="liquid-hybrid-tile inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-700 shadow-sm transition hover:border-sky-300 hover:text-sky-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-sky-400/50 dark:hover:text-sky-300"
                             >
                                 <span className="inline-flex h-2 w-2 rounded-full bg-sky-500" aria-hidden />
                                 ScientistShield
@@ -81,11 +81,11 @@ export default function FooterCom() {
                                             }
                                         }}
                                         placeholder="name@company.com"
-                                        className="h-11 flex-1 rounded-2xl border border-slate-200 bg-white/90 px-4 text-sm text-slate-700 transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:ring-sky-900/40"
+                                        className="liquid-hybrid-input h-11 flex-1 rounded-2xl border border-slate-200 bg-white/90 px-4 text-sm text-slate-700 transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:ring-sky-900/40"
                                     />
                                     <button
                                         type="submit"
-                                        className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-500 px-5 text-sm font-semibold text-white shadow-[0_18px_48px_-28px_rgba(14,116,244,0.7)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200 dark:focus-visible:ring-sky-900/50"
+                                        className="btn-aqua inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200 dark:focus-visible:ring-sky-900/50"
                                     >
                                         <HiOutlinePaperAirplane className="h-4 w-4" aria-hidden />
                                         Subscribe
@@ -148,7 +148,7 @@ export default function FooterCom() {
                                     aria-label={`Visit ${social.name}`}
                                     whileHover={{ y: -2, scale: 1.08 }}
                                     whileTap={{ scale: 0.94 }}
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-500 transition hover:border-sky-300 hover:text-sky-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-sky-400/50 dark:hover:text-sky-300"
+                                    className="liquid-hybrid-tile inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-500 transition hover:border-sky-300 hover:text-sky-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-sky-400/50 dark:hover:text-sky-300"
                                 >
                                     <social.icon className="h-4 w-4" />
                                 </motion.a>
@@ -167,7 +167,7 @@ export default function FooterCom() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 12, scale: 0.9 }}
                         transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="fixed bottom-6 right-6 z-50 inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-white shadow-xl transition hover:bg-sky-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300/50 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-sky-300"
+                        className="btn-aqua fixed bottom-6 right-6 z-50 inline-flex h-12 w-12 items-center justify-center rounded-full text-white shadow-xl transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300/50 dark:text-white"
                         aria-label="Back to top"
                     >
                         <HiOutlineArrowUp className="h-5 w-5" />

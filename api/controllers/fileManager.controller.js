@@ -40,7 +40,7 @@ export const updateNode = asyncHandler(async (req, res) => {
     const data = await updateNodeService({
         id: req.params.id,
         name: req.body?.name,
-        newParentId: req.body?.newParentId ?? null,
+        newParentId: req.body?.newParentId,
     });
     return res.json(data);
 });

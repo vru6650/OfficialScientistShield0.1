@@ -275,7 +275,7 @@ export const handleFileUpload = async ({ parentId = null, uploadParent = null, f
     return { file: formatNode(fileNode) };
 };
 
-export const updateNode = async ({ id, name, newParentId = null }) => {
+export const updateNode = async ({ id, name, newParentId }) => {
     if (!isValidObjectId(id)) {
         throw errorHandler(400, 'Invalid item id');
     }

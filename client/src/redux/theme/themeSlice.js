@@ -2,13 +2,41 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const THEME_MODES = ['light', 'dark', 'auto'];
 
+const getStorage = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+        return window.localStorage;
+    } catch {
+        return null;
+    }
+};
+
+const readStorage = (key) => {
+    const storage = getStorage();
+    if (!storage) return null;
+    try {
+        return storage.getItem(key);
+    } catch {
+        return null;
+    }
+};
+
+const writeStorage = (key, value) => {
+    const storage = getStorage();
+    if (!storage) return;
+    try {
+        storage.setItem(key, value);
+    } catch {
+        // Ignore blocked storage/quota errors so theme state still works in memory.
+    }
+};
+
 const resolveSystemTheme = () => {
     if (typeof window === 'undefined' || !window.matchMedia) return 'light';
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
-const storageAvailable = () =>
-    typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+const storageAvailable = () => getStorage() !== null;
 
 const resolveThemeFromMode = (mode) => {
     if (mode === 'light' || mode === 'dark') return mode;
@@ -22,11 +50,11 @@ const getInitialThemeState = () => {
         return { mode, theme };
     }
 
-    const storedMode = localStorage.getItem('themeMode');
+    const storedMode = readStorage('themeMode');
     const mode = THEME_MODES.includes(storedMode) ? storedMode : 'auto';
     const theme = resolveThemeFromMode(mode);
-    localStorage.setItem('themeMode', mode);
-    localStorage.setItem('theme', theme);
+    writeStorage('themeMode', mode);
+    writeStorage('theme', theme);
     return { mode, theme };
 };
 
@@ -43,8 +71,8 @@ const themeSlice = createSlice({
             state.mode = nextMode;
             state.theme = resolveThemeFromMode(nextMode);
             if (storageAvailable()) {
-                localStorage.setItem('themeMode', nextMode);
-                localStorage.setItem('theme', state.theme);
+                writeStorage('themeMode', nextMode);
+                writeStorage('theme', state.theme);
             }
         },
         setThemeMode: (state, action) => {
@@ -56,8 +84,8 @@ const themeSlice = createSlice({
             state.mode = nextMode;
             state.theme = resolveThemeFromMode(nextMode);
             if (storageAvailable()) {
-                localStorage.setItem('themeMode', nextMode);
-                localStorage.setItem('theme', state.theme);
+                writeStorage('themeMode', nextMode);
+                writeStorage('theme', state.theme);
             }
         },
         applySystemTheme: (state, action) => {
@@ -65,7 +93,7 @@ const themeSlice = createSlice({
             const nextTheme = action.payload === 'dark' ? 'dark' : 'light';
             state.theme = nextTheme;
             if (storageAvailable()) {
-                localStorage.setItem('theme', nextTheme);
+                writeStorage('theme', nextTheme);
             }
         },
     },

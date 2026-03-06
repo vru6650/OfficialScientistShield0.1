@@ -40,10 +40,18 @@ export default function Hero() {
     };
 
     return (
-        <section className="macos-hero-shell relative overflow-hidden py-space-4xl px-4 sm:px-8 lg:px-12 min-h-[520px] flex items-center justify-center">
+        <section className="macos-hero-shell liquid-app-shell relative overflow-hidden py-space-4xl px-4 sm:px-8 lg:px-12 min-h-[520px] flex items-center justify-center">
             <ParticlesBackground />
+            <div
+                aria-hidden
+                className="pointer-events-none absolute -top-24 left-[-10%] h-[360px] w-[380px] rounded-full bg-sky-400/25 blur-[86px] dark:bg-sky-500/28"
+            />
+            <div
+                aria-hidden
+                className="pointer-events-none absolute -top-16 right-[-8%] h-[320px] w-[340px] rounded-full bg-cyan-300/22 blur-[88px] dark:bg-cyan-400/22"
+            />
 
-            <div className="macos-hero-window macos-window macos-window--focused relative z-10">
+            <div className="macos-hero-window macos-hero-window--hybrid liquid-hybrid-panel macos-window macos-window--focused relative z-10">
                 <div className="macos-hero-titlebar">
                     <div className="macos-hero-lights" aria-hidden>
                         <span className="macos-hero-light macos-hero-light--red" />
@@ -91,7 +99,7 @@ export default function Hero() {
                         Liquid glass wallpaper with live caustics, translucent chrome, and tactile controls mirror the latest macOS aesthetic so the workspace stays calm while you explore tutorials, posts, and tools.
                     </p>
 
-                    <form onSubmit={handleSearch} className="macos-command">
+                    <form onSubmit={handleSearch} className="macos-command liquid-hybrid-tile mx-auto max-w-3xl">
                         <HiMagnifyingGlass className="macos-command__icon" aria-hidden />
                         <input
                             type="text"
@@ -106,7 +114,7 @@ export default function Hero() {
                     </form>
 
                     <div className="flex justify-center">
-                        <div className="desktop-status">
+                        <div className="desktop-status liquid-hybrid-panel">
                             <div className="desktop-status__chip">
                                 <span className="desktop-status__dot" aria-hidden />
                                 Liquid glass

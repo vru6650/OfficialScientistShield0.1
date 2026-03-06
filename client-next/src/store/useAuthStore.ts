@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import type { StateStorage } from 'zustand/middleware';
 
 type User = {
     id: string;
@@ -16,8 +17,14 @@ type AuthState = {
     signOut: () => void;
 };
 
+const createNoopStorage = (): StateStorage => ({
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+});
+
 const storage = createJSONStorage(() =>
-    typeof window !== 'undefined' ? window.localStorage : undefined
+    typeof window !== 'undefined' ? window.localStorage : createNoopStorage()
 );
 
 export const useAuthStore = create<AuthState>()(

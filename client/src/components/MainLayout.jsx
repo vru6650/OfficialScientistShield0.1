@@ -57,7 +57,7 @@ export default function MainLayout() {
                 id="main-content"
                 role="main"
                 tabIndex={-1}
-                className="liquid-stage relative min-h-screen overflow-hidden pt-8 pb-24 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300/70"
+                className="liquid-stage liquid-app-shell relative min-h-screen overflow-hidden pt-8 pb-24 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300/70"
                 style={{ filter: `brightness(${effects.brightness || 1}) contrast(${effects.contrast || 1})` }}
             >
                 <div aria-hidden className="liquid-stage__backdrop">

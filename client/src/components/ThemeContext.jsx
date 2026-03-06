@@ -1,27 +1,51 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { createContext, useState, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
-export const ThemeProvider = ({ children }) => {
-    // Check localStorage first, then system preference, default to 'light'
-    const [theme, setTheme] = useState(() => {
-        const storedTheme = localStorage.getItem('theme');
-        if (storedTheme) {
+const resolveInitialTheme = () => {
+    if (typeof window === 'undefined') {
+        return 'light';
+    }
+
+    try {
+        const storedTheme = window.localStorage?.getItem('theme');
+        if (storedTheme === 'light' || storedTheme === 'dark') {
             return storedTheme;
         }
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    });
+    } catch {
+        // Ignore blocked storage errors and fall back to system preference.
+    }
 
-    // Effect to apply the theme class to the body and update localStorage
+    if (typeof window.matchMedia === 'function') {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    return 'light';
+};
+
+const persistTheme = (theme) => {
+    if (typeof window === 'undefined') return;
+    try {
+        window.localStorage?.setItem('theme', theme);
+    } catch {
+        // Ignore blocked storage errors.
+    }
+};
+
+export const ThemeProvider = ({ children }) => {
+    const [theme, setTheme] = useState(resolveInitialTheme);
+
     useEffect(() => {
-        const body = window.document.body;
-        body.classList.remove('light', 'dark');
-        body.classList.add(theme);
-        localStorage.setItem('theme', theme);
+        if (typeof document === 'undefined') return;
+        const root = document.documentElement;
+        root.classList.remove('light', 'dark');
+        root.classList.add(theme);
+        persistTheme(theme);
     }, [theme]);
 
     const toggleTheme = () => {
-        setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
+        setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
     };
 
     return (
@@ -31,5 +55,8 @@ export const ThemeProvider = ({ children }) => {
     );
 };
 
-// Custom hook to use the theme context
+ThemeProvider.propTypes = {
+    children: PropTypes.node.isRequired,
+};
+
 export const useTheme = () => useContext(ThemeContext);

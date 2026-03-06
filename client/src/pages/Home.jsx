@@ -24,22 +24,22 @@ const PostCard = lazy(() => import('../components/PostCard'));
 // Simple skeletons (no extra deps)
 function CategoryCardSkeleton() {
     return (
-        <div className="rounded-2xl p-6 bg-white/60 dark:bg-gray-800/60 shadow-sm border border-gray-100 dark:border-gray-700 animate-pulse">
-            <div className="h-8 w-1/2 bg-gray-200 dark:bg-gray-700 rounded mb-3" />
-            <div className="h-4 w-2/3 bg-gray-200 dark:bg-gray-700 rounded mb-1.5" />
-            <div className="h-4 w-1/3 bg-gray-200 dark:bg-gray-700 rounded" />
+        <div className="liquid-hybrid-tile rounded-2xl p-6 animate-pulse">
+            <div className="h-8 w-1/2 rounded bg-slate-200/85 dark:bg-slate-700/80 mb-3" />
+            <div className="h-4 w-2/3 rounded bg-slate-200/85 dark:bg-slate-700/80 mb-1.5" />
+            <div className="h-4 w-1/3 rounded bg-slate-200/85 dark:bg-slate-700/80" />
         </div>
     );
 }
 
 function PostCardSkeleton() {
     return (
-        <div className="rounded-2xl overflow-hidden bg-white/60 dark:bg-gray-800/60 shadow-sm border border-gray-100 dark:border-gray-700 animate-pulse">
-            <div className="h-40 bg-gray-200 dark:bg-gray-700" />
+        <div className="liquid-hybrid-tile rounded-2xl overflow-hidden animate-pulse">
+            <div className="h-40 bg-slate-200/85 dark:bg-slate-700/80" />
             <div className="p-4">
-                <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-3" />
-                <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded mb-2" />
-                <div className="h-4 w-5/6 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="h-6 w-3/4 rounded bg-slate-200/85 dark:bg-slate-700/80 mb-3" />
+                <div className="h-4 w-full rounded bg-slate-200/85 dark:bg-slate-700/80 mb-2" />
+                <div className="h-4 w-5/6 rounded bg-slate-200/85 dark:bg-slate-700/80" />
             </div>
         </div>
     );
@@ -47,9 +47,9 @@ function PostCardSkeleton() {
 
 function EditorSkeleton() {
     return (
-        <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 shadow-sm p-4 animate-pulse">
-            <div className="h-8 w-1/3 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
-            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded" />
+        <div className="liquid-hybrid-tile rounded-2xl p-4 animate-pulse">
+            <div className="h-8 w-1/3 rounded bg-slate-200/85 dark:bg-slate-700/80 mb-4" />
+            <div className="h-64 rounded bg-slate-200/85 dark:bg-slate-700/80" />
         </div>
     );
 }
@@ -239,13 +239,15 @@ export default function Home() {
     };
 
     return (
-        <main className="relative min-h-screen">
+        <main className="liquid-app-shell relative min-h-screen">
             <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 -top-32 -z-10 blur-3xl opacity-40 dark:opacity-25"
             >
-                <div className="mx-auto h-64 w-3/4 rounded-full bg-gradient-to-tr from-sky-400 via-indigo-400 to-fuchsia-500" />
+                <div className="mx-auto h-64 w-3/4 rounded-full bg-gradient-to-tr from-sky-400 via-cyan-400 to-teal-400" />
             </div>
+            <div aria-hidden className="pointer-events-none absolute -left-20 top-28 -z-10 h-80 w-80 rounded-full bg-cyan-300/25 blur-[90px] dark:bg-cyan-500/25" />
+            <div aria-hidden className="pointer-events-none absolute -right-16 top-[34rem] -z-10 h-72 w-72 rounded-full bg-sky-300/18 blur-[92px] dark:bg-indigo-500/22" />
 
             {/* Error banner (non-blocking) */}
             {error && (
@@ -253,7 +255,7 @@ export default function Home() {
                     <Alert color="failure" onDismiss={() => setError(null)}>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <span>{error}</span>
-                            <Button size="sm" gradientDuoTone="purpleToBlue" onClick={retry}>
+                            <Button size="sm" className="btn-aqua" onClick={retry}>
                                 Retry
                             </Button>
                         </div>
@@ -269,7 +271,7 @@ export default function Home() {
             <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-20">
                 {/* Stats */}
                 <section className="relative" aria-labelledby="community-impact">
-                    <div className="macos-panel macos-panel--wide">
+                    <div className="macos-panel macos-panel--wide liquid-hybrid-panel">
                         <div className="macos-panel__grid p-6 sm:p-8 lg:p-10 space-y-8">
                             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
                                 <div>
@@ -292,7 +294,7 @@ export default function Home() {
                                 {stats.map(({ icon: Icon, label, value, description }) => (
                                     <div
                                         key={label}
-                                        className="macos-tile group p-6"
+                                        className="macos-tile liquid-hybrid-tile group p-6"
                                     >
                                         <div className="flex items-center gap-4">
                                             <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white text-2xl shadow-md">
@@ -334,7 +336,7 @@ export default function Home() {
                         {highlights.map(({ icon: Icon, title, description }) => (
                             <article
                                 key={title}
-                                className="macos-tile group relative overflow-hidden p-8"
+                                className="macos-tile liquid-hybrid-tile group relative overflow-hidden p-8"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-sky-200/0 via-sky-200/0 to-sky-200/20 dark:from-sky-500/0 dark:via-sky-500/0 dark:to-sky-500/15 transition-opacity duration-300 group-hover:opacity-100" />
                                 <div className="relative flex items-start gap-5">
@@ -354,7 +356,10 @@ export default function Home() {
                 </section>
 
                 {/* Categories */}
-                <section aria-labelledby="learn-tech">
+                <section
+                    aria-labelledby="learn-tech"
+                    className="liquid-hybrid-panel liquid-hybrid-band relative overflow-hidden rounded-3xl p-8 sm:p-10"
+                >
                     <h2
                         id="learn-tech"
                         className="text-3xl sm:text-4xl font-bold text-center mb-12 text-gray-800 dark:text-gray-200"
@@ -396,7 +401,7 @@ export default function Home() {
 
                     <div className="flex justify-center mt-10">
                         <Link to="/tutorials">
-                            <Button pill gradientDuoTone="purpleToBlue">
+                            <Button pill className="btn-aqua">
                                 Explore All Categories
                             </Button>
                         </Link>
@@ -404,8 +409,7 @@ export default function Home() {
                 </section>
 
                 {/* Problem Solving Feature */}
-                <section className="relative overflow-hidden rounded-3xl border border-slate-200/70 bg-white/80 p-10 shadow-xl dark:border-slate-700/70 dark:bg-slate-900/70" aria-labelledby="problem-solving">
-                    <div className="absolute inset-0 -z-10 bg-gradient-to-br from-cyan-100 via-indigo-100 to-purple-200 opacity-70 dark:from-cyan-900/30 dark:via-indigo-900/20 dark:to-purple-900/30" />
+                <section className="liquid-hybrid-panel liquid-hybrid-band relative overflow-hidden p-10" aria-labelledby="problem-solving">
                     <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
                         <div className="space-y-4">
                             <p className="inline-flex items-center gap-2 rounded-full bg-cyan-100 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200">
@@ -437,24 +441,24 @@ export default function Home() {
                             </ul>
                             <div className="flex flex-wrap gap-4 pt-4">
                                 <Link to="/problems">
-                                    <Button gradientDuoTone="cyanToBlue" size="lg" className="shadow-lg">
+                                    <Button size="lg" className="btn-aqua">
                                         Start solving problems
                                     </Button>
                                 </Link>
                                 {currentUser?.isAdmin && (
                                     <Link to="/create-problem">
-                                        <Button color="light" size="lg" className="border border-cyan-500 text-cyan-600 hover:bg-cyan-50 dark:border-cyan-300 dark:text-cyan-200 dark:hover:bg-cyan-900/30">
+                                        <Button size="lg" className="btn-glass-secondary">
                                             Contribute a challenge
                                         </Button>
                                     </Link>
                                 )}
                             </div>
                         </div>
-                        <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/90 p-6 shadow-inner dark:border-white/10 dark:bg-slate-900/80">
+                        <div className="liquid-hybrid-tile relative overflow-hidden rounded-3xl p-6">
                             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-indigo-500/10" />
                             <div className="relative space-y-4">
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Daily challenge preview</h3>
-                                <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 dark:border-slate-700 dark:bg-slate-900/80">
+                                <div className="liquid-hybrid-tile rounded-2xl p-4">
                                     <p className="text-sm font-semibold text-cyan-600 dark:text-cyan-300">Dynamic Programming · Medium</p>
                                     <p className="mt-2 font-bold text-gray-900 dark:text-white">Optimize workshop scheduling</p>
                                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
@@ -474,7 +478,10 @@ export default function Home() {
                 </section>
 
                 {/* Code Playground */}
-                <section aria-labelledby="playground">
+                <section
+                    aria-labelledby="playground"
+                    className="liquid-hybrid-panel liquid-hybrid-band relative overflow-hidden rounded-3xl p-8 sm:p-10"
+                >
                     <h2
                         id="playground"
                         className="text-3xl sm:text-4xl font-bold text-center mb-12 text-gray-800 dark:text-gray-200"
@@ -489,7 +496,7 @@ export default function Home() {
                 {/* Learning Path */}
                 <section aria-labelledby="learning-journey" className="relative">
                     <div className="absolute inset-0 -z-10 bg-gradient-to-r from-indigo-100/60 via-transparent to-sky-100/60 dark:from-indigo-900/40 dark:via-transparent dark:to-sky-900/40 rounded-3xl" />
-                    <div className="rounded-3xl border border-slate-200/70 dark:border-slate-700/70 bg-white/70 dark:bg-slate-900/60 shadow-xl p-8 sm:p-10 space-y-10">
+                    <div className="liquid-hybrid-panel rounded-3xl p-8 sm:p-10 space-y-10">
                         <div className="text-center space-y-4">
                             <p className="text-sm uppercase tracking-[0.4em] text-indigo-500 dark:text-indigo-400 font-semibold">
                                 Your Journey
@@ -509,7 +516,7 @@ export default function Home() {
                             {learningPath.map(({ step, title, description, icon: Icon }) => (
                                 <li
                                     key={step}
-                                    className="relative rounded-3xl border border-transparent bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-900/80 dark:to-slate-900 p-6 shadow-lg"
+                                    className="liquid-hybrid-tile relative rounded-3xl border border-transparent p-6 shadow-lg"
                                 >
                                     <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-widest">
                                         <Icon aria-hidden className="text-base" />
@@ -526,7 +533,10 @@ export default function Home() {
                 </section>
 
                 {/* Recent Posts */}
-                <section aria-labelledby="recent-articles">
+                <section
+                    aria-labelledby="recent-articles"
+                    className="liquid-hybrid-panel liquid-hybrid-band relative overflow-hidden rounded-3xl p-8 sm:p-10"
+                >
                     <h2
                         id="recent-articles"
                         className="text-3xl sm:text-4xl font-bold text-center mb-12 text-gray-800 dark:text-gray-200"
@@ -570,7 +580,7 @@ export default function Home() {
 
                     <div className="flex justify-center mt-10">
                         <Link to="/search">
-                            <Button pill outline gradientDuoTone="purpleToBlue">
+                            <Button pill className="btn-glass-secondary">
                                 View All Articles
                             </Button>
                         </Link>
@@ -580,7 +590,7 @@ export default function Home() {
                 {/* CTA */}
                 <section
                     aria-labelledby="join-community"
-                    className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-transparent dark:bg-transparent"
+                    className="liquid-hybrid-panel liquid-hybrid-band relative overflow-hidden rounded-3xl"
                 >
                     <div className="absolute inset-0 -z-10 hidden dark:block bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-600" />
                     <div className="relative px-6 py-12 sm:px-12 sm:py-16 flex flex-col lg:flex-row items-center lg:items-end lg:justify-between gap-8 text-slate-900 dark:text-white">
@@ -609,8 +619,7 @@ export default function Home() {
                                 <Button
                                     pill
                                     size="lg"
-                                    color="light"
-                                    className="border border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white dark:border-white dark:text-white dark:hover:bg-white/10"
+                                    className="btn-glass-secondary"
                                 >
                                     Learn more
                                 </Button>

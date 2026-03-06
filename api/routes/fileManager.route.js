@@ -102,6 +102,15 @@ const uploadBodySchema = z.object({
     parentId: optionalObjectId,
 }).partial();
 
+const validateUploadBody = (req, res, next) => {
+    validateRequest({ body: uploadBodySchema })(req, res, async (error) => {
+        if (error && req.file?.path) {
+            await fs.unlink(req.file.path).catch(() => {});
+        }
+        return next(error);
+    });
+};
+
 const nodeParamsSchema = z.object({
     id: objectIdSchema,
 });
@@ -117,7 +126,7 @@ router.post('/folder', validateRequest({ body: folderBodySchema }), createFolder
 router.post(
     '/upload',
     upload.single('file'),
-    validateRequest({ body: uploadBodySchema }),
+    validateUploadBody,
     resolveUploadParent,
     handleFileUpload
 );

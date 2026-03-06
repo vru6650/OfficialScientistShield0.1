@@ -186,6 +186,13 @@ const WALLPAPER_OPTIONS = Object.freeze([
     { key: 'liquid', label: 'Liquid Glass', helper: 'Cyan, mint, and amber caustics' },
 ]);
 
+const MISSION_CONTROL_FILTERS = Object.freeze([
+    { key: 'all', label: 'All Windows' },
+    { key: 'visible', label: 'Visible' },
+    { key: 'minimized', label: 'Minimized' },
+    { key: 'closed', label: 'Closed Tools' },
+]);
+
 const WindowRouteFallback = () => (
     <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-500 dark:text-slate-400">
         Loading view...
@@ -675,6 +682,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         typeof window === 'undefined' ? true : window.innerWidth < 1024
     );
     const [missionControlOpen, setMissionControlOpen] = useState(false);
+    const [missionControlFilter, setMissionControlFilter] = useState('all');
     const [reduceMotion, setReduceMotion] = useState(() => readReduceMotionPreference());
     const [effects, setEffects] = useState(() => {
         if (typeof window === 'undefined') return sanitizeEffects(DEFAULT_EFFECTS);
@@ -3200,8 +3208,9 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
 
     const openMissionControl = useCallback(() => {
         if (SINGLE_WINDOW_MODE) return;
+        setMissionControlFilter('all');
         setMissionControlOpen(true);
-    }, [setMissionControlOpen]);
+    }, []);
 
     const handleZoom = useCallback(
         (id, options = {}) => {
@@ -3301,7 +3310,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
 
             switch (action) {
                 case 'mission-control':
-                    setMissionControlOpen(true);
+                    openMissionControl();
                     announcement = HOT_CORNER_ACTION_LABELS[action];
                     performed = true;
                     break;
@@ -3337,7 +3346,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 }
             }
         },
-        [announce, hotCorners, toggleFocusMode]
+        [announce, hotCorners, openMissionControl, toggleFocusMode]
     );
 
     const handleHotCornerToggle = useCallback(() => {
@@ -3481,7 +3490,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
 
             if (metaOrCtrl && event.key === 'ArrowUp') {
                 event.preventDefault();
-                setMissionControlOpen(true);
+                openMissionControl();
                 return;
             }
 
@@ -3621,6 +3630,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         closeWindowSwitcher,
         duplicateActiveAppWindow,
         applyLayoutPresetToTopWindow,
+        openMissionControl,
         resolveTopWindow,
     ]);
 
@@ -4017,6 +4027,35 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         [windowsForUI]
     );
 
+    const reopenableWindowTypes = useMemo(
+        () => closedTypes.filter((type) => !windowsForUI.some((win) => win.type === type)),
+        [closedTypes, windowsForUI]
+    );
+
+    const missionControlFilteredWindows = useMemo(() => {
+        switch (missionControlFilter) {
+            case 'visible':
+                return windowsForUI.filter((win) => !win.minimized);
+            case 'minimized':
+                return minimisedWindows;
+            case 'closed':
+                return [];
+            case 'all':
+            default:
+                return windowsForUI;
+        }
+    }, [missionControlFilter, windowsForUI, minimisedWindows]);
+
+    const missionControlFilterCounts = useMemo(
+        () => ({
+            all: windowsForUI.length,
+            visible: windowsForUI.length - minimisedWindows.length,
+            minimized: minimisedWindows.length,
+            closed: reopenableWindowTypes.length,
+        }),
+        [windowsForUI.length, minimisedWindows.length, reopenableWindowTypes.length]
+    );
+
     const minimisedWindowSummary = useMemo(() => {
         if (minimisedWindows.length === 0) {
             return '';
@@ -4040,6 +4079,16 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             null
         );
     }, [windowsForUI]);
+
+    const missionControlSummaryCards = useMemo(
+        () => [
+            { key: 'open', label: 'Open Now', value: missionControlFilterCounts.all, Icon: HiOutlineSquares2X2 },
+            { key: 'visible', label: 'Visible Stage', value: missionControlFilterCounts.visible, Icon: HiOutlineViewColumns },
+            { key: 'minimized', label: 'Minimized', value: missionControlFilterCounts.minimized, Icon: HiOutlineRectangleStack },
+            { key: 'closed', label: 'Closed Tools', value: missionControlFilterCounts.closed, Icon: HiOutlineSparkles },
+        ],
+        [missionControlFilterCounts]
+    );
 
     const activeStageAccent = useMemo(() => {
         if (focusedWindow?.isAppWindow) {
@@ -4488,7 +4537,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 {missionControlOpen ? (
                     <motion.div
                         key="mission-control"
-                        className="fixed inset-0 z-[65] bg-slate-900/35 backdrop-blur-2xl dark:bg-slate-950/55"
+                        className="fixed inset-0 z-[65] overflow-y-auto bg-slate-900/45 backdrop-blur-2xl dark:bg-slate-950/70"
                         initial={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -4497,115 +4546,240 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                         aria-modal="true"
                         aria-label="Mission Control"
                     >
-                        <div className="mx-auto flex h-full max-w-6xl flex-col gap-6 px-6 py-12">
-                            <div className="flex flex-wrap items-center justify-between gap-4">
-                                <div>
-                                    <p className="text-xs uppercase tracking-[0.32em] text-slate-300/80 dark:text-slate-200/80">Mission Control</p>
-                                    <h2 className="text-2xl font-semibold text-white">Window overview</h2>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xs text-slate-200/80">Press Esc to exit</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setMissionControlOpen(false)}
-                                        className="rounded-full border border-white/40 bg-white/30 px-4 py-2 text-sm font-medium text-white backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="grid flex-1 content-start gap-6 overflow-y-auto pb-4 md:grid-cols-2 xl:grid-cols-3">
-                                {windowsForUI.map((win) => (
-                                    <motion.button
-                                        key={`mission-${win.id}`}
-                                        type="button"
-                                        onClick={() => handleMissionControlSelect(win)}
-                                        className={`relative flex h-48 flex-col rounded-3xl border border-white/35 bg-white/15 p-4 text-left text-white shadow-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300/60 dark:border-white/10 dark:bg-slate-900/40 ${win.minimized ? 'opacity-75' : 'opacity-100'}`}
-                                        whileHover={{ translateY: -4, scale: 1.01 }}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 text-lg">
-                                                    {win.iconComponent ? (
-                                                        <win.iconComponent className="h-5 w-5" />
-                                                    ) : (
-                                                        renderWindowIcon(win.type, 'h-5 w-5') || (
-                                                            <HiOutlineSparkles className="h-5 w-5" />
-                                                        )
-                                                    )}
-                                                </span>
-                                                <div>
-                                                    <p className="text-xs uppercase tracking-[0.32em] text-white/80">
-                                                        {win.isMain ? 'Primary' : 'Utility'}
-                                                    </p>
-                                                    <p className="text-sm font-semibold text-white leading-tight">
-                                                        {win.title}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <span className="rounded-full border border-white/30 px-2 py-1 text-[0.65rem] uppercase tracking-[0.28em] text-white/70">
-                                                {win.minimized ? 'Minimized' : 'Active'}
+                        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                            <div className="absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
+                            <div className="absolute right-0 top-1/3 h-80 w-80 rounded-full bg-blue-400/20 blur-3xl" />
+                            <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-brand-400/20 blur-3xl" />
+                        </div>
+                        <div className="relative mx-auto flex min-h-full w-full max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+                            <section className="rounded-3xl border border-white/20 bg-white/12 p-5 shadow-[0_26px_90px_-45px_rgba(8,47,73,0.85)] backdrop-blur-xl sm:p-6">
+                                <div className="flex flex-wrap items-start justify-between gap-4">
+                                    <div>
+                                        <p className="text-xs uppercase tracking-[0.34em] text-slate-200/80">Mission Control</p>
+                                        <h2 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">Window command deck</h2>
+                                        <p className="mt-2 max-w-2xl text-sm text-slate-100/80">
+                                            Scan every workspace, recover hidden tools, and jump to the exact window you need.
+                                        </p>
+                                        <p className="mt-2 text-xs text-slate-200/75">
+                                            Top window:{' '}
+                                            <span className="font-semibold text-white">
+                                                {focusedWindow ? focusedWindow.title || typeToTitle(focusedWindow.type) : 'None'}
                                             </span>
-                                        </div>
-                                        <div className="mt-4 flex-1 rounded-2xl border border-dashed border-white/20 bg-white/5 p-3 text-xs text-white/70">
-                                            {missionControlPreview(win)}
-                                        </div>
-                                        <div className="mt-4 flex items-center justify-between text-[0.7rem] text-white/75">
-                                            <span>{Math.round(win.width)} × {Math.round(win.height)}</span>
-                                            <div className="flex items-center gap-2">
-                                                {!win.isMain ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={(event) => {
-                                                            event.stopPropagation();
-                                                            handleClose(win.id);
-                                                            setMissionControlOpen(false);
-                                                        }}
-                                                        className="rounded-full border border-white/30 px-2 py-1 text-[0.65rem] uppercase tracking-[0.28em] text-white/80 hover:border-red-300/60 hover:text-red-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-                                                    >
-                                                        Close
-                                                    </button>
-                                                ) : null}
-                                                <button
-                                                    type="button"
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        setMissionControlOpen(false);
-                                                        if (win.minimized) {
-                                                            restoreWindow(win.id);
-                                                        } else {
-                                                            handleMinimize(win.id);
-                                                        }
-                                                    }}
-                                                    className="rounded-full border border-white/30 px-2 py-1 text-[0.65rem] uppercase tracking-[0.28em] text-white/80 hover:border-brand-200/60 hover:text-brand-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-                                                >
-                                                    {win.minimized ? 'Show' : 'Hide'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </motion.button>
-                                ))}
-                                {closedTypes
-                                    .filter((type) => !windows.some((win) => win.type === type))
-                                    .map((type) => (
-                                        <motion.button
-                                            key={`mission-closed-${type}`}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="hidden rounded-full border border-white/25 bg-white/10 px-3 py-2 text-xs text-slate-100/85 sm:inline-flex">
+                                            {metaKeyLabel}+↑ to open · Esc to exit
+                                        </span>
+                                        <button
                                             type="button"
-                                            onClick={() => {
-                                                reopenWindow(type);
-                                                setMissionControlOpen(false);
-                                            }}
-                                            className="flex h-48 flex-col items-center justify-center rounded-3xl border border-dashed border-white/35 bg-white/10 text-white transition hover:border-brand-200/60 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200/60 dark:border-white/15 dark:bg-slate-900/30 dark:hover:border-brand-300/60"
-                                            whileHover={{ translateY: -3, scale: 1.02 }}
+                                            onClick={() => setMissionControlOpen(false)}
+                                            className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/70 hover:bg-white/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                                         >
-                                            <span className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-xl">
-                                                {renderWindowIcon(type)}
+                                            <HiOutlineXMark className="h-4 w-4" />
+                                            Close
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                    {missionControlSummaryCards.map((item) => (
+                                        <div
+                                            key={item.key}
+                                            className="flex items-center gap-3 rounded-2xl border border-white/20 bg-black/20 px-4 py-3"
+                                        >
+                                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-white">
+                                                <item.Icon className="h-5 w-5" />
                                             </span>
-                                            <p className="text-sm font-semibold">{typeToTitle(type)}</p>
-                                            <p className="mt-1 text-xs uppercase tracking-[0.32em] text-white/70">Reopen</p>
-                                        </motion.button>
+                                            <div>
+                                                <p className="text-[0.65rem] uppercase tracking-[0.26em] text-slate-200/80">{item.label}</p>
+                                                <p className="text-xl font-semibold text-white">{item.value}</p>
+                                            </div>
+                                        </div>
                                     ))}
-                            </div>
+                                </div>
+                                <div className="mt-5 flex flex-wrap gap-2">
+                                    {MISSION_CONTROL_FILTERS.map((filter) => {
+                                        const active = missionControlFilter === filter.key;
+                                        const count = missionControlFilterCounts[filter.key] ?? 0;
+                                        return (
+                                            <button
+                                                key={filter.key}
+                                                type="button"
+                                                onClick={() => setMissionControlFilter(filter.key)}
+                                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
+                                                    active
+                                                        ? 'border-cyan-200/75 bg-cyan-300/20 text-cyan-100'
+                                                        : 'border-white/30 bg-white/10 text-slate-100/85 hover:border-white/50 hover:bg-white/15'
+                                                }`}
+                                            >
+                                                <span>{filter.label}</span>
+                                                <span className="rounded-full border border-white/25 px-2 py-0.5 text-[0.62rem] tracking-[0.18em]">
+                                                    {count}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+
+                            {missionControlFilter !== 'closed' ? (
+                                <section className="rounded-3xl border border-white/20 bg-white/10 p-4 backdrop-blur-xl sm:p-5">
+                                    <div className="flex flex-wrap items-end justify-between gap-2">
+                                        <div>
+                                            <p className="text-xs uppercase tracking-[0.3em] text-slate-200/75">Open windows</p>
+                                            <h3 className="text-lg font-semibold text-white">Live workspace stack</h3>
+                                        </div>
+                                        <p className="text-xs uppercase tracking-[0.24em] text-slate-200/75">
+                                            {missionControlFilteredWindows.length} shown
+                                        </p>
+                                    </div>
+                                    <div className="mt-4 grid gap-4 pb-2 md:grid-cols-2 xl:grid-cols-3">
+                                        {missionControlFilteredWindows.length > 0 ? (
+                                            missionControlFilteredWindows.map((win) => {
+                                                const isFocused = focusedWindow?.id === win.id;
+                                                const statusLabel = win.minimized ? 'Minimized' : isFocused ? 'Focused' : 'Active';
+                                                const statusClass = win.minimized
+                                                    ? 'border-amber-200/55 bg-amber-300/20 text-amber-100'
+                                                    : isFocused
+                                                        ? 'border-cyan-200/65 bg-cyan-300/20 text-cyan-100'
+                                                        : 'border-emerald-200/55 bg-emerald-300/20 text-emerald-100';
+                                                return (
+                                                    <motion.div
+                                                        key={`mission-${win.id}`}
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={() => handleMissionControlSelect(win)}
+                                                        onKeyDown={(event) => {
+                                                            if (event.key === 'Enter' || event.key === ' ') {
+                                                                event.preventDefault();
+                                                                handleMissionControlSelect(win);
+                                                            }
+                                                        }}
+                                                        className={`relative flex h-56 cursor-pointer flex-col overflow-hidden rounded-3xl border p-4 text-left text-white shadow-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/80 ${
+                                                            isFocused
+                                                                ? 'border-cyan-200/60 bg-white/20'
+                                                                : 'border-white/20 bg-white/12 hover:border-white/45 hover:bg-white/16'
+                                                        } ${win.minimized ? 'opacity-75' : 'opacity-100'}`}
+                                                        whileHover={{ translateY: -4, scale: 1.01 }}
+                                                    >
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-lg">
+                                                                    {win.iconComponent ? (
+                                                                        <win.iconComponent className="h-5 w-5" />
+                                                                    ) : (
+                                                                        renderWindowIcon(win.type, 'h-5 w-5') || (
+                                                                            <HiOutlineSparkles className="h-5 w-5" />
+                                                                        )
+                                                                    )}
+                                                                </span>
+                                                                <div>
+                                                                    <p className="text-xs uppercase tracking-[0.3em] text-white/75">
+                                                                        {win.isMain ? 'Primary' : 'Utility'}
+                                                                    </p>
+                                                                    <p className="text-sm font-semibold leading-tight text-white">{win.title}</p>
+                                                                </div>
+                                                            </div>
+                                                            <span
+                                                                className={`rounded-full border px-2 py-1 text-[0.62rem] uppercase tracking-[0.22em] ${statusClass}`}
+                                                            >
+                                                                {statusLabel}
+                                                            </span>
+                                                        </div>
+                                                        <div className="relative mt-4 flex-1 overflow-hidden rounded-2xl border border-white/25 p-3">
+                                                            <div
+                                                                className="pointer-events-none absolute inset-0 opacity-70"
+                                                                style={{ backgroundImage: stagePreviewAccent(win.type, Boolean(win.isMain)) }}
+                                                            />
+                                                            <div className="relative text-xs text-white/85">{missionControlPreview(win)}</div>
+                                                        </div>
+                                                        <div className="mt-4 flex items-center justify-between gap-2 text-[0.68rem] text-white/75">
+                                                            <span>
+                                                                {Number.isFinite(win.width) ? Math.round(win.width) : '--'} ×{' '}
+                                                                {Number.isFinite(win.height) ? Math.round(win.height) : '--'}
+                                                            </span>
+                                                            <div className="flex items-center gap-2">
+                                                                {!win.isMain ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(event) => {
+                                                                            event.stopPropagation();
+                                                                            handleClose(win.id);
+                                                                            setMissionControlOpen(false);
+                                                                        }}
+                                                                        className="rounded-full border border-white/35 px-2 py-1 text-[0.62rem] uppercase tracking-[0.2em] text-white/85 transition hover:border-red-300/70 hover:text-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/65"
+                                                                    >
+                                                                        Close
+                                                                    </button>
+                                                                ) : null}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(event) => {
+                                                                        event.stopPropagation();
+                                                                        setMissionControlOpen(false);
+                                                                        if (win.minimized) {
+                                                                            restoreWindow(win.id);
+                                                                        } else {
+                                                                            handleMinimize(win.id);
+                                                                        }
+                                                                    }}
+                                                                    className="rounded-full border border-white/35 px-2 py-1 text-[0.62rem] uppercase tracking-[0.2em] text-white/85 transition hover:border-cyan-200/70 hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/65"
+                                                                >
+                                                                    {win.minimized ? 'Show' : 'Hide'}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="col-span-full rounded-2xl border border-dashed border-white/35 bg-white/8 px-4 py-6 text-center text-sm text-slate-200/80">
+                                                No windows match this segment.
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+                            ) : null}
+
+                            {missionControlFilter === 'all' || missionControlFilter === 'closed' ? (
+                                <section className="rounded-3xl border border-white/20 bg-white/10 p-4 backdrop-blur-xl sm:p-5">
+                                    <div className="flex items-end justify-between gap-2">
+                                        <div>
+                                            <p className="text-xs uppercase tracking-[0.3em] text-slate-200/75">Closed tools</p>
+                                            <h3 className="text-lg font-semibold text-white">Restore utility windows</h3>
+                                        </div>
+                                        <p className="text-xs uppercase tracking-[0.24em] text-slate-200/75">
+                                            {reopenableWindowTypes.length} available
+                                        </p>
+                                    </div>
+                                    <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                        {reopenableWindowTypes.length > 0 ? (
+                                            reopenableWindowTypes.map((type) => (
+                                                <motion.button
+                                                    key={`mission-closed-${type}`}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        reopenWindow(type);
+                                                        setMissionControlOpen(false);
+                                                    }}
+                                                    className="flex h-44 flex-col items-center justify-center rounded-3xl border border-dashed border-white/40 bg-white/12 text-white transition hover:border-cyan-200/70 hover:bg-white/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/70"
+                                                    whileHover={{ translateY: -3, scale: 1.02 }}
+                                                >
+                                                    <span className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-xl">
+                                                        {renderWindowIcon(type)}
+                                                    </span>
+                                                    <p className="text-sm font-semibold">{typeToTitle(type)}</p>
+                                                    <p className="mt-1 text-xs uppercase tracking-[0.3em] text-white/75">Reopen</p>
+                                                </motion.button>
+                                            ))
+                                        ) : (
+                                            <div className="col-span-full rounded-2xl border border-dashed border-white/35 bg-white/8 px-4 py-6 text-center text-sm text-slate-200/80">
+                                                No closed utility windows right now.
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+                            ) : null}
                         </div>
                     </motion.div>
                 ) : null}

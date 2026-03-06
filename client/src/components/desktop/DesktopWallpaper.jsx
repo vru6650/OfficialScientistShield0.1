@@ -8,15 +8,15 @@ const WALLPAPER_PRESETS = {
     liquid: {
         light: {
             wallpaper:
-                'radial-gradient(1420px 880px at 14% -12%, rgba(61, 225, 255, 0.46), transparent 54%), radial-gradient(1220px 760px at 88% -10%, rgba(255, 189, 94, 0.28), transparent 62%), radial-gradient(1100px 720px at 18% 112%, rgba(96, 225, 212, 0.26), transparent 70%), radial-gradient(980px 660px at 78% 122%, rgba(255, 255, 255, 0.32), transparent 74%), linear-gradient(180deg, rgba(236, 248, 255, 0.98), rgba(224, 240, 255, 0.93))',
-            auroraPrimary: 'radial-gradient(860px 560px at 16% 6%, rgba(34, 211, 238, 0.32), transparent 72%)',
-            auroraSecondary: 'radial-gradient(920px 580px at 88% 18%, rgba(255, 194, 120, 0.24), transparent 74%)',
-            orbTop: 'rgba(255, 255, 255, 0.6)',
-            orbBottom: 'rgba(34, 197, 235, 0.38)',
-            grid: 'rgba(45, 212, 191, 0.16)',
+                'radial-gradient(1460px 880px at 10% -14%, rgba(110, 205, 255, 0.34), transparent 56%), radial-gradient(1280px 780px at 88% -10%, rgba(255, 197, 128, 0.2), transparent 62%), radial-gradient(1120px 700px at 20% 112%, rgba(145, 228, 255, 0.2), transparent 72%), radial-gradient(980px 640px at 78% 120%, rgba(255, 255, 255, 0.3), transparent 74%), linear-gradient(180deg, rgba(246, 250, 255, 0.98), rgba(232, 242, 255, 0.94))',
+            auroraPrimary: 'radial-gradient(860px 560px at 16% 6%, rgba(66, 186, 255, 0.24), transparent 74%)',
+            auroraSecondary: 'radial-gradient(920px 580px at 88% 18%, rgba(255, 194, 120, 0.18), transparent 76%)',
+            orbTop: 'rgba(255, 255, 255, 0.66)',
+            orbBottom: 'rgba(66, 186, 255, 0.32)',
+            grid: 'rgba(120, 178, 236, 0.14)',
             horizon:
-                'radial-gradient(150% 200% at 48% 92%, rgba(34, 197, 235, 0.2), transparent 62%), radial-gradient(140% 180% at 14% 94%, rgba(255, 255, 255, 0.2), transparent 72%)',
-            noise: 0.08,
+                'radial-gradient(150% 200% at 48% 92%, rgba(110, 205, 255, 0.2), transparent 64%), radial-gradient(140% 180% at 14% 94%, rgba(255, 255, 255, 0.24), transparent 72%)',
+            noise: 0.06,
         },
         dark: {
             wallpaper:

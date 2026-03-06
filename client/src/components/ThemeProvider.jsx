@@ -27,12 +27,21 @@ const ACCENT_FALLBACK_MAP = Object.freeze({
     graphite: { color: '#111827', strong: '#0F172A' },
 });
 
+const persistTheme = (nextTheme) => {
+    if (typeof window === 'undefined') return;
+    try {
+        window.localStorage.setItem('theme', nextTheme);
+    } catch {
+        // Ignore blocked storage/quota errors.
+    }
+};
+
 const resolveUiEffects = () => {
-    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    if (typeof window === 'undefined') {
         return { surfacePreset: 'liquid', accentPreset: 'system' };
     }
     try {
-        const parsed = JSON.parse(window.localStorage.getItem(UI_EFFECTS_STORAGE_KEY) || '{}');
+        const parsed = JSON.parse(window.localStorage?.getItem(UI_EFFECTS_STORAGE_KEY) || '{}');
         return {
             surfacePreset: SURFACE_CLASS_MAP[parsed?.surfacePreset] ? parsed.surfacePreset : 'liquid',
             accentPreset: typeof parsed?.accentPreset === 'string' ? parsed.accentPreset : 'system',
@@ -71,7 +80,11 @@ export default function ThemeProvider({ children }) {
         let accentColor = fallbackAccent.color;
         let accentStrong = fallbackAccent.strong;
 
-        if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+        if (
+            typeof window !== 'undefined' &&
+            typeof document !== 'undefined' &&
+            typeof window.getComputedStyle === 'function'
+        ) {
             const styles = window.getComputedStyle(document.documentElement);
             const cssAccent = styles.getPropertyValue('--color-accent').trim();
             const cssAccentStrong = styles.getPropertyValue('--color-accent-strong').trim();
@@ -88,6 +101,7 @@ export default function ThemeProvider({ children }) {
     }, [accentPreset, surfacePreset, theme]);
 
     useEffect(() => {
+        if (typeof window === 'undefined' || typeof document === 'undefined') return;
         const root = window.document.documentElement;
         const surfaceClass = SURFACE_CLASS_MAP[surfacePreset] || SURFACE_CLASS_MAP.liquid;
         // Always apply chosen light/dark theme plus Big Sur style class
@@ -101,7 +115,7 @@ export default function ThemeProvider({ children }) {
         root.setAttribute('data-surface-preset', surfacePreset);
         root.setAttribute('data-accent-preset', accentPreset);
         root.style.setProperty('color-scheme', theme);
-        localStorage.setItem('theme', theme);
+        persistTheme(theme);
         document.body.classList.add('macos-theme-transition');
     }, [accentPreset, mode, surfacePreset, theme]);
 
@@ -109,12 +123,19 @@ export default function ThemeProvider({ children }) {
         if (mode !== 'auto') return undefined;
         if (typeof window === 'undefined' || !window.matchMedia) return undefined;
         const media = window.matchMedia('(prefers-color-scheme: dark)');
-        const sync = (event) => {
-            dispatch(applySystemTheme(event.matches ? 'dark' : 'light'));
+        const sync = () => {
+            dispatch(applySystemTheme(media.matches ? 'dark' : 'light'));
         };
-        sync(media);
-        media.addEventListener('change', sync);
-        return () => media.removeEventListener('change', sync);
+        sync();
+        if (media.addEventListener) {
+            media.addEventListener('change', sync);
+            return () => media.removeEventListener('change', sync);
+        }
+        if (media.addListener) {
+            media.addListener(sync);
+            return () => media.removeListener(sync);
+        }
+        return undefined;
     }, [dispatch, mode]);
 
     const liquidAccent =

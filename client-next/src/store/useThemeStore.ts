@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import type { StateStorage } from 'zustand/middleware';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -10,8 +11,14 @@ type ThemeState = {
     toggle: () => void;
 };
 
+const createNoopStorage = (): StateStorage => ({
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+});
+
 const storage = createJSONStorage(() =>
-    typeof window !== 'undefined' ? window.localStorage : undefined
+    typeof window !== 'undefined' ? window.localStorage : createNoopStorage()
 );
 
 const resolveSystemTheme = (): 'light' | 'dark' => {
