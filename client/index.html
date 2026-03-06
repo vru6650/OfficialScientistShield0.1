@@ -16,6 +16,28 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="mask-icon" href="/favicon.svg" color="#174878" />
     <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const read = (key) => {
+          try { return window.localStorage.getItem(key); } catch { return null; }
+        };
+        const write = (key, value) => {
+          try { window.localStorage.setItem(key, value); } catch { /* ignore quota/private mode */ }
+        };
+        const storedMode = read('themeMode');
+        const mode = ['light', 'dark', 'auto'].includes(storedMode) ? storedMode : 'auto';
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = mode === 'light' ? 'light' : mode === 'dark' ? 'dark' : (prefersDark ? 'dark' : 'light');
+        root.classList.remove('light', 'dark');
+        root.classList.add(theme);
+        root.setAttribute('data-theme', 'liquid-glass');
+        root.setAttribute('data-theme-mode', mode);
+        root.style.setProperty('color-scheme', theme);
+        write('themeMode', mode);
+        write('theme', theme);
+      })();
+    </script>
     <title>Scientist Shield</title>
   </head>
   <body>

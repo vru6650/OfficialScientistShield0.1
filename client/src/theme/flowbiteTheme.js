@@ -28,11 +28,11 @@ export const customFlowbiteTheme = {
             'group inline-flex items-center justify-center font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-radius-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed',
         color: {
             primary:
-                'btn-theme-primary text-white hover:brightness-105 active:scale-[0.985] transition-transform focus-visible:ring-[var(--theme-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900',
+                'glass-button glass-button--primary focus-visible:outline-none',
             secondary:
-                'btn-glass-secondary focus-visible:ring-[var(--theme-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900',
+                'glass-button glass-button--secondary focus-visible:outline-none',
             light:
-                'btn-glass-secondary text-ink-800 dark:text-ink-100 focus-visible:ring-[var(--theme-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900',
+                'glass-button glass-button--ghost text-ink-800 dark:text-ink-100 focus-visible:outline-none',
             danger:
                 'text-white bg-red-600 hover:bg-red-700 focus-visible:ring-red-300',
             success:
@@ -40,7 +40,7 @@ export const customFlowbiteTheme = {
             teal:
                 'text-white bg-accent-teal hover:bg-teal-500 focus-visible:ring-[var(--theme-focus-ring)]',
             aqua:
-                'btn-aqua text-white focus-visible:ring-[var(--theme-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900',
+                'glass-button glass-button--primary focus-visible:outline-none',
         },
         gradientDuoTone: {
             cyanToBlue: 'btn-aqua text-white',
@@ -86,7 +86,7 @@ export const customFlowbiteTheme = {
         },
         content: {
             base:
-                'relative w-full p-0 m-4 sm:m-6 max-w-lg sm:max-w-xl rounded-radius-lg border border-slate-200/75 shadow-[0_30px_80px_-48px_rgba(15,23,42,0.42)] backdrop-blur-2xl bg-white/82 dark:bg-ink-900/60 dark:border-white/10',
+                'glass-modal__surface relative w-full p-0 m-4 sm:m-6 max-w-lg sm:max-w-xl rounded-radius-lg border border-slate-200/75 shadow-[0_30px_80px_-48px_rgba(15,23,42,0.42)] backdrop-blur-2xl bg-white/82 dark:bg-ink-900/60 dark:border-white/10',
         },
         header: {
             base: 'flex items-start justify-between py-3 px-4 border-b border-slate-200/70 dark:border-ink-700/60',
@@ -162,7 +162,7 @@ export const customFlowbiteTheme = {
             base: 'relative w-full',
             input: {
                 base:
-                    'theme-control-input liquid-hybrid-input block w-full rounded-radius-md border border-slate-300/90 bg-white/92 text-ink-900 placeholder-ink-400 shadow-[0_1px_1px_rgba(15,23,42,0.06)] focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700 dark:placeholder-ink-500',
+                    'glass-input theme-control-input liquid-hybrid-input block w-full rounded-radius-md border border-slate-300/90 bg-white/92 text-ink-900 placeholder-ink-400 shadow-[0_1px_1px_rgba(15,23,42,0.06)] focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700 dark:placeholder-ink-500',
                 colors: {
                     gray: '',
                 },
@@ -178,7 +178,7 @@ export const customFlowbiteTheme = {
     },
     textarea: {
         base:
-            'theme-control-input liquid-hybrid-input block w-full rounded-radius-md border border-slate-300/90 bg-white/92 text-sm text-ink-900 placeholder-ink-400 shadow-[0_1px_1px_rgba(15,23,42,0.06)] focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700 dark:placeholder-ink-500',
+            'glass-input theme-control-input liquid-hybrid-input block w-full rounded-radius-md border border-slate-300/90 bg-white/92 text-sm text-ink-900 placeholder-ink-400 shadow-[0_1px_1px_rgba(15,23,42,0.06)] focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700 dark:placeholder-ink-500',
         colors: {
             gray: '',
         },
@@ -192,7 +192,7 @@ export const customFlowbiteTheme = {
             base: 'relative w-full',
             select: {
                 base:
-                    'theme-control-input liquid-hybrid-input block w-full rounded-radius-md border border-slate-300/90 bg-white/92 text-ink-900 shadow-[0_1px_1px_rgba(15,23,42,0.06)] focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700',
+                    'glass-input theme-control-input liquid-hybrid-input block w-full rounded-radius-md border border-slate-300/90 bg-white/92 text-ink-900 shadow-[0_1px_1px_rgba(15,23,42,0.06)] focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700',
                 sizes: {
                     sm: 'p-2 text-sm',
                     md: 'p-2.5 text-sm',

@@ -80,10 +80,10 @@ export default function Modal({
       onClick={onClose}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="glass-modal__backdrop absolute inset-0" />
       <div
         ref={containerRef}
-        className={`relative z-10 max-w-md w-full p-space-lg rounded-radius-lg shadow-lg bg-white dark:bg-gray-800 focus:outline-none ${className}`}
+        className={`glass-modal__surface relative z-10 max-w-md w-full p-space-lg rounded-radius-lg shadow-lg focus:outline-none ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

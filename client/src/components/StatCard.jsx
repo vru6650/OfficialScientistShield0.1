@@ -17,7 +17,7 @@ export default function StatCard({
     // 1. Add a skeleton loading state for better UX
     if (loading) {
         return (
-            <div className='flex flex-col p-3 dark:bg-slate-800 gap-4 md:w-72 w-full rounded-md shadow-md'>
+            <div className='glass-card flex flex-col p-3 gap-4 md:w-72 w-full'>
                 <div className='flex justify-between'>
                     <div>
                         <h3 className='text-gray-500 text-md uppercase'><Skeleton width={100} /></h3>
@@ -53,7 +53,7 @@ export default function StatCard({
     return (
         <motion.div
             whileHover={{ scale: 1.05, y: -5 }}
-            className='flex flex-col p-4 dark:bg-slate-800 gap-4 w-full rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 bg-white'>
+            className='glass-card flex flex-col p-4 gap-4 w-full rounded-2xl'>
             <div className='flex justify-between items-start'>
                 <div>
                     <h3 className='text-gray-500 text-md uppercase font-semibold'>{title}</h3>

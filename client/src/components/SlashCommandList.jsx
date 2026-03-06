@@ -55,4 +55,6 @@ const SlashCommandList = forwardRef((props, ref) => {
     );
 });
 
+SlashCommandList.displayName = 'SlashCommandList';
+
 export default SlashCommandList;

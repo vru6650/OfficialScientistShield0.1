@@ -16,7 +16,6 @@ export default function Skeleton({
       <div className={`space-y-2 ${className}`}>
         {Array.from({ length: lines }).map((_, i) => (
           <div
-            // eslint-disable-next-line react/no-array-index-key
             key={i}
             className={`${base} ${shimmer} h-4 w-full rounded radius-md`}
           />
@@ -34,4 +33,3 @@ export default function Skeleton({
 
   return <div className={`${base} ${shimmer} ${shape} ${className}`} style={style} />;
 }
-

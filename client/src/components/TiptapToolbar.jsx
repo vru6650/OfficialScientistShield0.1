@@ -3,20 +3,17 @@ import {
     FaBold, FaItalic, FaStrikethrough, FaListUl, FaListOl, FaQuoteLeft,
     FaCode, FaLink, FaImage, FaYoutube, FaTable, FaSubscript, FaSuperscript,
     FaHighlighter, FaTasks, FaAlignLeft, FaAlignCenter, FaAlignRight, FaAlignJustify,
-    FaUndo, FaRedo, FaEraser, FaMinus, FaLaptopCode, FaPalette
+    FaUndo, FaRedo, FaEraser, FaMinus, FaLaptopCode, FaPalette,
 } from 'react-icons/fa';
 import {
-    LuHeading1, LuHeading2, LuHeading3
+    LuHeading1, LuHeading2, LuHeading3,
 } from 'react-icons/lu';
 import { Button, Tooltip } from 'flowbite-react';
 import { motion } from 'framer-motion';
 
 const TiptapToolbar = ({ editor, onAddImage, isUploading, onAddYoutubeVideo, onAddCodeSnippet }) => {
-    if (!editor) {
-        return null;
-    }
-
     const setLink = useCallback(() => {
+        if (!editor) return;
         const previousUrl = editor.getAttributes('link').href;
         const url = window.prompt('URL', previousUrl);
         if (url === null) return;
@@ -28,10 +25,16 @@ const TiptapToolbar = ({ editor, onAddImage, isUploading, onAddYoutubeVideo, onA
     }, [editor]);
 
     const setTextColor = (color) => {
+        if (!editor) return;
         editor.chain().focus().setColor(color).run();
     };
 
-    const isTableActive = editor.isActive('table');
+    const isTableActive = editor?.isActive('table');
+
+    if (!editor) {
+        return null;
+    }
+
     const MotionButton = motion(Button);
 
     return (

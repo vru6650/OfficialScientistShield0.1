@@ -437,7 +437,6 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
         if (!isWebMode || !autoRunPreview) return;
         const t = setTimeout(() => updatePreview(), 400);
         return () => clearTimeout(t);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [codes.html, codes.css, codes.javascript, isWebMode, autoRunPreview]);
 
     // When switching to web mode, ensure webTab and default preview
@@ -447,7 +446,6 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
             // Initialize preview once on enter
             updatePreview();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isWebMode]);
 
     useEffect(() => {
@@ -724,7 +722,6 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
             // ignore bad local storage
         }
         appliedLocalRef.current = true;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hasAppliedSnippet, storageKey]);
 
     // Persist state to local storage (debounced)

@@ -45,12 +45,12 @@ const Button = React.forwardRef(
     };
 
     const variants = {
-      primary: 'btn-theme-primary text-white focus-visible:ring-[var(--theme-focus-ring)] focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900',
-      secondary: 'btn-glass-secondary focus-visible:ring-[var(--theme-focus-ring)] focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900',
-      outline: 'border border-ink-300 text-ink-700 hover:bg-ink-50 focus-visible:ring-[var(--theme-focus-ring)]',
-      ghost: 'bg-transparent text-ink-700 hover:bg-ink-100 focus-visible:ring-[var(--theme-focus-ring)]',
+      primary: 'glass-button glass-button--primary focus-visible:outline-none',
+      secondary: 'glass-button glass-button--secondary focus-visible:outline-none',
+      outline: 'glass-button glass-button--ghost focus-visible:outline-none',
+      ghost: 'glass-button glass-button--ghost bg-transparent focus-visible:outline-none',
       danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-300',
-      subtle: 'bg-ink-100 text-ink-800 hover:bg-ink-200 focus-visible:ring-[var(--theme-focus-ring)]',
+      subtle: 'glass-button glass-button--ghost bg-ink-100 text-ink-800 hover:bg-ink-200 focus-visible:outline-none',
     };
 
     const width = fullWidth ? 'w-full' : '';
@@ -78,5 +78,7 @@ const Button = React.forwardRef(
     );
   }
 );
+
+Button.displayName = 'Button';
 
 export default Button;

@@ -186,7 +186,6 @@ export default function CodeStudioScene({ className = '' }) {
                 };
             } catch (error) {
                 if (import.meta.env.DEV) {
-                    // eslint-disable-next-line no-console
                     console.error('Failed to load Three.js studio backdrop', error);
                 }
             }

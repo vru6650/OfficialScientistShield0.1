@@ -28,4 +28,6 @@ Card.defaultProps = {
     className: '',
 };
 
+Card.displayName = 'Card';
+
 export default Card;
