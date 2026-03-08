@@ -56,7 +56,7 @@ npm start       # serves API + static client bundle
 | Area | Choices |
 | ---- | ------- |
 | Frontend | React 18, Vite SPA (Redux Toolkit) • Next.js 16 App Router (SSR/RSC) with Tailwind v4 + shadcn/ui primitives, Zustand stores for auth/theme |
-| Backend | Express, Mongoose, JWT auth, cookie sessions, centralized error handling; **migration path** to NestJS + PostgreSQL (Prisma) with Redis cache |
+| Backend | Express modular monolith (domain modules + controller/service/repository), Mongoose, JWT auth, cookie sessions, optional PostgreSQL connectivity |
 | Search | Optional Elasticsearch; graceful in-app fallback if disabled |
 | Runtimes | JS/TS, Python, C/C++, Java, C# code runners with safety timeouts |
 | Tooling | Nodemon, Node test runner, UUID utilities |
@@ -83,7 +83,7 @@ npm start       # serves API + static client bundle
 The `temp/` directory is created at runtime for code execution scratch files and is safe to purge between runs. Each run cleans its own workspace in a `finally` block, and production deployments should still schedule periodic cleanup (cron/systemd timer) as defense in depth.
 
 ## Project Layout
-- `api/` – Express API (routes, controllers, models, services, middleware, utils). Tests live beside controllers as `*.test.js`.
+- `api/` – Express API with modular domains in `api/modules/` (`auth`, `user`, `content`, `quiz`, etc.) plus shared infrastructure/config/bootstrap.
 - `client/` – Vite + React app with `pages/`, `components/`, `redux/`, `hooks/`, `services/`, and theme tokens.
 - `uploads/` – Manual testing artifacts. Scrub sensitive data after use; prefer `temp/` for disposable files.
 - `temp/` – Ephemeral workspace created by code runners (git-ignored).
@@ -96,6 +96,7 @@ The API provides defaults so it can boot without a custom `.env`, but you should
 | ---- | -------- | ------- | ----------- |
 | `JWT_SECRET` | ✅ | `viren` (dev fallback) | Secret for signing JWTs. Override in any non-local environment. |
 | `MONGO_URI` | ✅ | `mongodb://0.0.0.0:27017/myappp` | MongoDB connection string. |
+| `POSTGRES_URI` | ➖ | *(empty)* | Optional PostgreSQL connection string for transactional modules. |
 | `PORT` | ➖ | `3000` | Express server port. |
 | `CORS_ORIGIN` | ➖ | `http://localhost:5173` | Allowed origin for cookies/CORS in dev. |
 | `VITE_API_URL` | ➖ | *(empty)* | Axios base URL for the client; empty uses same origin/proxy. |
@@ -114,6 +115,8 @@ The API provides defaults so it can boot without a custom `.env`, but you should
 | `CODE_RUNNER_PIDS` | ➖ | `128` | Docker PID limit for code runners. |
 | `CODE_RUNNER_TMPFS` | ➖ | `64m` | Docker `/tmp` size for code runners. |
 | `CODE_RUNNER_NETWORK` | ➖ | `none` | Docker network mode for code runners (`none` disables outbound network). |
+| `CODE_RUNNER_JOB_WAIT_TIMEOUT_MS` | ➖ | `15000` | Default wait timeout for queue-based code runner jobs. |
+| `CODE_RUNNER_JOB_RETENTION_MS` | ➖ | `300000` | How long completed code runner jobs stay in memory for polling. |
 
 Client-side `.env` (`client/.env`) only needs `VITE_API_URL` when you are not using same-origin requests.
 
@@ -154,7 +157,7 @@ Run commands from the repository root unless noted.
 ## API Surface
 - **Auth & Users**: `/api/auth` (signup/signin), `/api/user`
 - **Content**: `/api/post`, `/api/tutorial`, `/api/problems`, `/api/pages`
-- **Assessments**: `/api/quiz`
+- **Assessments**: `/api/quiz` (submissions are also written to PostgreSQL when `POSTGRES_URI` is configured)
 - **Files**: `/api/files` for uploads/file management
 - **Search**: `/api/search` with Elasticsearch acceleration when enabled; falls back to scored in-app search when disabled
 - **Code Execution** (`POST { code: string }`):
@@ -163,6 +166,8 @@ Run commands from the repository root unless noted.
   - `/api/code/run-cpp` – Docker sandbox in production; local C/C++ toolchain in dev
   - `/api/code/run-java` – Docker sandbox in production; local JDK in dev
   - `/api/code/run-csharp` – Docker sandbox in production; local .NET SDK/dotnet-script/csi/scriptcs in dev
+  - `/api/code/jobs` – queue a code execution task on a separate worker process (optional async flow)
+  - `/api/code/jobs/:jobId` – poll queued worker job status/results
 
 Runtimes are optional. When missing, endpoints respond with user-friendly guidance instead of hard failures.
 

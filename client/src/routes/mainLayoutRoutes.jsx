@@ -9,6 +9,7 @@ const SignIn = lazy(() => import('../pages/SignIn'));
 const SignUp = lazy(() => import('../pages/SignUp'));
 const Dashboard = lazy(() => import('../pages/Dashboard'));
 const Projects = lazy(() => import('../pages/Projects'));
+const PostListPage = lazy(() => import('../pages/PostListPage'));
 const CreatePost = lazy(() => import('../pages/CreatePost'));
 const UpdatePost = lazy(() => import('../pages/UpdatePost'));
 const PostPage = lazy(() => import('../pages/PostPage'));
@@ -46,6 +47,7 @@ export const mainLayoutRoutes = Object.freeze([
     { path: 'about', element: <About /> },
     { path: 'search', element: <Search /> },
     { path: 'projects', element: <Projects /> },
+    { path: 'posts', element: <PostListPage /> },
     { path: 'tools', element: <Tools /> },
     { path: 'tools/*', element: <Tools /> },
     { path: 'post/:postSlug', element: <PostPage /> },

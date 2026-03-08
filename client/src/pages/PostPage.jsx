@@ -116,9 +116,46 @@ export default function PostPage() {
     const [isViewerOpen, setIsViewerOpen] = useState(false);
     const [activeHeadingId, setActiveHeadingId] = useState('');
 
+    const sanitizeWithEmbeds = useCallback((html) => {
+        if (!html) return '';
+
+        // Allow safe video iframes (YouTube / Vimeo) while keeping other sanitation in place.
+        const clean = DOMPurify.sanitize(html, {
+            ADD_TAGS: ['iframe'],
+            ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'src', 'width', 'height', 'title', 'loading', 'referrerpolicy'],
+        });
+
+        if (typeof document === 'undefined') return clean;
+
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = clean;
+
+        const allowedEmbedHosts = /^(https?:)?\/\/(www\.)?(youtube\.com|youtube-nocookie\.com|youtu\.be|player\.vimeo\.com)\//i;
+
+        wrapper.querySelectorAll('iframe').forEach((frame) => {
+            const src = frame.getAttribute('src') || '';
+            const isSafe = allowedEmbedHosts.test(src);
+            if (!isSafe) {
+                frame.remove();
+                return;
+            }
+            frame.setAttribute('loading', 'lazy');
+            frame.setAttribute('allowfullscreen', '');
+            frame.setAttribute('referrerpolicy', frame.getAttribute('referrerpolicy') || 'strict-origin-when-cross-origin');
+            if (!frame.getAttribute('allow')) {
+                frame.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+            }
+            if (!frame.getAttribute('title')) {
+                frame.setAttribute('title', 'Embedded video');
+            }
+        });
+
+        return wrapper.innerHTML;
+    }, []);
+
     const sanitizedContent = useMemo(() => {
-        return post?.content ? DOMPurify.sanitize(post.content) : '';
-    }, [post?.content]);
+        return sanitizeWithEmbeds(post?.content);
+    }, [post?.content, sanitizeWithEmbeds]);
 
     const headings = useMemo(() => {
         if (!sanitizedContent) return [];
@@ -534,155 +571,167 @@ export default function PostPage() {
             )}
 
             <ReadingProgressBar />
-            <div className='min-h-screen bg-gradient-to-b from-slate-100 via-white to-slate-100 pb-16 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950'>
-                {/* Compact sticky header when reading */}
-                {showCompactHeader && (
-                    <div className='fixed inset-x-0 top-0 z-40 border-b border-slate-200/70 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-white/10 dark:bg-slate-900/70'>
-                        <div className='mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2 lg:px-10'>
-                            <div className='flex min-w-0 items-center gap-3'>
-                                <span className='inline-flex h-2.5 w-2.5 flex-none rounded-full bg-sky-500 ring-2 ring-sky-500/20' aria-hidden='true' />
-                                <span className='truncate text-sm font-medium text-slate-700 dark:text-slate-200'>{post.title}</span>
+            <div className='liquid-stage' data-theme='liquid-glass'>
+                <div className='liquid-stage__backdrop' aria-hidden='true'>
+                    <div className='liquid-stage__blob liquid-stage__blob--cyan' />
+                    <div className='liquid-stage__blob liquid-stage__blob--violet' />
+                    <div className='liquid-stage__blob liquid-stage__blob--amber' />
+                    <div className='liquid-stage__mesh' />
+                    <div className='liquid-stage__glint' />
+                    <div className='liquid-stage__noise' />
+                </div>
+                <div className='relative z-10 min-h-screen pb-16'>
+                    {/* Compact sticky header when reading */}
+                    {showCompactHeader && (
+                        <div className='fixed inset-x-0 top-0 z-40 px-3 pt-2'>
+                            <div className='glass-navbar glass-panel mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-2xl border border-white/20 bg-white/60 px-3 py-2 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:border-white/10 dark:bg-slate-900/70'>
+                                <div className='flex min-w-0 items-center gap-3'>
+                                    <span className='inline-flex h-2.5 w-2.5 flex-none rounded-full bg-sky-500 ring-2 ring-sky-500/20' aria-hidden='true' />
+                                    <span className='truncate text-sm font-medium text-slate-700 dark:text-slate-200'>{post.title}</span>
+                                </div>
+                                <div className='flex items-center gap-2'>
+                                    <ClapButton
+                                        postId={post._id}
+                                        initialClaps={post.claps ?? 0}
+                                        initialClappedBy={post.clappedBy ?? []}
+                                    />
+                                    <Tooltip content='Copy link'>
+                                        <button onClick={handleCopyLink} className='rounded-full border border-slate-200 bg-white p-1.5 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
+                                            <FaLink className='h-4 w-4' />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip content='Share'>
+                                        <button onClick={handleShare} className='rounded-full border border-slate-200 bg-white p-1.5 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
+                                            <FaArrowRight className='h-4 w-4 rotate-[-45deg]' />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip content='Print'>
+                                        <button onClick={() => window.print()} className='rounded-full border border-slate-200 bg-white p-1.5 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
+                                            <FaPrint className='h-4 w-4' />
+                                        </button>
+                                    </Tooltip>
+                                </div>
                             </div>
-                            <div className='flex items-center gap-2'>
-                                <ClapButton
-                                    postId={post._id}
-                                    initialClaps={post.claps ?? 0}
-                                    initialClappedBy={post.clappedBy ?? []}
-                                />
-                                <Tooltip content='Copy link'>
-                                    <button onClick={handleCopyLink} className='rounded-full border border-slate-200 bg-white p-1.5 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
-                                        <FaLink className='h-4 w-4' />
-                                    </button>
-                                </Tooltip>
-                                <Tooltip content='Share'>
-                                    <button onClick={handleShare} className='rounded-full border border-slate-200 bg-white p-1.5 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
-                                        <FaArrowRight className='h-4 w-4 rotate-[-45deg]' />
-                                    </button>
-                                </Tooltip>
-                                <Tooltip content='Print'>
-                                    <button onClick={() => window.print()} className='rounded-full border border-slate-200 bg-white p-1.5 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
-                                        <FaPrint className='h-4 w-4' />
-                                    </button>
-                                </Tooltip>
+                        </div>
+                    )}
+                    <section
+                        className='relative isolate overflow-hidden text-white'
+                        style={heroBackgroundStyle}
+                    >
+                        <div className='absolute inset-0 bg-slate-900/82 backdrop-blur-lg dark:bg-slate-950/86' />
+                        <div className='absolute inset-x-0 -bottom-44 h-[460px] bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent opacity-80 blur-3xl dark:from-slate-950 dark:via-slate-950/80' aria-hidden='true' />
+                        <div className='absolute -left-24 top-20 h-72 w-72 rounded-full bg-gradient-to-br from-sky-400/50 via-cyan-300/40 to-emerald-400/50 blur-3xl' aria-hidden='true' />
+                        <div className='absolute -right-28 bottom-10 h-80 w-80 rounded-full bg-gradient-to-br from-indigo-400/45 via-violet-400/38 to-amber-300/42 blur-3xl' aria-hidden='true' />
+                        <div className='absolute inset-x-10 top-16 h-40 rounded-full bg-white/10 blur-3xl mix-blend-screen' aria-hidden='true' />
+                        <div className='relative mx-auto flex max-w-6xl flex-col gap-8 px-4 py-20 sm:px-8 sm:py-24 lg:px-0'>
+                            {/* Breadcrumbs */}
+                            <div className='glass-panel liquid-hybrid-band lg-glass-strong mx-auto flex w-full max-w-5xl flex-col gap-6 rounded-[28px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-white/5 sm:p-10'>
+                                <nav aria-label='Breadcrumb' className='mx-auto -mb-2 flex items-center gap-2 text-xs text-slate-200/90'>
+                                    <Link to='/' className='link-premium'>Home</Link>
+                                    <span aria-hidden='true'>/</span>
+                                    <Link to={`/search?category=${categoryQuery}`} className='link-premium'>{formatCategory(post.category)}</Link>
+                                    <span aria-hidden='true'>/</span>
+                                    <span className='truncate max-w-[40ch]' title={post.title}>{post.title}</span>
+                                </nav>
+                                <div className='inline-flex flex-wrap items-center justify-center gap-3 self-center text-[11px] uppercase tracking-[0.28em] text-slate-100'>
+                                    <span className='inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1 font-semibold backdrop-blur'>
+                                        <HiOutlineSparkles className='h-4 w-4 text-amber-300' aria-hidden='true' />
+                                        Liquid Glass Feature
+                                    </span>
+                                    <Link
+                                        to={`/search?category=${categoryQuery}`}
+                                        className='inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-1 font-medium backdrop-blur transition hover:border-white/50 hover:bg-white/20'
+                                    >
+                                        {formatCategory(post.category)}
+                                    </Link>
+                                </div>
+                                <h1 className='text-balance text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl'>
+                                    {post.title}
+                                </h1>
+                                {heroDescriptionText && (
+                                    <p className='mx-auto max-w-3xl text-base text-slate-100/90 sm:text-lg'>
+                                        {heroDescriptionText}
+                                    </p>
+                                )}
+                                <div className='flex flex-wrap items-center justify-center gap-3 sm:gap-4'>
+                                    <Button
+                                        gradientDuoTone='purpleToBlue'
+                                        className='group flex items-center gap-2 rounded-full px-6 py-2 text-sm font-semibold shadow-lg shadow-sky-500/35 backdrop-blur'
+                                        onClick={handleStartReading}
+                                    >
+                                        Start reading
+                                        <FaArrowRight className='h-4 w-4 transition-transform duration-300 group-hover:translate-x-1' />
+                                    </Button>
+                                    <Button
+                                        color='light'
+                                        className='group flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-2 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/20'
+                                        onClick={handleDiscuss}
+                                    >
+                                        Join the discussion
+                                        <FaCommentDots className='h-4 w-4 text-slate-200 transition-transform duration-300 group-hover:-translate-y-0.5' />
+                                    </Button>
+                                    <Button color='light' className='rounded-full border border-white/30 bg-white/10 px-6 py-2 text-sm font-semibold text-white hover:border-white/50 hover:bg-white/20' onClick={handleShare}>
+                                        Share
+                                    </Button>
+                                </div>
+                                <div className='mx-auto flex flex-wrap items-center justify-center gap-3 text-sm text-slate-200/90 sm:gap-4'>
+                                    {formattedPublishDate && (
+                                        <span className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
+                                            <FaCalendarAlt className='h-4 w-4 text-emerald-300' aria-hidden='true' />
+                                            {formattedPublishDate}
+                                        </span>
+                                    )}
+                                    {readingStats.readingMinutes > 0 && (
+                                        <span className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
+                                            <FaClock className='h-4 w-4 text-sky-300' aria-hidden='true' />
+                                            {readingStats.readingMinutes} minute read
+                                        </span>
+                                    )}
+                                    {readingStats.wordCount > 0 && (
+                                        <span className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
+                                            <FaBookOpen className='h-4 w-4 text-indigo-300' aria-hidden='true' />
+                                            {readingStats.wordCount.toLocaleString()} words
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
-                <section
-                    className='relative isolate overflow-hidden bg-slate-900 text-white'
-                    style={heroBackgroundStyle}
-                >
-                    <div className='absolute inset-0 bg-slate-900/80 backdrop-blur-sm dark:bg-slate-950/85' />
-                    <div className='absolute inset-x-0 -bottom-40 h-[420px] bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent opacity-80 blur-3xl dark:from-slate-950 dark:via-slate-950/80' aria-hidden="true" />
-                    <div className='absolute -left-32 top-24 h-64 w-64 rounded-full bg-gradient-to-br from-sky-500/40 via-cyan-400/30 to-emerald-400/40 blur-3xl' aria-hidden="true" />
-                    <div className='absolute -right-32 bottom-24 h-72 w-72 rounded-full bg-gradient-to-br from-purple-500/30 via-indigo-500/30 to-amber-400/30 blur-3xl' aria-hidden="true" />
-                    <div className='relative mx-auto flex max-w-5xl flex-col gap-8 px-6 py-24 text-center sm:py-32 lg:px-0'>
-                        {/* Breadcrumbs */}
-                        <nav aria-label='Breadcrumb' className='mx-auto -mb-4 flex items-center gap-2 text-xs text-slate-200/80'>
-                            <Link to='/' className='link-premium'>Home</Link>
-                            <span aria-hidden="true">/</span>
-                            <Link to={`/search?category=${encodeURIComponent(categoryQuery)}`} className='link-premium'>{formatCategory(post.category)}</Link>
-                            <span aria-hidden="true">/</span>
-                            <span className='truncate max-w-[40ch]' title={post.title}>{post.title}</span>
-                        </nav>
-                        <div className='inline-flex flex-wrap items-center justify-center gap-3 self-center text-xs uppercase tracking-widest text-slate-100'>
-                            <span className='inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1 font-semibold backdrop-blur'>
-                                <HiOutlineSparkles className='h-4 w-4 text-amber-300' aria-hidden="true" />
-                                Featured Insight
-                            </span>
-                            <Link
-                                to={`/search?category=${categoryQuery}`}
-                                className='inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-1 font-medium backdrop-blur transition hover:border-white/50 hover:bg-white/20'
-                            >
-                                {formatCategory(post.category)}
-                            </Link>
-                        </div>
-                        <h1 className='text-balance text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl'>
-                            {post.title}
-                        </h1>
-                        {heroDescriptionText && (
-                            <p className='mx-auto max-w-3xl text-base text-slate-200/90 sm:text-lg'>
-                                {heroDescriptionText}
-                            </p>
-                        )}
-                        <div className='flex flex-wrap items-center justify-center gap-3'>
-                            <Button
-                                gradientDuoTone='purpleToBlue'
-                                className='group flex items-center gap-2 rounded-full px-6 py-2 text-sm font-semibold shadow-lg shadow-purple-500/30'
-                                onClick={handleStartReading}
-                            >
-                                Start reading
-                                <FaArrowRight className='h-4 w-4 transition-transform duration-300 group-hover:translate-x-1' />
-                            </Button>
-                            <Button
-                                color='light'
-                                className='group flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-2 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/20'
-                                onClick={handleDiscuss}
-                            >
-                                Join the discussion
-                                <FaCommentDots className='h-4 w-4 text-slate-200 transition-transform duration-300 group-hover:-translate-y-0.5' />
-                            </Button>
-                            <Button color='light' className='rounded-full border border-white/30 bg-white/10 px-6 py-2 text-sm font-semibold text-white hover:border-white/50 hover:bg-white/20' onClick={handleShare}>
-                                Share
-                            </Button>
-                        </div>
-                        <div className='mx-auto flex flex-wrap items-center justify-center gap-4 text-sm text-slate-200/90'>
-                            {formattedPublishDate && (
-                                <span className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
-                                            <FaCalendarAlt className='h-4 w-4 text-emerald-300' aria-hidden="true" />
-                                    {formattedPublishDate}
-                                </span>
-                            )}
-                            {readingStats.readingMinutes > 0 && (
-                                <span className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
-                                            <FaClock className='h-4 w-4 text-sky-300' aria-hidden="true" />
-                                    {readingStats.readingMinutes} minute read
-                                </span>
-                            )}
-                            {readingStats.wordCount > 0 && (
-                                <span className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
-                                            <FaBookOpen className='h-4 w-4 text-indigo-300' aria-hidden="true" />
-                                    {readingStats.wordCount.toLocaleString()} words
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                </section>
+                    </section>
 
-                <main className='mx-auto flex max-w-6xl flex-col gap-10 px-4 py-10 lg:flex-row lg:px-10'>
-                    <article id='article-start' className='relative flex-1 space-y-10'>
-                        {/* Desktop action rail */}
-                        <div className='pointer-events-none absolute -left-14 top-0 hidden h-full lg:block'>
-                            <div className='sticky top-40 flex flex-col items-center gap-2 pointer-events-auto'>
-                                <Tooltip content='Copy link'>
-                                    <button onClick={handleCopyLink} className='rounded-full border border-slate-200 bg-white p-2 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
-                                        <FaLink className='h-4 w-4' />
-                                    </button>
-                                </Tooltip>
-                                <Tooltip content='Share'>
-                                    <button onClick={handleShare} className='rounded-full border border-slate-200 bg-white p-2 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
-                                        <FaArrowRight className='h-4 w-4 rotate-[-45deg]' />
-                                    </button>
-                                </Tooltip>
-                                <Tooltip content='Print'>
-                                    <button onClick={() => window.print()} className='rounded-full border border-slate-200 bg-white p-2 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
-                                        <FaPrint className='h-4 w-4' />
-                                    </button>
-                                </Tooltip>
-                                <Tooltip content='Keyboard shortcuts'>
-                                    <button onClick={() => setShowShortcuts(true)} className='rounded-full border border-slate-200 bg-white p-2 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
-                                        <FaQuestionCircle className='h-4 w-4' />
-                                    </button>
-                                </Tooltip>
-                                <Tooltip content='Comments'>
-                                    <button onClick={handleDiscuss} className='rounded-full border border-slate-200 bg-white p-2 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
-                                        <FaCommentDots className='h-4 w-4' />
-                                    </button>
-                                </Tooltip>
+                    <main className='mx-auto flex max-w-6xl flex-col gap-10 px-4 py-10 lg:flex-row lg:px-10'>
+                        <article id='article-start' className='relative flex-1 space-y-10'>
+                            {/* Desktop action rail */}
+                            <div className='pointer-events-none absolute -left-14 top-0 hidden h-full lg:block'>
+                                <div className='pointer-events-auto sticky top-40 flex flex-col items-center gap-2'>
+                                    <Tooltip content='Copy link'>
+                                        <button onClick={handleCopyLink} className='rounded-full border border-white/40 bg-white/80 p-2 text-slate-600 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200'>
+                                            <FaLink className='h-4 w-4' />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip content='Share'>
+                                        <button onClick={handleShare} className='rounded-full border border-white/40 bg-white/80 p-2 text-slate-600 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200'>
+                                            <FaArrowRight className='h-4 w-4 rotate-[-45deg]' />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip content='Print'>
+                                        <button onClick={() => window.print()} className='rounded-full border border-white/40 bg-white/80 p-2 text-slate-600 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200'>
+                                            <FaPrint className='h-4 w-4' />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip content='Keyboard shortcuts'>
+                                        <button onClick={() => setShowShortcuts(true)} className='rounded-full border border-white/40 bg-white/80 p-2 text-slate-600 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200'>
+                                            <FaQuestionCircle className='h-4 w-4' />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip content='Comments'>
+                                        <button onClick={handleDiscuss} className='rounded-full border border-white/40 bg-white/80 p-2 text-slate-600 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200'>
+                                            <FaCommentDots className='h-4 w-4' />
+                                        </button>
+                                    </Tooltip>
+                                </div>
                             </div>
-                        </div>
                         {(heroImage || post.mediaType === 'video') && (
-                            <div className='overflow-hidden rounded-3xl border border-slate-200/60 bg-white shadow-xl shadow-slate-200/70 transition duration-500 hover:-translate-y-1 hover:shadow-2xl dark:border-white/5 dark:bg-slate-900/70 dark:shadow-slate-900/60'>
+                            <div className='liquid-hybrid-panel overflow-hidden shadow-2xl transition duration-500 hover:-translate-y-1'>
                                 {post.mediaType === 'video' ? (
                                     <VideoPlayer
                                         src={post.mediaUrl}
@@ -703,21 +752,21 @@ export default function PostPage() {
                         )}
 
                         <div
-                            className='overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-xl shadow-slate-200/70 dark:border-white/5 dark:bg-slate-900/70 dark:shadow-slate-900/60'
+                            className='glass-panel liquid-hybrid-panel overflow-hidden'
                             style={sharedContentStyle}
                         >
-                            <div className='flex items-center justify-between border-b border-slate-200/70 px-6 py-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400 sm:px-8'>
+                            <div className='flex items-center justify-between border-b border-white/20 bg-white/30 px-6 py-3 text-xs text-slate-600 backdrop-blur dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-300 sm:px-8'>
                                 <span>Reading mode</span>
                                 <div className='inline-flex items-center gap-2'>
                                     <button
                                         type='button'
                                         onClick={() => setPagedMode(false)}
-                                        className={`rounded-md px-2 py-1 ${!pagedMode ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100' : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/70'}`}
+                                        className={`rounded-md px-2 py-1 ${!pagedMode ? 'bg-white/70 text-slate-800 shadow-sm backdrop-blur dark:bg-slate-800/70 dark:text-slate-100' : 'hover:bg-white/60 dark:hover:bg-slate-800/60'}`}
                                     >Scroll</button>
                                     <button
                                         type='button'
                                         onClick={() => setPagedMode(true)}
-                                        className={`rounded-md px-2 py-1 ${pagedMode ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100' : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/70'}`}
+                                        className={`rounded-md px-2 py-1 ${pagedMode ? 'bg-white/70 text-slate-800 shadow-sm backdrop-blur dark:bg-slate-800/70 dark:text-slate-100' : 'hover:bg-white/60 dark:hover:bg-slate-800/60'}`}
                                     >Pages</button>
                                 </div>
                             </div>
@@ -753,7 +802,7 @@ export default function PostPage() {
                             )}
                         </div>
 
-                        <div className='flex flex-col gap-6 rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-xl shadow-slate-200/70 backdrop-blur dark:border-white/5 dark:bg-slate-900/80 dark:shadow-slate-900/60 sm:flex-row sm:items-center sm:justify-between'>
+                        <div className='liquid-hybrid-tile flex flex-col gap-6 p-6 shadow-xl sm:flex-row sm:items-center sm:justify-between'>
                             <div className='flex flex-1 flex-col items-start gap-4 sm:flex-row sm:items-center'>
                                 <ClapButton
                                     postId={post._id}
@@ -767,7 +816,7 @@ export default function PostPage() {
                             </div>
                             <div className='flex flex-1 flex-col items-start gap-2 sm:items-end'>
                                 <Tooltip content='Share this insight'>
-                                    <span className='inline-flex items-center gap-3 rounded-full bg-slate-100/70 px-4 py-2 text-slate-600 shadow-sm shadow-slate-200/60 transition hover:bg-slate-100 dark:bg-slate-800/70 dark:text-slate-200 dark:shadow-slate-900/40'>
+                                    <span className='inline-flex items-center gap-3 rounded-full bg-white/70 px-4 py-2 text-slate-600 shadow-sm shadow-slate-200/60 transition hover:bg-white/80 dark:bg-slate-800/70 dark:text-slate-200 dark:shadow-slate-900/40'>
                                         <SocialShare post={post} />
                                         <span className='text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500'>Share</span>
                                     </span>
@@ -776,7 +825,7 @@ export default function PostPage() {
                             </div>
                         </div>
 
-                        <div id='comments-section' className='overflow-hidden rounded-3xl border border-slate-200/70 bg-white p-6 shadow-xl shadow-slate-200/70 dark:border-white/5 dark:bg-slate-900/70 dark:shadow-slate-900/60'>
+                        <div id='comments-section' className='liquid-hybrid-panel p-6 shadow-xl'>
                             <CommentSection postId={post._id} />
                         </div>
 
@@ -787,37 +836,37 @@ export default function PostPage() {
                                 const prev = pool[0];
                                 const next = pool[1];
                                 if (!prev && !next) return null;
-                                return (
-                                    <div className='flex flex-col gap-3 rounded-3xl border border-slate-200/70 bg-white p-4 shadow-xl shadow-slate-200/70 dark:border-white/5 dark:bg-slate-900/70 dark:shadow-slate-900/60 sm:flex-row sm:items-stretch sm:justify-between'>
-                                        <div className='flex-1'>
-                                            {prev && (
-                                                <Link to={`/post/${prev.slug}`} className='group flex items-center gap-3 rounded-xl border border-slate-200/70 p-3 transition hover:border-sky-300 dark:border-slate-700 dark:hover:border-sky-500'>
-                                                    <FaChevronLeft className='text-slate-400 group-hover:text-sky-500' />
-                                                    <div className='min-w-0'>
-                                                        <div className='text-xs uppercase tracking-wide text-slate-400'>Previous</div>
-                                                        <div className='truncate text-sm font-semibold text-slate-700 group-hover:text-sky-700 dark:text-slate-200 dark:group-hover:text-sky-300'>{prev.title}</div>
-                                                    </div>
-                                                </Link>
-                                            )}
+                                    return (
+                                        <div className='liquid-hybrid-tile flex flex-col gap-3 p-4 shadow-xl sm:flex-row sm:items-stretch sm:justify-between'>
+                                            <div className='flex-1'>
+                                                {prev && (
+                                                    <Link to={`/post/${prev.slug}`} className='group flex items-center gap-3 rounded-xl border border-white/50 bg-white/70 p-3 backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-300 dark:border-white/10 dark:bg-slate-900/60 dark:hover:border-sky-500'>
+                                                        <FaChevronLeft className='text-slate-400 group-hover:text-sky-500' />
+                                                        <div className='min-w-0'>
+                                                            <div className='text-xs uppercase tracking-wide text-slate-400'>Previous</div>
+                                                            <div className='truncate text-sm font-semibold text-slate-700 group-hover:text-sky-700 dark:text-slate-200 dark:group-hover:text-sky-300'>{prev.title}</div>
+                                                        </div>
+                                                    </Link>
+                                                )}
+                                            </div>
+                                            <div className='flex-1'>
+                                                {next && (
+                                                    <Link to={`/post/${next.slug}`} className='group flex items-center justify-end gap-3 rounded-xl border border-white/50 bg-white/70 p-3 text-right backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-300 dark:border-white/10 dark:bg-slate-900/60 dark:hover:border-sky-500'>
+                                                        <div className='min-w-0'>
+                                                            <div className='text-xs uppercase tracking-wide text-slate-400'>Next</div>
+                                                            <div className='truncate text-sm font-semibold text-slate-700 group-hover:text-sky-700 dark:text-slate-200 dark:group-hover:text-sky-300'>{next.title}</div>
+                                                        </div>
+                                                        <FaChevronRight className='text-slate-400 group-hover:text-sky-500' />
+                                                    </Link>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className='flex-1'>
-                                            {next && (
-                                                <Link to={`/post/${next.slug}`} className='group flex items-center justify-end gap-3 rounded-xl border border-slate-200/70 p-3 text-right transition hover:border-sky-300 dark:border-slate-700 dark:hover:border-sky-500'>
-                                                    <div className='min-w-0'>
-                                                        <div className='text-xs uppercase tracking-wide text-slate-400'>Next</div>
-                                                        <div className='truncate text-sm font-semibold text-slate-700 group-hover:text-sky-700 dark:text-slate-200 dark:group-hover:text-sky-300'>{next.title}</div>
-                                                    </div>
-                                                    <FaChevronRight className='text-slate-400 group-hover:text-sky-500' />
-                                                </Link>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
+                                    );
                             })()
                         )}
 
                         {relatedPosts && relatedPosts.filter(p => p._id !== post._id).length > 0 && (
-                            <section className='space-y-6 rounded-3xl border border-slate-200/70 bg-white p-6 shadow-xl shadow-slate-200/70 dark:border-white/5 dark:bg-slate-900/70 dark:shadow-slate-900/60'>
+                            <section className='liquid-hybrid-panel space-y-6 p-6 shadow-xl'>
                                 <div className='flex items-center justify-between'>
                                     <h2 className='text-lg font-semibold text-slate-800 dark:text-slate-100'>Related articles</h2>
                                     <span className='text-xs uppercase tracking-wide text-slate-400'>Curated for you</span>
@@ -835,7 +884,7 @@ export default function PostPage() {
 
                     <aside className='w-full space-y-8 lg:w-80 lg:pt-6'>
                         <div className='sticky top-28 flex flex-col gap-8'>
-                            <div id='toc' className='overflow-hidden rounded-3xl border border-slate-200/70 bg-white p-6 shadow-xl shadow-slate-200/70 dark:border-white/5 dark:bg-slate-900/70 dark:shadow-slate-900/60'>
+                            <div id='toc' className='liquid-hybrid-tile p-6 shadow-xl'>
                                 <h2 className='text-base font-semibold text-slate-800 dark:text-slate-100'>On this page</h2>
                                 <p className='mt-2 text-sm text-slate-500 dark:text-slate-400'>Navigate through the key sections of this story.</p>
                                 <div className='mt-4 max-h-[60vh] overflow-y-auto pr-1 text-sm'>
@@ -843,23 +892,23 @@ export default function PostPage() {
                                 </div>
                             </div>
 
-                            <div className='rounded-3xl border border-slate-200/70 bg-white p-6 shadow-xl shadow-slate-200/70 dark:border-white/5 dark:bg-slate-900/70 dark:shadow-slate-900/60'>
+                            <div className='liquid-hybrid-panel p-6 shadow-xl'>
                                 <h3 className='text-base font-semibold text-slate-800 dark:text-slate-100'>Reading insights</h3>
                                 <ul className='mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300'>
                                     {formattedPublishDate && (
-                                        <li className='flex items-center gap-3 rounded-2xl bg-slate-100/60 px-3 py-2 dark:bg-slate-800/70'>
+                                        <li className='flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 backdrop-blur dark:bg-slate-800/70'>
                                             <FaCalendarAlt className='h-4 w-4 text-slate-500 dark:text-slate-400' aria-hidden="true" />
                                             Published on {formattedPublishDate}
                                         </li>
                                     )}
                                     {readingStats.readingMinutes > 0 && (
-                                        <li className='flex items-center gap-3 rounded-2xl bg-slate-100/60 px-3 py-2 dark:bg-slate-800/70'>
+                                        <li className='flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 backdrop-blur dark:bg-slate-800/70'>
                                             <FaClock className='h-4 w-4 text-slate-500 dark:text-slate-400' aria-hidden="true" />
                                             {readingStats.readingMinutes} minute read
                                         </li>
                                     )}
                                     {readingStats.wordCount > 0 && (
-                                        <li className='flex items-center gap-3 rounded-2xl bg-slate-100/60 px-3 py-2 dark:bg-slate-800/70'>
+                                        <li className='flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 backdrop-blur dark:bg-slate-800/70'>
                                             <FaBookOpen className='h-4 w-4 text-slate-500 dark:text-slate-400' aria-hidden="true" />
                                             {readingStats.wordCount.toLocaleString()} words to explore
                                         </li>
@@ -876,27 +925,28 @@ export default function PostPage() {
                     </aside>
                 </main>
             </div>
+            </div>
 
             {/* Floating quick actions: Back to top, Discuss, and TOC on mobile */}
             <div className='fixed bottom-6 right-6 z-40 flex flex-col gap-3 lg:hidden'>
                 <button
                     aria-label='Back to top'
                     onClick={handleScrollTop}
-                    className='rounded-full border border-slate-300 bg-white p-3 text-slate-700 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200'
+                    className='rounded-full border border-white/60 bg-white/80 p-3 text-slate-700 shadow-xl backdrop-blur transition hover:-translate-y-0.5 hover:shadow-2xl dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200'
                 >
                     <FaChevronUp className='h-5 w-5' />
                 </button>
                 <button
                     aria-label='Jump to comments'
                     onClick={handleDiscuss}
-                    className='rounded-full border border-slate-300 bg-white p-3 text-slate-700 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200'
+                    className='rounded-full border border-white/60 bg-white/80 p-3 text-slate-700 shadow-xl backdrop-blur transition hover:-translate-y-0.5 hover:shadow-2xl dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200'
                 >
                     <FaCommentDots className='h-5 w-5' />
                 </button>
                 <button
                     aria-label='Open table of contents'
                     onClick={() => setShowMobileToc(true)}
-                    className='rounded-full border border-slate-300 bg-white p-3 text-slate-700 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 lg:hidden'
+                    className='rounded-full border border-white/60 bg-white/80 p-3 text-slate-700 shadow-xl backdrop-blur transition hover:-translate-y-0.5 hover:shadow-2xl dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200 lg:hidden'
                 >
                     <span className='text-xs font-bold'>TOC</span>
                 </button>

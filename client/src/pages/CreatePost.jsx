@@ -262,36 +262,44 @@ export default function CreatePost() {
     const stepProgress = ((currentStep - 1) / 2) * 100;
 
     return (
-        <div className='relative min-h-screen bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.18),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(59,130,246,0.18),transparent_28%)] px-4 py-10 lg:px-6'>
-            <div className='pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(14,165,233,0.08),transparent_45%)]' aria-hidden='true' />
-            <div className='relative mx-auto max-w-6xl space-y-6'>
-                <div className='rounded-3xl border border-white/60 bg-white/80 p-6 shadow-[0_30px_80px_-60px_rgba(15,23,42,0.7)] backdrop-blur dark:border-slate-800/80 dark:bg-slate-900/80'>
-                    <div className='flex flex-wrap items-start justify-between gap-4'>
-                        <div className='space-y-2'>
-                            <p className='text-xs font-semibold uppercase tracking-[0.22em] text-sky-600 dark:text-sky-300'>Writer studio</p>
-                            <h1 className='text-3xl font-semibold text-slate-900 dark:text-white'>Create a post</h1>
-                            <p className='max-w-2xl text-sm text-slate-600 dark:text-slate-300'>
-                                Build a polished article with live preview, autosave, and publishing readiness all in one place.
-                            </p>
+        <div className='liquid-stage' data-theme='liquid-glass'>
+            <div className='liquid-stage__backdrop' aria-hidden='true'>
+                <div className='liquid-stage__blob liquid-stage__blob--cyan' />
+                <div className='liquid-stage__blob liquid-stage__blob--violet' />
+                <div className='liquid-stage__blob liquid-stage__blob--amber' />
+                <div className='liquid-stage__mesh' />
+                <div className='liquid-stage__glint' />
+                <div className='liquid-stage__noise' />
+            </div>
+            <div className='relative z-10 min-h-screen px-4 py-10 lg:px-6'>
+                <div className='relative mx-auto max-w-6xl space-y-6'>
+                    <div className='glass-panel liquid-hybrid-panel p-6 shadow-[0_30px_80px_-60px_rgba(15,23,42,0.7)]'>
+                        <div className='flex flex-wrap items-start justify-between gap-4'>
+                            <div className='space-y-2'>
+                                <p className='text-xs font-semibold uppercase tracking-[0.22em] text-sky-600 dark:text-sky-300'>Writer studio</p>
+                                <h1 className='text-3xl font-semibold text-slate-900 dark:text-white'>Create a post</h1>
+                                <p className='max-w-2xl text-sm text-slate-600 dark:text-slate-300'>
+                                    Build a polished article with live preview, autosave, and publishing readiness all in one place.
+                                </p>
+                            </div>
+                            <div className='flex flex-wrap items-center gap-3'>
+                                <Badge color='info' className='bg-white/80 text-sky-700 ring-1 ring-sky-200 backdrop-blur dark:bg-slate-800/70 dark:text-sky-100'>
+                                    {draftStatus === 'saving' && 'Saving draft...'}
+                                    {draftStatus === 'saved' && 'Draft saved'}
+                                    {draftStatus === 'idle' && 'Autosave ready'}
+                                </Badge>
+                                <Badge color='gray' className='bg-white/70 text-slate-800 ring-1 ring-slate-200 backdrop-blur dark:bg-slate-800/80 dark:text-slate-100'>
+                                    Step {currentStep} / 3
+                                </Badge>
+                            </div>
                         </div>
-                        <div className='flex flex-wrap items-center gap-3'>
-                            <Badge color='info' className='bg-sky-100 text-sky-800 ring-1 ring-sky-200 dark:bg-sky-900/60 dark:text-sky-100'>
-                                {draftStatus === 'saving' && 'Saving draft...'}
-                                {draftStatus === 'saved' && 'Draft saved'}
-                                {draftStatus === 'idle' && 'Autosave ready'}
-                            </Badge>
-                            <Badge color='gray' className='bg-slate-100 text-slate-800 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-100'>
-                                Step {currentStep} / 3
-                            </Badge>
-                        </div>
-                    </div>
 
-                    <div className='mt-6 space-y-3'>
-                        <div className='flex items-center gap-3'>
-                            <div className='h-2 flex-1 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800/80'>
-                                <div
-                                    className='h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-400 to-emerald-400 transition-all duration-300'
-                                    style={{ width: `${stepProgress}%` }}
+                        <div className='mt-6 space-y-3'>
+                            <div className='flex items-center gap-3'>
+                                <div className='h-2 flex-1 overflow-hidden rounded-full bg-white/50 shadow-inner shadow-white/30 ring-1 ring-white/40 backdrop-blur dark:bg-slate-800/70 dark:ring-white/10'>
+                                    <div
+                                        className='h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-400 to-emerald-400 transition-all duration-300'
+                                        style={{ width: `${stepProgress}%` }}
                                 />
                             </div>
                             <span className='text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300'>
@@ -306,10 +314,8 @@ export default function CreatePost() {
                                 return (
                                     <div
                                         key={step.id}
-                                        className={`rounded-2xl border p-4 shadow-sm transition-all duration-200 ${
-                                            isActive
-                                                ? 'border-sky-400/60 bg-sky-50/60 dark:border-sky-500/50 dark:bg-sky-900/40'
-                                                : 'border-slate-200 bg-white/70 dark:border-slate-800 dark:bg-slate-900/60'
+                                        className={`liquid-hybrid-tile p-4 shadow-md transition-all duration-200 ${
+                                            isActive ? 'ring-2 ring-sky-300/60 dark:ring-sky-500/50' : ''
                                         }`}
                                     >
                                         <div className='flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white'>
@@ -343,7 +349,7 @@ export default function CreatePost() {
                                     animate='visible'
                                     exit='exit'
                                     transition={{ duration: 0.28 }}
-                                    className='rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900/80'
+                                    className='liquid-hybrid-panel p-6 shadow-xl'
                                 >
                                     <div className='flex items-center justify-between gap-3'>
                                         <div>
@@ -358,7 +364,7 @@ export default function CreatePost() {
                                     </div>
 
                                     <div className='mt-4 space-y-5'>
-                                        <div className='rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/70'>
+                                        <div className='glass-panel rounded-2xl p-4 shadow-sm'>
                                             <div className='flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300'>
                                                 <div className='flex items-center gap-2'>
                                                     <HiOutlineDocumentText className='text-sky-500' />
@@ -382,7 +388,7 @@ export default function CreatePost() {
                                             </div>
                                         </div>
 
-                                        <div className='rounded-2xl border border-dashed border-sky-200 bg-sky-50/60 p-4 shadow-inner dark:border-sky-500/50 dark:bg-sky-900/30'>
+                                        <div className='liquid-hybrid-tile border-dashed border-sky-200/70 bg-white/70 p-4 shadow-inner dark:border-sky-500/50 dark:bg-slate-900/40'>
                                             <div className='flex flex-wrap items-center gap-3'>
                                                 <div className='flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white'>
                                                     <HiOutlineClipboardList className='text-sky-500' />
@@ -394,14 +400,21 @@ export default function CreatePost() {
                                             </div>
 
                                             <div className='mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-                                                <FileInput
-                                                    helperText='JPG, PNG, WEBP, GIF or MP4/WEBM.'
-                                                    type='file'
-                                                    accept='image/*,video/*'
-                                                    onChange={handleFileChange}
-                                                    disabled={isUploading}
-                                                    className='max-w-lg cursor-pointer rounded-xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-700 dark:bg-slate-900/80'
-                                                />
+                                                <div className='flex flex-col gap-2'>
+                                                    <label className='liquid-hybrid-panel cursor-pointer rounded-xl border border-dashed border-sky-300/70 bg-white/80 p-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-900/70 dark:text-slate-100'>
+                                                        <span className='block text-xs font-medium uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400'>Upload cover</span>
+                                                        <span className='text-sm text-slate-700 dark:text-slate-200'>Drop image/video or click to browse</span>
+                                                        <FileInput
+                                                            helperText='JPG, PNG, WEBP, GIF or MP4/WEBM.'
+                                                            type='file'
+                                                            accept='image/*,video/*'
+                                                            onChange={handleFileChange}
+                                                            disabled={isUploading}
+                                                            className='sr-only'
+                                                        />
+                                                    </label>
+                                                    <p className='text-xs text-slate-500 dark:text-slate-400'>Images &lt; 2MB · Video &lt; 50MB · Replaces previous upload</p>
+                                                </div>
                                                 {isUploading && (
                                                     <div className='flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-sky-200 dark:bg-slate-900/80 dark:text-slate-100'>
                                                         <div className='h-10 w-10'>
@@ -436,7 +449,7 @@ export default function CreatePost() {
                                     animate='visible'
                                     exit='exit'
                                     transition={{ duration: 0.28 }}
-                                    className='rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900/80'
+                                    className='liquid-hybrid-panel p-6 shadow-xl'
                                 >
                                     <div className='flex items-center justify-between gap-3'>
                                         <div>
@@ -471,6 +484,7 @@ export default function CreatePost() {
                                                 placeholder='post-slug'
                                                 value={state.formData.slug}
                                                 onChange={handleChange}
+                                                helperText='Editable — keep it short and human readable.'
                                             />
                                             <Select id='category' onChange={handleChange} value={state.formData.category}>
                                                 <option value='uncategorized'>Select a category</option>
@@ -478,6 +492,8 @@ export default function CreatePost() {
                                                 <option value='reactjs'>React.js</option>
                                                 <option value='nextjs'>Next.js</option>
                                                 <option value='technology'>Technology</option>
+                                                <option value='devops'>DevOps</option>
+                                                <option value='ai-ml'>AI / ML</option>
                                             </Select>
                                         </div>
                                         <div className='rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-600 shadow-inner dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300'>
@@ -501,7 +517,7 @@ export default function CreatePost() {
                                     animate='visible'
                                     exit='exit'
                                     transition={{ duration: 0.28 }}
-                                    className='rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900/80'
+                                    className='liquid-hybrid-panel p-6 shadow-xl'
                                 >
                                     <div className='flex items-center justify-between gap-3'>
                                         <div>
@@ -528,7 +544,7 @@ export default function CreatePost() {
                                     color='light'
                                     type='button'
                                     onClick={handlePreviousStep}
-                                    className='border border-slate-200 bg-white text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'
+                                    className='lg-btn-hybrid !bg-white/80 !border-none !text-slate-800 dark:!bg-slate-800/70 dark:!text-slate-100'
                                 >
                                     Previous
                                 </Button>
@@ -537,7 +553,7 @@ export default function CreatePost() {
                                 color='light'
                                 type='button'
                                 onClick={handleResetForm}
-                                className='border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
+                                className='lg-btn-hybrid !bg-white/70 !border-none !text-slate-700 dark:!bg-slate-800/60 dark:!text-slate-200'
                             >
                                 Reset
                             </Button>
@@ -546,7 +562,7 @@ export default function CreatePost() {
                                     <Button
                                         type='button'
                                         onClick={handleNextStep}
-                                        className='bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-400 text-white shadow-md ring-1 ring-sky-300 transition hover:shadow-lg focus:ring-2 focus:ring-sky-300 dark:ring-sky-500/70'
+                                        className='lg-btn-hybrid !bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-400 !text-white !border-none shadow-lg shadow-sky-500/25'
                                     >
                                         Next
                                     </Button>
@@ -555,7 +571,7 @@ export default function CreatePost() {
                                     <Button
                                         type='submit'
                                         disabled={state.loading || isUploading}
-                                        className='bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500 text-white shadow-md ring-1 ring-sky-300 transition hover:shadow-lg focus:ring-2 focus:ring-sky-300 dark:ring-sky-500/70'
+                                        className='lg-btn-hybrid !bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500 !text-white !border-none shadow-lg shadow-sky-600/25 disabled:opacity-70'
                                     >
                                         {state.loading ? (
                                             <div className='flex items-center gap-2'>
@@ -577,8 +593,8 @@ export default function CreatePost() {
                         )}
                     </form>
 
-                    <aside className='space-y-4'>
-                        <div className='rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-lg dark:border-slate-800 dark:bg-slate-900/80'>
+                    <aside className='space-y-4 lg:sticky lg:top-8'>
+                        <div className='liquid-hybrid-panel p-5 shadow-xl'>
                             <div className='flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white'>
                                 <HiOutlineLightningBolt className='text-amber-500' />
                                 Publishing readiness
@@ -620,7 +636,7 @@ export default function CreatePost() {
                             </div>
                         </div>
 
-                        <div className='rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-lg dark:border-slate-800 dark:bg-slate-900/80'>
+                        <div className='liquid-hybrid-panel p-4 shadow-xl'>
                             <FullPostPreview post={{ ...state.formData, createdAt: new Date().toISOString() }} readTime={estimatedReadTime} wordCount={wordCount} />
                         </div>
                     </aside>
@@ -630,16 +646,20 @@ export default function CreatePost() {
             <Modal show={showModal} size='md' onClose={handleDismissDraft} popup>
                 <Modal.Header />
                 <Modal.Body>
-                    <div className='text-center'>
-                        <HiOutlineExclamationCircle className='mx-auto mb-4 h-14 w-14 text-gray-400 dark:text-gray-200' />
-                        <h3 className='mb-5 text-lg font-normal text-gray-500 dark:text-gray-400'>We found an unsaved draft. Do you want to restore it?</h3>
-                        <div className='flex justify-center gap-4'>
-                            <Button color='success' onClick={handleRestoreDraft}>Yes, restore it</Button>
-                            <Button color='gray' onClick={handleDismissDraft}>No, start fresh</Button>
+                    <div className='text-center space-y-3'>
+                        <div className='mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 shadow-inner shadow-amber-200 dark:bg-amber-900/30 dark:text-amber-200'>
+                            <HiOutlineExclamationCircle className='h-8 w-8' />
+                        </div>
+                        <h3 className='text-lg font-semibold text-slate-900 dark:text-white'>Resume your draft?</h3>
+                        <p className='text-sm text-slate-600 dark:text-slate-300'>We found saved work. Pick up where you left off or start fresh.</p>
+                        <div className='flex justify-center gap-3'>
+                            <Button color='success' onClick={handleRestoreDraft} className='lg-btn-hybrid !text-slate-900'>Yes, restore it</Button>
+                            <Button color='gray' onClick={handleDismissDraft} className='lg-btn-hybrid !bg-slate-900/80 !text-white'>No, start fresh</Button>
                         </div>
                     </div>
                 </Modal.Body>
             </Modal>
+            </div>
         </div>
     );
 }

@@ -11387,3 +11387,13 @@ body.dark.reading-contrast-active .post-content {
     transition: none !important;
   }
 }
+
+/* Responsive, safe embeds inside post content */
+.post-content iframe,
+.reading-surface iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 14px;
+  background-color: #0f172a;
+}
