@@ -46,7 +46,7 @@ export const useLike = ({ postId, initialClaps = 0, initialClappedBy = [] }) => 
 
     const {
         mutate,
-        isLoading,
+        isPending,
     } = useMutation({
         mutationFn: togglePostClap,
         onMutate: async (targetPostId) => {
@@ -142,7 +142,7 @@ export const useLike = ({ postId, initialClaps = 0, initialClappedBy = [] }) => 
     return {
         likeCount,
         isLiked,
-        isLoading,
+        isLoading: isPending,
         handleLike,
     };
 };

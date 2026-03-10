@@ -17,6 +17,7 @@ import RecentDataTable from '../components/RecentDataTable';
 import useAdminDashboardData from '../hooks/useAdminDashboardData';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { getPostPreviewImage } from '../utils/postMedia.js';
 
 const quickActions = [
     {
@@ -303,11 +304,17 @@ export default function AdminPanel() {
                                         <Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>
                                             <Table.Cell className='w-72'>
                                                 <div className='flex items-center gap-3'>
-                                                    <img
-                                                        src={post.image}
-                                                        alt={post.title}
-                                                        className='h-10 w-14 rounded-md object-cover'
-                                                    />
+                                                    {getPostPreviewImage(post) ? (
+                                                        <img
+                                                            src={getPostPreviewImage(post)}
+                                                            alt={post.title}
+                                                            className='h-10 w-14 rounded-md object-cover'
+                                                        />
+                                                    ) : (
+                                                        <div className='flex h-10 w-14 items-center justify-center rounded-md bg-slate-100 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-200'>
+                                                            Media
+                                                        </div>
+                                                    )}
                                                     <p className='line-clamp-2 font-medium'>{post.title}</p>
                                                 </div>
                                             </Table.Cell>

@@ -8,6 +8,7 @@ import {
     HiOutlineDocumentText,
     HiOutlineTrash,
     HiOutlinePencilSquare,
+    HiOutlineSparkles,
     HiOutlineMagnifyingGlass,
     HiOutlineChevronRight,
     HiOutlineChevronDown,
@@ -287,6 +288,19 @@ const getItemExtension = (item) => {
     const segments = (item.name || '').split('.');
     if (segments.length <= 1) return '';
     return segments.pop().toLowerCase();
+};
+
+const formatBytes = (value) => {
+    if (!value || Number.isNaN(value)) return '—';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let size = value;
+    let unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex += 1;
+    }
+    const precision = size >= 10 || unitIndex === 0 ? 0 : 1;
+    return `${size.toFixed(precision)} ${units[unitIndex]}`;
 };
 
 const matchesFilterCategory = (item, category) => {
@@ -631,7 +645,20 @@ export default function FileManager() {
     const activeFilter = FINDER_QUICK_FILTERS.find((option) => option.value === filterCategory) ?? FINDER_QUICK_FILTERS[0];
 
     return (
-        <section className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-10 lg:px-4">
+        <section className="relative mx-auto flex max-w-7xl flex-col gap-6 px-6 py-10 lg:px-4">
+            <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[40px] bg-gradient-to-br from-sky-200/30 via-white/40 to-indigo-200/25 blur-[2px]"
+            />
+            <div aria-hidden className="pointer-events-none absolute -left-24 top-16 -z-10 h-64 w-64 rounded-full bg-sky-400/30 blur-[120px]" />
+            <div aria-hidden className="pointer-events-none absolute -right-16 top-52 -z-10 h-72 w-72 rounded-full bg-cyan-300/25 blur-[120px]" />
+            <FinderHero
+                totalItems={originalItemsCount}
+                visibleItems={filteredCount}
+                totalSize={aggregateSize}
+                activeSpace={activeSpace}
+                onSpaceChange={handleSpaceChange}
+            />
             <header className="flex flex-col gap-4 rounded-[28px] border border-white/40 bg-white/60 p-0.5 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.7)] backdrop-blur-xl">
                 <div className="rounded-[26px] bg-gradient-to-br from-white/95 via-white/85 to-slate-50/80 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
                     <FinderToolbar
@@ -706,6 +733,91 @@ export default function FileManager() {
         </section>
     );
 }
+
+function FinderHero({ totalItems, visibleItems, totalSize, activeSpace, onSpaceChange }) {
+    const stats = [
+        { label: 'Visible now', value: visibleItems.toLocaleString() },
+        { label: 'Library', value: totalItems.toLocaleString() },
+        { label: 'Footprint', value: formatBytes(totalSize) },
+    ];
+
+    return (
+        <div className="relative overflow-hidden rounded-[32px] border border-white/60 bg-gradient-to-br from-white/80 via-slate-50/70 to-sky-50/60 p-6 shadow-[0_32px_90px_-52px_rgba(15,23,42,0.7)] backdrop-blur-2xl">
+            <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(59,130,246,0.20),transparent_36%),radial-gradient(circle_at_80%_20%,rgba(56,189,248,0.18),transparent_32%),radial-gradient(circle_at_60%_90%,rgba(16,185,129,0.16),transparent_34%)]" />
+            <div className="relative z-10 flex flex-col gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="space-y-1">
+                        <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-500 shadow-inner shadow-white/80">
+                            <HiOutlineSparkles className="text-sky-500" />
+                            Liquid Glass · File Manager
+                        </span>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Glassmorphism 2.0 workspace</h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-300">
+                            Browse, sort, and quick-peek files with a tactile glass shell tuned for focus and speed.
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        {stats.map((stat) => (
+                            <div
+                                key={stat.label}
+                                className="min-w-[120px] rounded-2xl border border-white/70 bg-white/70 px-4 py-3 text-left shadow-inner shadow-white/80"
+                            >
+                                <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-slate-400">{stat.label}</p>
+                                <p className="text-lg font-bold text-slate-800 dark:text-white">{stat.value}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                    {FINDER_SPACES.map((space) => {
+                        const isActive = activeSpace?.id === space.id;
+                        return (
+                            <button
+                                key={space.id}
+                                type="button"
+                                onClick={() => onSpaceChange(space.id)}
+                                className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br ${space.accent} px-4 py-3 text-left shadow-[0_16px_40px_-30px_rgba(15,23,42,0.7)] transition ${
+                                    isActive
+                                        ? 'border-sky-200/80 bg-gradient-to-br from-white/90 to-sky-50/70'
+                                        : 'border-white/60 bg-white/70 hover:border-sky-200/70'
+                                }`}
+                            >
+                                <div className="absolute inset-0 opacity-70 mix-blend-screen blur-xl" />
+                                <div className="relative flex flex-col gap-1">
+                                    <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/5 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500">
+                                        {space.previewLayout} view
+                                    </span>
+                                    <p className="text-sm font-semibold text-slate-800 dark:text-white">{space.label}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-300">{space.description}</p>
+                                </div>
+                                {isActive ? (
+                                    <span className="absolute right-3 top-3 rounded-full bg-sky-500/90 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-white">
+                                        Active
+                                    </span>
+                                ) : null}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+FinderHero.propTypes = {
+    totalItems: PropTypes.number.isRequired,
+    visibleItems: PropTypes.number.isRequired,
+    totalSize: PropTypes.number.isRequired,
+    activeSpace: PropTypes.shape({
+        id: PropTypes.string,
+    }),
+    onSpaceChange: PropTypes.func.isRequired,
+};
+
+FinderHero.defaultProps = {
+    activeSpace: FINDER_SPACES[0],
+};
 
 function FinderWindowControls() {
     const controls = [
@@ -1160,6 +1272,18 @@ function FinderContentArea({
                 ? 'No items match your search.'
                 : null;
 
+    const selectedMeta = selectedItem
+        ? {
+            name: selectedItem.name,
+            kind: selectedItem.type === 'folder' ? 'Folder' : 'File',
+            size: selectedItem.type === 'file' ? formatBytes(selectedItem.size) : '—',
+            updated:
+                selectedItem.updatedAt && !Number.isNaN(new Date(selectedItem.updatedAt).getTime())
+                    ? new Date(selectedItem.updatedAt).toLocaleString()
+                    : '—',
+        }
+        : null;
+
     return (
         <div
             ref={drop}
@@ -1197,6 +1321,81 @@ function FinderContentArea({
                         Quick Look
                     </button>
                 </div>
+            </div>
+            <div className="flex flex-col gap-2 rounded-[18px] border border-white/70 bg-white/80 px-4 py-3 shadow-inner shadow-white/80">
+                {selectedMeta ? (
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                        <div className="flex items-center gap-2 rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <span className="h-2 w-2 rounded-full bg-sky-400" />
+                            {selectedMeta.kind}
+                        </div>
+                        <span className="font-semibold text-slate-800">{selectedMeta.name}</span>
+                        <span className="text-xs text-slate-400">•</span>
+                        <span className="text-xs text-slate-500">Updated {selectedMeta.updated}</span>
+                        {selectedMeta.kind === 'File' ? (
+                            <>
+                                <span className="text-xs text-slate-400">•</span>
+                                <span className="text-xs text-slate-500">{selectedMeta.size}</span>
+                            </>
+                        ) : null}
+                        <div className="ml-auto flex flex-wrap items-center gap-2 text-xs">
+                            <button
+                                type="button"
+                                onClick={() => onOpen(selectedItem)}
+                                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-800"
+                            >
+                                <HiOutlineChevronRight className="text-sm" />
+                                Open
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onQuickLook(selectedItem)}
+                                className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 font-semibold text-sky-700 shadow-sm transition hover:border-sky-300 hover:bg-sky-100"
+                            >
+                                <HiOutlineEye className="text-sm" />
+                                Quick Look
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onRename(selectedItem)}
+                                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-800"
+                            >
+                                <HiOutlinePencilSquare className="text-sm" />
+                                Rename
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onDelete(selectedItem)}
+                                className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 font-semibold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-100"
+                            >
+                                <HiOutlineTrash className="text-sm" />
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-3 py-1 font-semibold text-slate-600">
+                            <HiOutlineEye className="text-sm text-slate-400" />
+                            Space = Quick Look
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-3 py-1 font-semibold text-slate-600">
+                            <HiOutlineChevronRight className="text-sm text-slate-400" />
+                            Enter = Open
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-3 py-1 font-semibold text-slate-600">
+                            <HiOutlinePencilSquare className="text-sm text-slate-400" />
+                            Cmd/Ctrl + R = Rename
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-3 py-1 font-semibold text-slate-600">
+                            <HiOutlineTrash className="text-sm text-slate-400" />
+                            Del = Delete
+                        </span>
+                        <span className="text-[0.75rem] text-slate-400">
+                            Tip: Drag files between folders or into the sidebar to move them.
+                        </span>
+                    </div>
+                )}
             </div>
             {emptyState ? (
                 <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-slate-200/70 bg-white/70 text-sm text-slate-500 shadow-inner shadow-white/70">
@@ -1484,7 +1683,7 @@ function FinderColumnRow({ item, isHighlighted, isLastColumn, columnIndex, onSel
             <div className="min-w-0 flex-1">
                 <p className={`truncate text-sm font-medium ${isHighlighted ? 'text-white' : 'text-slate-600'}`}>{item.name}</p>
                 <p className={`truncate text-[0.7rem] ${isHighlighted ? 'text-white/70' : 'text-slate-400'}`}>
-                    {item.type === 'file' ? formatSize(item.size) : 'Folder'}
+                    {item.type === 'file' ? formatBytes(item.size) : 'Folder'}
                 </p>
             </div>
             {isLastColumn ? (
@@ -1863,7 +2062,7 @@ function FinderListRow({ item, isSelected, onSelect, onOpen, onRename, onDelete,
                 <span className="truncate text-slate-600">{item.name}</span>
             </td>
             <td className="px-4 py-3 capitalize text-slate-500">{item.type}</td>
-            <td className="px-4 py-3 text-slate-500">{item.type === 'file' ? formatSize(item.size) : '—'}</td>
+            <td className="px-4 py-3 text-slate-500">{item.type === 'file' ? formatBytes(item.size) : '—'}</td>
             <td className="px-4 py-3 text-slate-500">{new Date(item.updatedAt).toLocaleString()}</td>
             <td className="px-4 py-3 text-right">
                 <div className="flex items-center justify-end gap-2 text-xs">
@@ -2009,7 +2208,7 @@ function FinderPreviewPane({ item, onRename, onDelete, onQuickLook }) {
                     <dl className="space-y-3 text-xs text-slate-500">
                         <div className="flex justify-between">
                             <dt className="uppercase tracking-[0.18em] text-slate-400">Size</dt>
-                            <dd className="text-slate-600">{formatSize(item.size)}</dd>
+                            <dd className="text-slate-600">{formatBytes(item.size)}</dd>
                         </div>
                         <div className="flex justify-between border-b border-slate-200 pb-2">
                             <dt className="uppercase tracking-[0.18em] text-slate-400">Type</dt>
@@ -2086,26 +2285,24 @@ FinderPreviewPane.defaultProps = {
     item: null,
 };
 
-const formatSize = (size) => {
-    if (!size && size !== 0) return '—';
-    if (size < 1024) return `${size} B`;
-    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-    if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-    return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-};
-
 function FinderStatusBar({ totalItems, visibleItems, totalSize, selection, filterLabel, searchTerm }) {
     const info = selection
-        ? `${selection.name} · ${selection.type === 'file' ? formatSize(selection.size) : 'Folder'}`
+        ? `${selection.name} · ${selection.type === 'file' ? formatBytes(selection.size) : 'Folder'}`
         : `${visibleItems} item${visibleItems === 1 ? '' : 's'} shown${visibleItems !== totalItems ? ` · ${totalItems} total` : ''}`;
-    const sizeInfo = selection ? new Date(selection.updatedAt).toLocaleString() : `Combined size ${formatSize(totalSize)}`;
+    const sizeInfo = selection
+        ? `Updated ${selection.updatedAt ? new Date(selection.updatedAt).toLocaleString() : '—'}`
+        : `Combined size ${formatBytes(totalSize)}`;
     const isFiltering = !selection && (Boolean(searchTerm) || (filterLabel && filterLabel !== 'All'));
 
     return (
-        <footer className="mt-6 flex flex-col gap-2 rounded-[24px] border border-white/60 bg-gradient-to-r from-white/95 via-[#f2f4fb] to-[#e9edf9] px-6 py-3 text-xs text-slate-500 shadow-[0_18px_46px_-32px_rgba(15,23,42,0.45)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        <footer className="mt-6 flex flex-col gap-3 rounded-[24px] border border-white/60 bg-gradient-to-r from-white/92 via-[#eef2fb] to-[#e7eefc] px-6 py-4 text-xs text-slate-500 shadow-[0_18px_46px_-32px_rgba(15,23,42,0.45)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    <HiOutlineSparkles className="text-sky-500" />
+                    Glass 2.0
+                </span>
                 <HiOutlineEllipsisHorizontal className="text-lg text-slate-400" />
-                <span className="font-medium text-slate-600">{info}</span>
+                <span className="font-medium text-slate-700">{info}</span>
                 {filterLabel && filterLabel !== 'All' ? (
                     <span className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
                         {filterLabel}
@@ -2212,7 +2409,7 @@ function QuickLookModal({ item, onClose }) {
                     <div>
                         <h2 className="text-lg font-semibold text-slate-700">{item.name}</h2>
                         <p className="text-xs text-slate-400">
-                            {item.mimeType || 'Unknown'} · {formatSize(item.size)} · {new Date(item.updatedAt).toLocaleString()}
+                            {item.mimeType || 'Unknown'} · {formatBytes(item.size)} · {new Date(item.updatedAt).toLocaleString()}
                         </p>
                     </div>
                     <button

@@ -33,6 +33,8 @@ const ProblemSolving = lazy(() => import('../pages/ProblemSolving'));
 const SingleProblemPage = lazy(() => import('../pages/SingleProblemPage'));
 const CreateProblem = lazy(() => import('../pages/CreateProblem'));
 const UpdateProblem = lazy(() => import('../pages/UpdateProblem'));
+const Community = lazy(() => import('../pages/Community'));
+const CreateCommunityPost = lazy(() => import('../pages/CreateCommunityPost'));
 const AlgorithmVisualizer = lazy(() => import('../pages/AlgorithmVisualizer'));
 const CodeVisualizer = lazy(() => import('../pages/CodeVisualizer'));
 const FileManager = lazy(() => import('../pages/FileManager'));
@@ -58,13 +60,17 @@ export const mainLayoutRoutes = Object.freeze([
     { path: 'quizzes/:quizSlug', element: <SingleQuizPage /> },
     { path: 'problems', element: <ProblemSolving /> },
     { path: 'problems/:problemSlug', element: <SingleProblemPage /> },
+    { path: 'community', element: <Community /> },
     { path: 'tryit', element: <TryItPage /> },
     { path: 'algorithm-visualizer', element: <AlgorithmVisualizer /> },
     { path: 'code-visualizer', element: <CodeVisualizer /> },
     { path: 'content/:slug', element: <ContentPage /> },
     {
         element: <PrivateRoute />,
-        children: [{ path: 'dashboard', element: <Dashboard /> }],
+        children: [
+            { path: 'dashboard', element: <Dashboard /> },
+            { path: 'community/create', element: <CreateCommunityPost /> },
+        ],
     },
     {
         element: <OnlyAdminPrivateRoute />,

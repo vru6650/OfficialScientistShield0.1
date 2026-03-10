@@ -1,10 +1,11 @@
 // client/src/components/InteractiveCodeBlock.jsx
-import React, { useId, useState } from 'react';
+import React, { Suspense, lazy, useId, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from 'flowbite-react';
 import { FaPlayCircle, FaCode, FaTimes, FaExternalLinkAlt } from 'react-icons/fa';
-import CodeEditor from './CodeEditor';
 import { useNavigate } from 'react-router-dom';
+
+const CodeEditor = lazy(() => import('./CodeEditor'));
 
 export default function InteractiveCodeBlock({ initialCode, language }) {
     const navigate = useNavigate();
@@ -92,11 +93,19 @@ export default function InteractiveCodeBlock({ initialCode, language }) {
                         exit="exit"
                         className="pt-6"
                     >
-                        <CodeEditor
-                            initialCode={{ [language]: initialCode }}
-                            language={language}
-                            workspaceId={`interactive-${workspaceId}`}
-                        />
+                        <Suspense
+                            fallback={
+                                <div className="flex h-64 items-center justify-center rounded-lg bg-gray-50 text-sm text-gray-500 dark:bg-gray-900 dark:text-gray-300">
+                                    Loading interactive editor...
+                                </div>
+                            }
+                        >
+                            <CodeEditor
+                                initialCode={{ [language]: initialCode }}
+                                language={language}
+                                workspaceId={`interactive-${workspaceId}`}
+                            />
+                        </Suspense>
                     </motion.div>
                 ) : (
                     <motion.div

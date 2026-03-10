@@ -32,9 +32,10 @@ export const useCloudinaryUpload = () => {
 
     const upload = useCallback((file, { allowedTypes, maxSizeMB }) => {
         return new Promise((resolve, reject) => {
-            // --- UPDATED: Get credentials from environment variables ---
-            const cloudName = "dmoiun16g";
-            const uploadPreset = "blog_unsigned_uploads";
+            const cloudName =
+                import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dmoiun16g';
+            const uploadPreset =
+                import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'blog_unsigned_uploads';
 
             if (!cloudName || !uploadPreset) {
                 const err = "Cloudinary credentials are not configured in .env file.";
@@ -60,7 +61,11 @@ export const useCloudinaryUpload = () => {
             const xhr = new XMLHttpRequest();
             xhrRef.current = xhr;
 
-            const resourceType = file.type.startsWith('image/') ? 'image' : 'video';
+            const resourceType = file.type.startsWith('image/')
+                ? 'image'
+                : file.type.startsWith('video/') || file.type.startsWith('audio/')
+                    ? 'video'
+                    : 'raw';
             const url = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
             xhr.open('POST', url, true);
 

@@ -4,6 +4,7 @@ import { Alert, Badge, Spinner, Table } from 'flowbite-react';
 import StatCard from './StatCard'; // Import new component
 import RecentDataTable from './RecentDataTable'; // Import new component
 import useAdminDashboardData from '../hooks/useAdminDashboardData';
+import { getPostPreviewImage } from '../utils/postMedia.js';
 
 export default function DashboardComp() {
     const { currentUser } = useSelector((state) => state.user);
@@ -112,7 +113,19 @@ export default function DashboardComp() {
                     renderRow={(post) => (
                         <Table.Body key={post._id} className='divide-y'>
                             <Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>
-                                <Table.Cell><img src={post.image} alt={post.title} className='w-14 h-10 rounded-md bg-gray-500 object-cover'/></Table.Cell>
+                                <Table.Cell>
+                                    {getPostPreviewImage(post) ? (
+                                        <img
+                                            src={getPostPreviewImage(post)}
+                                            alt={post.title}
+                                            className='h-10 w-14 rounded-md bg-gray-500 object-cover'
+                                        />
+                                    ) : (
+                                        <div className='flex h-10 w-14 items-center justify-center rounded-md bg-slate-100 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-200'>
+                                            Media
+                                        </div>
+                                    )}
+                                </Table.Cell>
                                 <Table.Cell className='w-96'>{post.title}</Table.Cell>
                                 <Table.Cell className='w-5'>{post.category}</Table.Cell>
                             </Table.Row>

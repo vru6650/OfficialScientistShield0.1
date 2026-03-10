@@ -82,7 +82,7 @@ export const useBookmark = (initialIsBookmarked, postId) => {
         return updateBookmarkInPost(collection, shouldAdd, userId);
     };
 
-    const { mutate, isLoading } = useMutation({
+    const { mutate, isPending } = useMutation({
         mutationFn: () => {
             if (!currentUser?._id) {
                 return Promise.reject(new Error('You must be logged in to bookmark posts.'));
@@ -136,5 +136,5 @@ export const useBookmark = (initialIsBookmarked, postId) => {
         },
     });
 
-    return { isBookmarked, isLoading, handleBookmark: mutate };
+    return { isBookmarked, isLoading: isPending, handleBookmark: mutate };
 };

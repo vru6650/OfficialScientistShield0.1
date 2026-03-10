@@ -3711,21 +3711,39 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
     const renderMainContentMemo = useCallback(() => renderMainContent(), [renderMainContent]);
 
     const renderWindowContent = useCallback(
-        (win) => {
+        (win, options = {}) => {
             if (win.isAppWindow) {
-                if (win.id === activeAppId && win.appRoutePath) {
-                    return renderMainContentMemo();
-                }
                 const Icon = iconForAppKey(win.appIconKey);
                 const routeLabel = win.appRouteKey
                     ? win.appRouteKey.replace(/[-_]/g, ' ')
                     : 'Workspace';
                 const statusLabel = win.minimized ? 'Minimized' : 'Background';
+                const forceLive = options.forceLive === true;
+                const shouldRenderLiveRoute = forceLive || (win.id === activeAppId && !win.minimized);
+
+                if (!shouldRenderLiveRoute) {
+                    return (
+                        <div className="flex h-full flex-col justify-center gap-3 rounded-[26px] border border-dashed border-white/60 bg-white/70 p-6 text-center text-sm text-slate-500 shadow-inner dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-300">
+                            <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900/5 text-slate-500 dark:bg-white/10 dark:text-slate-200">
+                                {Icon ? <Icon className="h-5 w-5" /> : <HiOutlineSparkles className="h-5 w-5" />}
+                            </div>
+                            <p className="font-semibold text-slate-700 dark:text-slate-100">{routeLabel}</p>
+                            <p className="text-xs uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
+                                Paused · Activate window to load
+                            </p>
+                        </div>
+                    );
+                }
+
+                if (win.id === activeAppId && win.appRoutePath) {
+                    return renderMainContentMemo();
+                }
+
                 if (win.routeLocation) {
                     const locationKey =
                         (win.routeLocation.key &&
                             `${win.id}-${win.routeLocation.key}`) ||
-                        `${win.id}-${win.routeLocation.pathname || ''}${win.routeLocation.search || ''}${win.routeLocation.hash || ''}`;
+                            `${win.id}-${win.routeLocation.pathname || ''}${win.routeLocation.search || ''}${win.routeLocation.hash || ''}`;
                     return (
                         <div className="flex h-full flex-col overflow-hidden rounded-[26px] border border-white/40 bg-white/80 shadow-inner dark:border-white/10 dark:bg-slate-900/60">
                             <div className="flex-1 overflow-auto">
@@ -4835,7 +4853,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                                 </button>
                             </div>
                             <div className="max-h-[60vh] overflow-auto rounded-2xl border border-white/30 bg-white/80 p-4 shadow-inner dark:border-white/10 dark:bg-slate-900/70">
-                                {renderWindowContent(quickLookTarget)}
+                                {renderWindowContent(quickLookTarget, { forceLive: true })}
                             </div>
                             <p className="mt-4 text-[0.65rem] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">
                                 Press Space to toggle · {Math.round(quickLookTarget.width)} × {Math.round(quickLookTarget.height)}

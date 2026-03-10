@@ -28,6 +28,22 @@ const postSchema = new mongoose.Schema(
             type: String,
             default: 'image',
         },
+        mediaAssets: {
+            type: [
+                {
+                    url: { type: String, required: true },
+                    type: {
+                        type: String,
+                        enum: ['image', 'video', 'audio', 'document'],
+                        default: 'image',
+                    },
+                    caption: { type: String, default: '' },
+                    order: { type: Number, default: 0 },
+                },
+            ],
+            default: () => [],
+        },
+        coverAssetIndex: { type: Number, default: 0 },
         category: {
             type: String,
             default: 'uncategorized',
@@ -52,7 +68,13 @@ const postSchema = new mongoose.Schema(
             type: [mongoose.Schema.Types.ObjectId],
             ref: 'User',
             default: [],
-        }
+        },
+        kind: {
+            type: String,
+            enum: ['article', 'community'],
+            default: 'article',
+            index: true,
+        },
         // --- END OF NEW FIELDS ---
     },
     { timestamps: true }

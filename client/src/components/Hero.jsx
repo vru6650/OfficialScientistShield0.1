@@ -1,13 +1,29 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 
 import { TypeAnimation } from 'react-type-animation';
 import { HiMagnifyingGlass, HiOutlineArrowRightCircle, HiOutlineSparkles } from 'react-icons/hi2';
-import ParticlesBackground from './ParticlesBackground';
+
+const ParticlesBackground = lazy(() => import('./ParticlesBackground'));
 
 export default function Hero() {
     const [searchQuery, setSearchQuery] = useState('');
+    const [showParticles, setShowParticles] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const start = () => setShowParticles(true);
+        const idle = typeof window !== 'undefined' && window.requestIdleCallback;
+        const handle = idle ? idle(start) : setTimeout(start, 0);
+
+        return () => {
+            if (idle && typeof window.cancelIdleCallback === 'function') {
+                window.cancelIdleCallback(handle);
+            } else {
+                clearTimeout(handle);
+            }
+        };
+    }, []);
 
     const quickFilters = useMemo(
         () => [
@@ -41,7 +57,11 @@ export default function Hero() {
 
     return (
         <section className="macos-hero-shell liquid-app-shell relative overflow-hidden py-space-4xl px-4 sm:px-8 lg:px-12 min-h-[520px] flex items-center justify-center">
-            <ParticlesBackground />
+            {showParticles ? (
+                <Suspense fallback={null}>
+                    <ParticlesBackground />
+                </Suspense>
+            ) : null}
             <div
                 aria-hidden
                 className="pointer-events-none absolute -top-24 left-[-10%] h-[360px] w-[380px] rounded-full bg-sky-400/25 blur-[86px] dark:bg-sky-500/28"

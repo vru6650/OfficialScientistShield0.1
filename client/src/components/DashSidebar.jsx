@@ -9,6 +9,7 @@ import {
   HiChartPie,
   HiPuzzle, // NEW: Import puzzle icon for quizzes
   HiCollection,
+  HiUsers,
 } from 'react-icons/hi';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -27,6 +28,7 @@ const sidebarLinks = [
   { tab: 'quizzes', label: 'Quizzes', icon: HiPuzzle, adminOnly: true }, // NEW: Add Quizzes link
   { tab: 'problems', label: 'Problems', icon: HiPuzzle, adminOnly: true },
   { tab: 'content', label: 'Content', icon: HiCollection, adminOnly: true },
+  { tab: 'community', label: 'Community', icon: HiUsers, adminOnly: true },
 ];
 
 export default function DashSidebar() {

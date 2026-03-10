@@ -32,8 +32,8 @@ const createPageBody = z
 
 const updatePageBody = z
     .object({
-        title: nonEmptyStringSchema,
-        slug: z.string().optional(),
+        title: z.string().trim().min(1).optional(),
+        slug: z.string().trim().optional(),
         description: z.string().optional(),
         sections: z.array(z.any()).optional(),
         status: z.string().optional(),

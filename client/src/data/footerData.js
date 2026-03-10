@@ -22,6 +22,7 @@ export const footerLinks = [
         links: [
             { name: 'Github', href: 'https://github.com/sahandghavidel' },
             { name: 'Search articles', href: '/search' },
+            { name: 'Join the community', href: '/community' },
         ],
     },
     {

@@ -3,7 +3,7 @@ import { Button, Alert, Tooltip, Modal } from 'flowbite-react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import DOMPurify from 'dompurify';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { Suspense, lazy, useEffect, useState, useMemo, useCallback } from 'react';
 import hljs from 'highlight.js';
 import ImageViewer from 'react-simple-image-viewer';
 import { Helmet } from 'react-helmet-async';
@@ -19,12 +19,14 @@ import ReadingProgressBar from '../components/ReadingProgressBar';
 import SocialShare from '../components/SocialShare';
 import ClapButton from '../components/ClapButton';
 import VideoPlayer from '../components/VideoPlayer';
-import CodeEditor from '../components/CodeEditor';
 import ReadingControlCenter from '../components/ReadingControlCenter';
 import useReadingSettings from '../hooks/useReadingSettings';
 import InteractiveReadingSurface from '../components/InteractiveReadingSurface.jsx';
 import PagedReader from '../components/PagedReader.jsx';
+import GalleryCarousel from '../components/media/GalleryCarousel.jsx';
 import '../Tiptap.css';
+
+const CodeEditor = lazy(() => import('../components/CodeEditor'));
 
 // --- API fetching functions ---
 const fetchPostBySlug = async (postSlug) => {
@@ -353,6 +355,22 @@ export default function PostPage() {
 
     const metaDescription = useMemo(() => createMetaDescription(post?.content), [post?.content]);
 
+    const sortedMedia = useMemo(
+        () => (post?.mediaAssets ?? []).slice().sort((a, b) => (a.order || 0) - (b.order || 0)),
+        [post?.mediaAssets]
+    );
+
+    const primaryAsset = useMemo(() => {
+        if (!post) return null;
+        if (post.mediaUrl) return { url: post.mediaUrl, type: post.mediaType || 'image' };
+        if (sortedMedia.length) {
+            const idx = Number.isInteger(post.coverAssetIndex) ? post.coverAssetIndex : 0;
+            return sortedMedia[idx] || sortedMedia[0];
+        }
+        if (post.image) return { url: post.image, type: 'image' };
+        return null;
+    }, [post, sortedMedia]);
+
     const readingStats = useMemo(() => {
         if (!sanitizedContent) return { wordCount: 0, readingMinutes: 0 };
         const tempDiv = document.createElement('div');
@@ -378,10 +396,16 @@ export default function PostPage() {
     }, [post?.createdAt]);
 
     const heroImage = useMemo(() => {
-        if (!post) return null;
-        if (post.mediaType === 'video') return post.image || null;
-        return post.mediaUrl || post.image || null;
-    }, [post]);
+        if (!primaryAsset) return null;
+        if (primaryAsset.type === 'video') return post?.image || null;
+        if (primaryAsset.type === 'image') return primaryAsset.url;
+        return post?.image || null;
+    }, [post?.image, primaryAsset]);
+
+    const galleryItems = useMemo(
+        () => sortedMedia.filter((asset) => asset?.url).slice(0, 8),
+        [sortedMedia]
+    );
 
     const heroBackgroundStyle = useMemo(() => {
         if (!heroImage) {
@@ -527,7 +551,17 @@ export default function PostPage() {
             // NEW: Render the CodeEditor component
             if (domNode.type === 'tag' && domNode.name === 'div' && domNode.attribs['data-snippet-id']) {
                 const snippetId = domNode.attribs['data-snippet-id'];
-                return <CodeEditor snippetId={snippetId} />;
+                return (
+                    <Suspense
+                        fallback={
+                            <div className="liquid-hybrid-tile rounded-2xl border border-white/30 bg-white/70 p-4 text-sm text-slate-500 shadow-inner dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-300">
+                                Loading interactive snippet...
+                            </div>
+                        }
+                    >
+                        <CodeEditor snippetId={snippetId} />
+                    </Suspense>
+                );
             }
         }
     };
@@ -539,7 +573,7 @@ export default function PostPage() {
                 <meta name="description" content={metaDescription} />
                 <meta property="og:title" content={post.title} />
                 <meta property="og:description" content={metaDescription} />
-                <meta property="og:image" content={post.mediaUrl || post.image} />
+                <meta property="og:image" content={heroImage || post.image} />
                 <meta property="og:url" content={window.location.href} />
                 <meta property="og:type" content="article" />
                 <script type="application/ld+json">
@@ -730,16 +764,48 @@ export default function PostPage() {
                                     </Tooltip>
                                 </div>
                             </div>
-                        {(heroImage || post.mediaType === 'video') && (
-                            <div className='liquid-hybrid-panel overflow-hidden shadow-2xl transition duration-500 hover:-translate-y-1'>
-                                {post.mediaType === 'video' ? (
+                        {primaryAsset && (
+                            <article className='liquid-hybrid-panel overflow-hidden shadow-2xl transition duration-500 hover:-translate-y-1'>
+                                {primaryAsset.type === 'video' ? (
                                     <VideoPlayer
-                                        src={post.mediaUrl}
+                                        src={primaryAsset.url}
                                         poster={post.image || undefined}
                                         title={post.title}
                                         storageKey={post._id}
                                         className='rounded-3xl'
                                     />
+                                ) : primaryAsset.type === 'audio' ? (
+                                    <div className='flex flex-col gap-3 rounded-3xl bg-white/60 p-4 backdrop-blur dark:bg-slate-900/80'>
+                                        <div className='flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-200'>
+                                            <span className='rounded-full bg-slate-200 px-3 py-1 text-[11px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-100'>Audio</span>
+                                            {primaryAsset.caption && <span className='truncate text-slate-600 dark:text-slate-300'>{primaryAsset.caption}</span>}
+                                        </div>
+                                        <audio src={primaryAsset.url} controls className='w-full' />
+                                    </div>
+                                ) : primaryAsset.type === 'document' ? (
+                                    <div className='flex flex-col gap-3 rounded-3xl bg-white/70 p-4 text-slate-800 shadow-sm ring-1 ring-slate-200 backdrop-blur dark:bg-slate-900/80 dark:text-slate-100 dark:ring-slate-700'>
+                                        <div className='flex items-center gap-2 text-xs font-semibold uppercase tracking-wide'>
+                                            <span className='rounded-full bg-slate-200 px-3 py-1 text-[11px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-100'>Document</span>
+                                            {primaryAsset.caption && <span className='truncate text-slate-600 dark:text-slate-300'>{primaryAsset.caption}</span>}
+                                        </div>
+                                        <div className='flex flex-wrap items-center gap-3'>
+                                            <a
+                                                href={primaryAsset.url}
+                                                target='_blank'
+                                                rel='noreferrer'
+                                                className='rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow hover:-translate-y-0.5 hover:shadow-lg transition dark:bg-slate-700'
+                                            >
+                                                Open document
+                                            </a>
+                                            <a
+                                                href={primaryAsset.url}
+                                                download
+                                                className='rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'
+                                            >
+                                                Download
+                                            </a>
+                                        </div>
+                                    </div>
                                 ) : (
                                     <img
                                         src={heroImage}
@@ -748,6 +814,16 @@ export default function PostPage() {
                                         loading='lazy'
                                     />
                                 )}
+                            </article>
+                        )}
+
+                        {galleryItems.length > 1 && (
+                            <div className='liquid-hybrid-tile space-y-4 p-5 shadow-xl'>
+                                <div className='flex items-center justify-between text-sm font-semibold text-slate-700 dark:text-slate-200'>
+                                    <span>Media gallery</span>
+                                    <span className='text-xs text-slate-500 dark:text-slate-400'>{galleryItems.length} items</span>
+                                </div>
+                                <GalleryCarousel items={galleryItems} initialIndex={Number.isInteger(post.coverAssetIndex) ? post.coverAssetIndex : 0} />
                             </div>
                         )}
 

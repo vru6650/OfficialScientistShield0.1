@@ -15,6 +15,7 @@ const DashTutorials = lazy(() => import('../components/DashTutorials'));
 const DashQuizzes = lazy(() => import('../components/DashQuizzes')); // NEW: Import DashQuizzes component
 const DashPages = lazy(() => import('../components/DashPages'));
 const DashProblems = lazy(() => import('../components/DashProblems'));
+const DashCommunitySubmissions = lazy(() => import('../components/DashCommunitySubmissions'));
 
 // Create a map to associate tab names with their components.
 const componentMap = {
@@ -27,6 +28,25 @@ const componentMap = {
     quizzes: DashQuizzes, // NEW: Add DashQuizzes to the map
     content: DashPages,
     problems: DashProblems,
+    community: DashCommunitySubmissions,
+};
+
+const resolveDashboardTab = (currentUser, requestedTab) => {
+    const defaultTab = currentUser?.isAdmin ? 'dash' : 'profile';
+
+    if (!requestedTab) {
+        return defaultTab;
+    }
+
+    if (requestedTab === 'profile') {
+        return 'profile';
+    }
+
+    if (currentUser?.isAdmin && componentMap[requestedTab]) {
+        return requestedTab;
+    }
+
+    return defaultTab;
 };
 
 export default function Dashboard() {
@@ -37,8 +57,7 @@ export default function Dashboard() {
     useEffect(() => {
         const urlParams = new URLSearchParams(location.search);
         const tabFromUrl = urlParams.get('tab');
-        const defaultTab = currentUser?.isAdmin ? 'dash' : 'profile';
-        setTab(tabFromUrl || defaultTab);
+        setTab(resolveDashboardTab(currentUser, tabFromUrl));
     }, [location.search, currentUser]);
 
     const ActiveComponent = componentMap[tab];

@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Alert, Badge, Button, Tooltip } from 'flowbite-react';
 import {
     HiArrowPath,
@@ -17,9 +17,14 @@ import PostCardSkeleton from '../components/skeletons/PostCardSkeleton';
 import useDebounce from '../hooks/useDebounce';
 import { getPosts } from '../services/postService';
 import { formatRelativeTimeFromNow } from '../utils/date';
+import { getPostPreviewImage, getPrimaryPostAsset } from '../utils/postMedia.js';
 
 const categoryChips = [
     { value: 'all', label: 'All' },
+    { value: 'community', label: 'Community' },
+    { value: 'show-and-tell', label: 'Show & Tell' },
+    { value: 'help', label: 'Help' },
+    { value: 'tips', label: 'Tips' },
     { value: 'javascript', label: 'JavaScript' },
     { value: 'reactjs', label: 'React.js' },
     { value: 'nextjs', label: 'Next.js' },
@@ -34,6 +39,29 @@ const sortOptions = [
     { id: 'trending', label: 'Trending', sort: 'claps', order: 'desc', description: 'Most applause' },
     { id: 'oldest', label: 'Archive', sort: 'updatedAt', order: 'asc', description: 'Oldest first' },
 ];
+
+const kindChips = [
+    { value: 'all', label: 'Everything' },
+    { value: 'community', label: 'Community only' },
+];
+
+const communityCategories = new Set(['community', 'show-and-tell', 'help', 'tips']);
+
+const resolveSortKey = (sort, order) =>
+    sortOptions.find((option) => option.sort === sort && option.order === order)?.id || 'latest';
+
+const parseFiltersFromSearch = (search) => {
+    const params = new URLSearchParams(search);
+    const categoryParam = params.get('category');
+    const hasCategory = categoryChips.some((chip) => chip.value === categoryParam);
+
+    return {
+        searchTerm: params.get('searchTerm') || '',
+        category: hasCategory ? categoryParam : 'all',
+        sortKey: resolveSortKey(params.get('sort'), params.get('order')),
+        kindFilter: params.get('kind') === 'community' ? 'community' : 'all',
+    };
+};
 
 const stripHtml = (value = '') => value.replace(/<[^>]*>/g, ' ');
 
@@ -51,16 +79,35 @@ const computeReadMinutes = (content = '') => {
 };
 
 export default function PostListPage() {
+    const location = useLocation();
     const { currentUser } = useSelector((state) => state.user);
     const [searchTerm, setSearchTerm] = useState('');
     const [category, setCategory] = useState('all');
     const [sortKey, setSortKey] = useState('latest');
+    const [kindFilter, setKindFilter] = useState('all');
     const [layout, setLayout] = useState('grid');
+
+    useEffect(() => {
+        const parsed = parseFiltersFromSearch(location.search);
+        setSearchTerm(parsed.searchTerm);
+        setCategory(parsed.category);
+        setSortKey(parsed.sortKey);
+        setKindFilter(parsed.kindFilter);
+    }, [location.search]);
 
     const debouncedSearch = useDebounce(searchTerm, 420);
     const selectedSort = useMemo(
         () => sortOptions.find((option) => option.id === sortKey) || sortOptions[0],
         [sortKey]
+    );
+    const visibleCategoryChips = useMemo(
+        () =>
+            kindFilter === 'community'
+                ? categoryChips.filter(
+                    (chip) => chip.value === 'all' || communityCategories.has(chip.value)
+                )
+                : categoryChips,
+        [kindFilter]
     );
 
     const queryString = useMemo(() => {
@@ -74,8 +121,11 @@ export default function PostListPage() {
         if (debouncedSearch.trim()) {
             params.set('searchTerm', debouncedSearch.trim());
         }
+        if (kindFilter === 'community' || communityCategories.has(category)) {
+            params.set('kind', 'community');
+        }
         return params.toString();
-    }, [category, debouncedSearch, layout, selectedSort.order, selectedSort.sort]);
+    }, [category, debouncedSearch, kindFilter, layout, selectedSort.order, selectedSort.sort]);
 
     const {
         data,
@@ -87,7 +137,7 @@ export default function PostListPage() {
     } = useQuery({
         queryKey: ['posts', queryString],
         queryFn: () => getPosts(queryString),
-        keepPreviousData: true,
+        placeholderData: (previousData) => previousData,
     });
 
     const posts = data?.posts ?? [];
@@ -101,10 +151,13 @@ export default function PostListPage() {
         setCategory('all');
         setSearchTerm('');
         setSortKey('latest');
+        setKindFilter('all');
     };
 
     const featuredReadingTime = featured ? computeReadMinutes(featured.content) : 0;
     const featuredStamp = featured?.createdAt ? formatRelativeTimeFromNow(featured.createdAt) : 'Just now';
+    const featuredPreviewImage = useMemo(() => getPostPreviewImage(featured), [featured]);
+    const featuredPrimaryAsset = useMemo(() => getPrimaryPostAsset(featured), [featured]);
 
     return (
         <div className='relative min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950'>
@@ -138,13 +191,20 @@ export default function PostListPage() {
                             </div>
                         </div>
                         <div className='flex flex-wrap items-center gap-3'>
-                            {currentUser?.isAdmin && (
+                            {currentUser?.isAdmin ? (
                                 <Link to='/create-post'>
                                     <Button className='bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500 text-white shadow-md ring-1 ring-sky-300 transition hover:shadow-lg focus:ring-2 focus:ring-sky-300 dark:ring-sky-500/70'>
                                         Start a new post
                                     </Button>
                                 </Link>
-                            )}
+                            ) : null}
+                            {currentUser ? (
+                                <Link to='/community/create'>
+                                    <Button color='light' className='border border-slate-200 bg-white text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'>
+                                        Share with community
+                                    </Button>
+                                </Link>
+                            ) : null}
                             <Button color='light' onClick={() => refetch()} className='border border-slate-200 bg-white text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'>
                                 <div className='flex items-center gap-2'>
                                     <HiArrowPath className='h-5 w-5' />
@@ -195,7 +255,36 @@ export default function PostListPage() {
                             </div>
 
                             <div className='flex flex-wrap items-center gap-2'>
-                                {categoryChips.map((chip) => {
+                                {kindChips.map((chip) => {
+                                    const isActive = chip.value === kindFilter;
+                                    return (
+                                        <button
+                                            key={chip.value}
+                                            type='button'
+                                            onClick={() => {
+                                                setKindFilter(chip.value);
+                                                if (
+                                                    chip.value === 'community' &&
+                                                    category !== 'all' &&
+                                                    !communityCategories.has(category)
+                                                ) {
+                                                    setCategory('all');
+                                                }
+                                            }}
+                                            className={`rounded-full border px-3 py-1 text-sm font-semibold transition ${
+                                                isActive
+                                                    ? 'border-indigo-300 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 text-white shadow-sm'
+                                                    : 'border-slate-200 bg-white text-slate-600 hover:border-sky-200 hover:text-sky-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-sky-500'
+                                            }`}
+                                        >
+                                            {chip.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className='flex flex-wrap items-center gap-2'>
+                                {visibleCategoryChips.map((chip) => {
                                     const isActive = chip.value === category;
                                     return (
                                         <button
@@ -236,7 +325,7 @@ export default function PostListPage() {
                                     })}
                                 </div>
 
-                                {(category !== 'all' || debouncedSearch || sortKey !== 'latest') && (
+                                {(category !== 'all' || debouncedSearch || sortKey !== 'latest' || kindFilter !== 'all') && (
                                     <Button
                                         size='xs'
                                         color='light'
@@ -285,12 +374,24 @@ export default function PostListPage() {
                                     <div className='grid gap-0 lg:grid-cols-[1.1fr,0.9fr]'>
                                         <div className='relative h-full'>
                                             <div className='absolute inset-0 bg-gradient-to-br from-slate-900/80 via-slate-900/40 to-slate-900/70' aria-hidden />
-                                            <img
-                                                src={featured.mediaUrl || featured.image}
-                                                alt={featured.title}
-                                                className='h-full w-full object-cover'
-                                                loading='lazy'
-                                            />
+                                            {featuredPreviewImage ? (
+                                                <img
+                                                    src={featuredPreviewImage}
+                                                    alt={featured.title}
+                                                    className='h-full w-full object-cover'
+                                                    loading='lazy'
+                                                />
+                                            ) : (
+                                                <div className='flex h-full min-h-[320px] items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 px-6 text-center text-sm font-semibold uppercase tracking-[0.24em] text-slate-200'>
+                                                    {featuredPrimaryAsset?.type === 'video'
+                                                        ? 'Video feature'
+                                                        : featuredPrimaryAsset?.type === 'audio'
+                                                            ? 'Audio feature'
+                                                            : featuredPrimaryAsset?.type === 'document'
+                                                                ? 'Document feature'
+                                                                : 'Featured post'}
+                                                </div>
+                                            )}
                                             <div className='absolute inset-0 flex items-end p-6 sm:p-8'>
                                                 <div className='space-y-3 text-white'>
                                                     <div className='flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200'>

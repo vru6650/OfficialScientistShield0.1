@@ -184,8 +184,8 @@ export default function CommentSection({ postId }) {
                 <p className='text-gray-500 dark:text-gray-400 text-xs'>
                   {200 - comment.length} characters remaining
                 </p>
-                <Button outline gradientDuoTone='purpleToBlue' type='submit' disabled={createMutation.isLoading}>
-                  {createMutation.isLoading ? 'Submitting...' : 'Submit'}
+                <Button outline gradientDuoTone='purpleToBlue' type='submit' disabled={createMutation.isPending}>
+                  {createMutation.isPending ? 'Submitting...' : 'Submit'}
                 </Button>
               </div>
               {commentError && (
@@ -242,7 +242,7 @@ export default function CommentSection({ postId }) {
                 <Button
                     color='failure'
                     onClick={() => handleDelete(commentToDelete)}
-                    disabled={deleteMutation.isLoading}
+                    disabled={deleteMutation.isPending}
                 >
                   Yes, I'm sure
                 </Button>

@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import DOMPurify from 'dompurify';
-import parse from 'html-react-parser';
 import {
     Alert,
     Badge,
@@ -23,8 +21,8 @@ import {
     HiOutlineRocketLaunch,
     HiOutlineSparkles,
     HiOutlineSwatch,
-    HiOutlineTag,
 } from 'react-icons/hi2';
+import PostLivePreview from '../components/PostLivePreview';
 import TiptapEditor from '../components/TiptapEditor';
 import '../Tiptap.css';
 import { useCloudinaryUpload } from '../hooks/useCloudinaryUpload';
@@ -42,64 +40,13 @@ const generateSlug = (title) => {
         .replace(/--+/g, '-');
 };
 
-const PreviewCard = ({ post, readTime, wordCount }) => {
-    const sanitized = DOMPurify.sanitize(post?.content || '');
-    const previewTitle = post?.title || 'Untitled post';
-    const hasBody = stripHtml(sanitized).trim().length > 0;
-
-    return (
-        <div className='relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900'>
-            <div className='absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(56,189,248,0.12),transparent_30%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.12),transparent_28%)] dark:bg-[radial-gradient(circle_at_0%_0%,rgba(56,189,248,0.16),transparent_30%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.16),transparent_28%)]' aria-hidden />
-            <div className='relative space-y-4 p-5 sm:p-6'>
-                <div className='flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300'>
-                    <span className='inline-flex items-center gap-2 rounded-full bg-sky-100 px-3 py-1 text-sky-700 shadow-sm ring-1 ring-sky-200 dark:bg-sky-900/50 dark:text-sky-100'>
-                        <HiOutlineTag className='h-4 w-4' />
-                        {post?.category || 'uncategorized'}
-                    </span>
-                    {readTime ? (
-                        <span className='rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 shadow-sm ring-1 ring-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200'>
-                            {readTime} min read
-                        </span>
-                    ) : (
-                        <span className='rounded-full bg-slate-100 px-3 py-1 text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200'>Preview</span>
-                    )}
-                    {wordCount > 0 && (
-                        <span className='rounded-full bg-amber-100 px-3 py-1 text-amber-700 shadow-sm ring-1 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200'>
-                            {wordCount} words
-                        </span>
-                    )}
-                </div>
-                <div className='space-y-2'>
-                    <p className='text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>Live preview</p>
-                    <h2 className='text-2xl font-semibold text-slate-900 dark:text-white'>{previewTitle}</h2>
-                </div>
-                {post?.mediaUrl && (
-                    <div className='overflow-hidden rounded-xl border border-slate-200 shadow-sm dark:border-slate-800'>
-                        {post.mediaType === 'video' ? (
-                            <video src={post.mediaUrl} controls className='h-64 w-full object-cover' />
-                        ) : (
-                            <img src={post.mediaUrl} alt='Uploaded preview' className='h-64 w-full object-cover' />
-                        )}
-                    </div>
-                )}
-                <div className='prose prose-slate max-w-none text-slate-700 dark:prose-invert dark:text-slate-200'>
-                    {hasBody ? (
-                        parse(sanitized)
-                    ) : (
-                        <p className='text-sm text-slate-500 dark:text-slate-400'>Your story preview will appear here as you edit.</p>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
 export default function UpdatePost() {
     const { postId } = useParams();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({});
     const [file, setFile] = useState(null);
     const debounceTimeout = useRef(null);
+    const latestContentRef = useRef(undefined);
 
     const { isUploading, error: uploadError, progress, upload, cancelUpload } = useCloudinaryUpload();
 
@@ -112,11 +59,13 @@ export default function UpdatePost() {
     useEffect(() => {
         if (initialPost) {
             setFormData(initialPost);
+            latestContentRef.current = initialPost.content || '';
         }
     }, [initialPost]);
 
     const updateMutation = useMutation({
-        mutationFn: (variables) => updatePost({ ...variables, formData }),
+        mutationFn: ({ formData: nextFormData = formData, ...variables }) =>
+            updatePost({ ...variables, formData: nextFormData }),
         onSuccess: (data) => navigate(`/post/${data.slug}`),
     });
 
@@ -154,6 +103,7 @@ export default function UpdatePost() {
     };
 
     const handleContentChange = (content) => {
+        latestContentRef.current = content;
         if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
         debounceTimeout.current = setTimeout(() => {
             setFormData((prev) => ({ ...prev, content }));
@@ -163,16 +113,23 @@ export default function UpdatePost() {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+        const nextFormData = {
+            ...formData,
+            content: latestContentRef.current ?? formData.content ?? '',
+        };
+        setFormData(nextFormData);
 
         updateMutation.mutate({
             postId: formData._id,
             userId: formData.userId,
+            formData: nextFormData,
         });
     };
 
     const handleRevert = () => {
         if (initialPost) {
             setFormData(initialPost);
+            latestContentRef.current = initialPost.content || '';
         }
     };
 
@@ -440,7 +397,14 @@ export default function UpdatePost() {
                             </div>
                         </div>
 
-                        <PreviewCard post={{ ...formData, createdAt: formData.createdAt || new Date().toISOString() }} readTime={readTime} wordCount={wordCount} />
+                        <PostLivePreview
+                            post={{
+                                ...formData,
+                                createdAt: formData.createdAt || new Date().toISOString(),
+                            }}
+                            readTime={readTime}
+                            wordCount={wordCount}
+                        />
                     </aside>
                 </div>
             </div>

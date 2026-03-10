@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Suspense, lazy, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Breadcrumb, Spinner } from 'flowbite-react';
@@ -16,7 +16,9 @@ import ProblemStatsBar from '../components/problems/ProblemStatsBar';
 import ProblemResourceLinks from '../components/problems/ProblemResourceLinks';
 import ProblemMetaSummary from '../components/problems/ProblemMetaSummary';
 import ProblemWorkspace from '../components/problems/ProblemWorkspace';
-import CodeEditor from '../components/CodeEditor';
+import ProblemDifficultyBadge from '../components/problems/ProblemDifficultyBadge';
+
+const CodeEditor = lazy(() => import('../components/CodeEditor'));
 
 const normalizeStarterLanguage = (language) => {
     if (!language) {
@@ -59,7 +61,6 @@ const normalizeStarterLanguage = (language) => {
 
     return null;
 };
-import ProblemDifficultyBadge from '../components/problems/ProblemDifficultyBadge';
 
 export default function SingleProblemPage() {
     const { problemSlug } = useParams();
@@ -279,11 +280,19 @@ export default function SingleProblemPage() {
                                 </p>
                             </div>
                             <div className="h-[720px] bg-slate-50/80 dark:bg-slate-900/70">
-                                <CodeEditor
-                                    language={starterDefaultLanguage ?? 'javascript'}
-                                    initialCode={starterInitialCode}
-                                    workspaceId={`problem-${data?._id || data?.slug || 'default'}`}
-                                />
+                                <Suspense
+                                    fallback={
+                                        <div className="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-300">
+                                            Loading code workspace...
+                                        </div>
+                                    }
+                                >
+                                    <CodeEditor
+                                        language={starterDefaultLanguage ?? 'javascript'}
+                                        initialCode={starterInitialCode}
+                                        workspaceId={`problem-${data?._id || data?.slug || 'default'}`}
+                                    />
+                                </Suspense>
                             </div>
                         </section>
 

@@ -17,8 +17,22 @@ export const create = asyncHandler(async (req, res) => {
     res.status(201).json(savedPost);
 });
 
+export const createCommunityPost = asyncHandler(async (req, res) => {
+    const savedPost = await createPost({
+        userId: req.user?.id,
+        isAdmin: Boolean(req.user?.isAdmin),
+        body: { ...req.body, kind: 'community', category: req.body?.category || 'community' },
+    });
+    res.status(201).json(savedPost);
+});
+
 export const getposts = asyncHandler(async (req, res) => {
     const data = await getPosts({ query: req.query });
+    res.status(200).json(data);
+});
+
+export const getCommunityPosts = asyncHandler(async (req, res) => {
+    const data = await getPosts({ query: { ...req.query, kind: 'community' } });
     res.status(200).json(data);
 });
 

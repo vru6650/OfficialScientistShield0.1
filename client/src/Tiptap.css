@@ -226,4 +226,683 @@ input[type="color"]::-webkit-color-swatch {
     border: none;
 }
 
+/*
+ * Create-post studio shell
+ * Scoped so the layout and editor treatment stay isolated to the create page.
+ */
+.create-post-studio {
+    --create-post-border: rgba(148, 163, 184, 0.24);
+    --create-post-surface:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.56)),
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 42%),
+        radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.12), transparent 34%);
+    --create-post-shadow:
+        0 28px 90px -58px rgba(15, 23, 42, 0.75),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
 
+.dark .create-post-studio {
+    --create-post-border: rgba(148, 163, 184, 0.16);
+    --create-post-surface:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.84), rgba(15, 23, 42, 0.68)),
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.15), transparent 42%),
+        radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.1), transparent 30%);
+    --create-post-shadow:
+        0 32px 96px -62px rgba(2, 6, 23, 0.96),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.create-post-hero,
+.create-post-workspace,
+.create-post-sidecard {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--create-post-border);
+    border-radius: 32px;
+    background: var(--create-post-surface);
+    box-shadow: var(--create-post-shadow);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+
+.create-post-hero::before,
+.create-post-workspace::before,
+.create-post-sidecard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.24), transparent 36%),
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 40%);
+    opacity: 0.65;
+}
+
+.create-post-hero,
+.create-post-workspace {
+    padding: 1.5rem;
+}
+
+.create-post-sidecard {
+    padding: 1.25rem;
+}
+
+.create-post-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid rgba(56, 189, 248, 0.18);
+    background: rgba(255, 255, 255, 0.65);
+    color: #0f172a;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.dark .create-post-kicker {
+    border-color: rgba(56, 189, 248, 0.24);
+    background: rgba(15, 23, 42, 0.64);
+    color: #e2e8f0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.create-post-kicker__dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 1), rgba(16, 185, 129, 0.94));
+    box-shadow: 0 0 0 5px rgba(56, 189, 248, 0.16);
+}
+
+.create-post-title {
+    max-width: 14ch;
+    font-size: clamp(2.2rem, 5vw, 4.1rem);
+    line-height: 0.96;
+    letter-spacing: -0.04em;
+    color: #0f172a;
+}
+
+.dark .create-post-title {
+    color: #f8fafc;
+}
+
+.create-post-copy {
+    max-width: 60ch;
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #475569;
+}
+
+.dark .create-post-copy {
+    color: #cbd5e1;
+}
+
+.create-post-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 2.7rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    background: rgba(255, 255, 255, 0.72);
+    color: #0f172a;
+    font-size: 0.88rem;
+    font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.dark .create-post-pill {
+    border-color: rgba(148, 163, 184, 0.16);
+    background: rgba(15, 23, 42, 0.68);
+    color: #e2e8f0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.create-post-stat {
+    position: relative;
+    border-radius: 24px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(255, 255, 255, 0.68);
+    padding: 1rem;
+    box-shadow:
+        0 20px 40px -34px rgba(15, 23, 42, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.74);
+}
+
+.dark .create-post-stat {
+    border-color: rgba(148, 163, 184, 0.14);
+    background: rgba(15, 23, 42, 0.72);
+    box-shadow:
+        0 24px 42px -32px rgba(2, 6, 23, 0.72),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.create-post-stat__label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+.dark .create-post-stat__label {
+    color: #94a3b8;
+}
+
+.create-post-stat__value {
+    margin-top: 0.75rem;
+    font-size: clamp(1.7rem, 3vw, 2.4rem);
+    line-height: 1;
+    letter-spacing: -0.05em;
+    color: #0f172a;
+}
+
+.dark .create-post-stat__value {
+    color: #f8fafc;
+}
+
+.create-post-stat__helper {
+    margin-top: 0.55rem;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: #64748b;
+}
+
+.dark .create-post-stat__helper {
+    color: #94a3b8;
+}
+
+.create-post-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.create-post-panel-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #0ea5e9;
+}
+
+.create-post-panel-title {
+    font-size: 1.55rem;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: #0f172a;
+}
+
+.dark .create-post-panel-title {
+    color: #f8fafc;
+}
+
+.create-post-panel-copy {
+    max-width: 60ch;
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: #64748b;
+}
+
+.dark .create-post-panel-copy {
+    color: #cbd5e1;
+}
+
+.create-post-template-row {
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 1.4rem;
+}
+
+@media (min-width: 768px) {
+    .create-post-template-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.create-post-template {
+    text-align: left;
+    padding: 1rem;
+    border-radius: 24px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(255, 255, 255, 0.64);
+    box-shadow:
+        0 16px 38px -32px rgba(15, 23, 42, 0.46),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    transition:
+        transform 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        background 0.18s ease;
+}
+
+.create-post-template:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, 0.28);
+    box-shadow:
+        0 24px 44px -34px rgba(14, 165, 233, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.dark .create-post-template {
+    border-color: rgba(148, 163, 184, 0.14);
+    background: rgba(15, 23, 42, 0.68);
+    box-shadow:
+        0 22px 40px -34px rgba(2, 6, 23, 0.72),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.dark .create-post-template:hover {
+    border-color: rgba(56, 189, 248, 0.24);
+}
+
+.create-post-template.is-active {
+    border-color: transparent;
+    background:
+        linear-gradient(135deg, rgba(14, 165, 233, 0.92), rgba(16, 185, 129, 0.86));
+    box-shadow:
+        0 24px 42px -30px rgba(14, 165, 233, 0.36),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.create-post-template.is-active .create-post-template__label,
+.create-post-template.is-active .create-post-template__copy {
+    color: #f8fafc;
+}
+
+.create-post-template__label {
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.dark .create-post-template__label {
+    color: #f8fafc;
+}
+
+.create-post-template__copy {
+    margin-top: 0.45rem;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: #64748b;
+}
+
+.dark .create-post-template__copy {
+    color: #94a3b8;
+}
+
+.create-post-template__tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 4.5rem;
+    height: 1.85rem;
+    padding: 0 0.65rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    color: #f8fafc;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.create-post-excerpt-grid {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.25rem;
+}
+
+@media (min-width: 768px) {
+    .create-post-excerpt-grid {
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+    }
+}
+
+.create-post-excerpt-card {
+    border-radius: 24px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(255, 255, 255, 0.6);
+    padding: 1rem;
+    box-shadow:
+        0 18px 34px -30px rgba(15, 23, 42, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.74);
+}
+
+.dark .create-post-excerpt-card {
+    border-color: rgba(148, 163, 184, 0.14);
+    background: rgba(15, 23, 42, 0.62);
+    box-shadow:
+        0 20px 36px -30px rgba(2, 6, 23, 0.72),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.create-post-mini-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(255, 255, 255, 0.62);
+    padding: 0.85rem;
+}
+
+.dark .create-post-mini-stat {
+    border-color: rgba(148, 163, 184, 0.14);
+    background: rgba(15, 23, 42, 0.56);
+}
+
+.create-post-mini-stat__label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+
+.dark .create-post-mini-stat__label {
+    color: #94a3b8;
+}
+
+.create-post-mini-stat__value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.dark .create-post-mini-stat__value {
+    color: #f8fafc;
+}
+
+.create-post-meter {
+    position: relative;
+    height: 0.55rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.18);
+}
+
+.create-post-meter__fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(14, 165, 233, 0.94), rgba(16, 185, 129, 0.9));
+    box-shadow: 0 12px 22px -14px rgba(14, 165, 233, 0.7);
+}
+
+.create-post-cue {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem 0.95rem;
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(255, 255, 255, 0.58);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+.dark .create-post-cue {
+    border-color: rgba(148, 163, 184, 0.14);
+    background: rgba(15, 23, 42, 0.58);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/*
+ * Create-post glassmorphism editor skin
+ * Scoped so other editors keep their current presentation.
+ */
+.create-post-editor-shell {
+    position: relative;
+}
+
+.create-post-editor-shell::before {
+    content: '';
+    position: absolute;
+    inset: -14px;
+    border-radius: 32px;
+    background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.22), transparent 42%),
+        radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.16), transparent 34%);
+    filter: blur(18px);
+    opacity: 0.95;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.create-post-editor-shell .tiptap-container {
+    position: relative;
+    z-index: 1;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    border-radius: 30px;
+    overflow: hidden;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.6)),
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 44%),
+        radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.14), transparent 34%);
+    box-shadow:
+        0 28px 90px -56px rgba(15, 23, 42, 0.72),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+
+.create-post-editor-shell .tiptap-container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.34), transparent 34%),
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.34), transparent 48%);
+    mix-blend-mode: screen;
+    opacity: 0.72;
+}
+
+.dark .create-post-editor-shell .tiptap-container {
+    border-color: rgba(148, 163, 184, 0.18);
+    background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.74)),
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 40%),
+        radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.12), transparent 30%);
+    box-shadow:
+        0 32px 96px -62px rgba(2, 6, 23, 0.96),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.create-post-editor-shell .tiptap-toolbar {
+    position: relative;
+    gap: 0.75rem;
+    padding: 0.95rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.24)),
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), transparent 42%);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+
+.dark .create-post-editor-shell .tiptap-toolbar {
+    border-bottom-color: rgba(148, 163, 184, 0.16);
+    background:
+        linear-gradient(180deg, rgba(30, 41, 59, 0.72), rgba(15, 23, 42, 0.44)),
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 42%);
+}
+
+.create-post-editor-shell .tiptap-toolbar [role="group"],
+.create-post-editor-shell .tiptap-toolbar > .relative,
+.create-post-editor-shell .tiptap-toolbar > button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem;
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(255, 255, 255, 0.46);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+}
+
+.dark .create-post-editor-shell .tiptap-toolbar [role="group"],
+.dark .create-post-editor-shell .tiptap-toolbar > .relative,
+.dark .create-post-editor-shell .tiptap-toolbar > button {
+    border-color: rgba(148, 163, 184, 0.14);
+    background: rgba(15, 23, 42, 0.44);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.create-post-editor-shell .tiptap-toolbar button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    border-radius: 14px !important;
+    border: 1px solid rgba(148, 163, 184, 0.22) !important;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(241, 245, 249, 0.74)) !important;
+    box-shadow:
+        0 12px 24px -20px rgba(15, 23, 42, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    color: #0f172a !important;
+    transition:
+        transform 0.18s ease,
+        background 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        color 0.18s ease;
+}
+
+.dark .create-post-editor-shell .tiptap-toolbar button {
+    border-color: rgba(148, 163, 184, 0.16) !important;
+    background:
+        linear-gradient(180deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.82)) !important;
+    box-shadow:
+        0 14px 28px -22px rgba(2, 6, 23, 0.9),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    color: #e2e8f0 !important;
+}
+
+.create-post-editor-shell .tiptap-toolbar button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(56, 189, 248, 0.34) !important;
+    box-shadow:
+        0 18px 28px -22px rgba(14, 165, 233, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+.dark .create-post-editor-shell .tiptap-toolbar button:hover {
+    border-color: rgba(56, 189, 248, 0.3) !important;
+    box-shadow:
+        0 18px 30px -24px rgba(14, 165, 233, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.create-post-editor-shell .tiptap-toolbar button.is-active {
+    border-color: transparent !important;
+    background:
+        linear-gradient(135deg, rgba(14, 165, 233, 0.96), rgba(16, 185, 129, 0.92)) !important;
+    color: #ffffff !important;
+    box-shadow:
+        0 18px 34px -24px rgba(14, 165, 233, 0.56),
+        inset 0 1px 0 rgba(255, 255, 255, 0.26);
+}
+
+.create-post-editor-shell .tiptap-toolbar button:disabled {
+    opacity: 0.42;
+    box-shadow: none;
+    transform: none;
+}
+
+.create-post-editor-shell .tiptap-toolbar input[type="color"] {
+    width: 100%;
+    height: 100%;
+    border: none;
+    box-shadow: none;
+}
+
+.create-post-editor-shell .tiptap {
+    min-height: 540px;
+    padding: 1.65rem 1.65rem 1.9rem;
+    color: #0f172a;
+    font-size: 1.02rem;
+    line-height: 1.85;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.12));
+}
+
+.dark .create-post-editor-shell .tiptap {
+    color: #e2e8f0;
+    background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.24), rgba(15, 23, 42, 0.08));
+}
+
+.create-post-editor-shell .tiptap p.is-editor-empty:first-child::before {
+    color: rgba(71, 85, 105, 0.72);
+}
+
+.dark .create-post-editor-shell .tiptap p.is-editor-empty:first-child::before {
+    color: rgba(148, 163, 184, 0.76);
+}
+
+.create-post-editor-shell .tiptap h1,
+.create-post-editor-shell .tiptap h2,
+.create-post-editor-shell .tiptap h3 {
+    letter-spacing: -0.02em;
+}
+
+.create-post-editor-shell .tiptap blockquote {
+    margin-left: 0;
+    padding: 1rem 1.2rem;
+    border-left: 3px solid rgba(56, 189, 248, 0.6);
+    border-radius: 0 18px 18px 0;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.dark .create-post-editor-shell .tiptap blockquote {
+    background: rgba(15, 23, 42, 0.46);
+    border-left-color: rgba(56, 189, 248, 0.44);
+}
+
+.create-post-editor-shell .tiptap pre {
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.88));
+    box-shadow: 0 20px 38px -30px rgba(15, 23, 42, 0.78);
+}
+
+.create-post-editor-shell .tiptap img,
+.create-post-editor-shell .tiptap .youtube-iframe,
+.create-post-editor-shell .tiptap video,
+.create-post-editor-shell .tiptap audio {
+    border-radius: 20px;
+    box-shadow: 0 22px 48px -34px rgba(15, 23, 42, 0.48);
+}
+
+.create-post-editor-shell .tiptap table {
+    border-radius: 18px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.46);
+}
+
+.dark .create-post-editor-shell .tiptap table {
+    background: rgba(15, 23, 42, 0.5);
+}
+
+.create-post-editor-shell .character-count {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.85rem 1rem 1rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.22);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.18));
+    color: #475569;
+}
+
+.dark .create-post-editor-shell .character-count {
+    border-top-color: rgba(148, 163, 184, 0.14);
+    background:
+        linear-gradient(180deg, rgba(30, 41, 59, 0.62), rgba(15, 23, 42, 0.4));
+    color: #94a3b8;
+}

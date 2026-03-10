@@ -146,7 +146,7 @@ export default function DashComments() {
               Are you sure you want to delete this comment?
             </h3>
             <div className='flex justify-center gap-4'>
-              <Button color='failure' onClick={handleDeleteComment} disabled={deleteMutation.isLoading}>
+              <Button color='failure' onClick={handleDeleteComment} disabled={deleteMutation.isPending}>
                 Yes, I'm sure
               </Button>
               <Button color='gray' onClick={() => setShowModal(false)}>

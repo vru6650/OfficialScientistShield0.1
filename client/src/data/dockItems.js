@@ -9,6 +9,7 @@ import quickAddIcon from '../assets/dock/quick-add.svg';
 import themeIcon from '../assets/dock/theme.svg';
 import fileManagerIcon from '../assets/dock/file-manager.svg';
 import settingsIcon from '../assets/dock/settings.svg';
+import communityIcon from '../assets/dock/community.svg';
 
 const getIconPack = () => {
     if (typeof window === 'undefined') return 'default';
@@ -49,6 +50,15 @@ export const baseDockItems = [
         fallbackIconSrc: aboutIcon,
         iconAlt: 'About dock icon',
         match: (path) => path.startsWith('/about'),
+    },
+    {
+        key: 'community',
+        to: '/community',
+        label: 'Community',
+        iconSrc: buildIconSrc('community', communityIcon),
+        fallbackIconSrc: communityIcon,
+        iconAlt: 'Community dock icon',
+        match: (path) => path.startsWith('/community'),
     },
     {
         key: 'tutorials',

@@ -22,11 +22,38 @@ export const getPosts = async (searchQuery) => {
  * @returns {Promise<object>} The data containing the posts array.
  */
 export const getAdminPosts = async ({ queryKey, pageParam = 0 }) => {
-    // UPDATED: Get the userId from the queryKey passed by React Query.
-    const userId = queryKey[1];
-    const res = await apiFetch(`/api/v1/post/getposts?userId=${userId}&startIndex=${pageParam}`);
+    const [, userId, filters = {}] = queryKey;
+    if (!userId) throw new Error('User id is required to fetch admin posts.');
+
+    const params = new URLSearchParams();
+    params.set('userId', userId);
+    params.set('startIndex', pageParam);
+    params.set('limit', filters.pageSize ?? 15);
+    if (filters.searchTerm) params.set('searchTerm', filters.searchTerm);
+    if (filters.category && filters.category !== 'all') params.set('category', filters.category);
+    if (filters.kind && filters.kind !== 'all') params.set('kind', filters.kind);
+    if (filters.sort) params.set('sort', filters.sort);
+    if (filters.order) params.set('order', filters.order);
+
+    const res = await apiFetch(`/api/v1/post/getposts?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch admin posts');
     return res.json();
+};
+
+export const createPost = async (payload) => {
+    const res = await apiFetch('/api/v1/post/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+        throw new Error(data.message || 'Failed to create post.');
+    }
+
+    return data;
 };
 
 /**

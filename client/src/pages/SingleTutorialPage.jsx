@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getTutorials } from '../services/tutorialService';
 import { Spinner, Alert, Button, Progress } from 'flowbite-react';
 import DOMPurify from 'dompurify';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,7 +15,6 @@ import SocialShare from '../components/SocialShare';
 import { calculateReadingTime } from '../utils/helpers';
 import useUser from '../hooks/useUser';
 import CommentSection from '../components/CommentSection';
-import CodeEditor from '../components/CodeEditor';
 import QuizComponent from '../components/QuizComponent';
 import InteractiveCodeBlock from '../components/InteractiveCodeBlock.jsx';
 import InteractiveReadingSurface from '../components/InteractiveReadingSurface.jsx';
@@ -29,6 +28,8 @@ import '../pages/Scrollbar.css';
 import { FaCode, FaQuestionCircle, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import { HiCheckCircle, HiExternalLink } from 'react-icons/hi';
 import { HiOutlineUserCircle, HiOutlineDocumentText } from 'react-icons/hi2';
+
+const CodeEditor = lazy(() => import('../components/CodeEditor'));
 
 // Helper function to generate a valid slug from a string.
 const generateSlug = (text) => {
@@ -102,12 +103,20 @@ const ChapterContent = ({ activeChapter, sanitizedContent, parserOptions, conten
                         style={readingStyle}
                         dangerouslySetInnerHTML={{ __html: sanitizedContent }}
                     />
-                    <CodeEditor
-                        key={`chapter-code-${activeChapter._id || activeChapter.chapterSlug || activeChapter.chapterTitle || 'default'}`}
-                        initialCode={activeChapter.initialCode || ''}
-                        language={activeChapter.codeLanguage || 'javascript'}
-                        workspaceId={`tutorial-${activeChapter._id || activeChapter.chapterSlug || activeChapter.chapterTitle || 'default'}`}
-                    />
+                    <Suspense
+                        fallback={
+                            <div className='liquid-hybrid-tile mt-4 rounded-2xl border border-white/20 bg-white/60 p-4 text-sm text-slate-600 shadow-inner dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-300'>
+                                Loading interactive editor...
+                            </div>
+                        }
+                    >
+                        <CodeEditor
+                            key={`chapter-code-${activeChapter._id || activeChapter.chapterSlug || activeChapter.chapterTitle || 'default'}`}
+                            initialCode={activeChapter.initialCode || ''}
+                            language={activeChapter.codeLanguage || 'javascript'}
+                            workspaceId={`tutorial-${activeChapter._id || activeChapter.chapterSlug || activeChapter.chapterTitle || 'default'}`}
+                        />
+                    </Suspense>
                 </motion.div>
             );
         case 'quiz':
@@ -450,7 +459,17 @@ export default function SingleTutorialPage() {
             }
             if (domNode.type === 'tag' && domNode.name === 'div' && domNode.attribs['data-snippet-id']) {
                 const snippetId = domNode.attribs['data-snippet-id'];
-                return <CodeEditor snippetId={snippetId} />;
+                return (
+                    <Suspense
+                        fallback={
+                            <div className="liquid-hybrid-tile rounded-2xl border border-white/20 bg-white/70 p-4 text-sm text-slate-600 shadow-inner dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-300">
+                                Loading interactive snippet...
+                            </div>
+                        }
+                    >
+                        <CodeEditor snippetId={snippetId} />
+                    </Suspense>
+                );
             }
         }
     };

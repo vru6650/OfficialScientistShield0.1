@@ -7,6 +7,7 @@ import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { Tooltip, Spinner } from 'flowbite-react';
 import { formatRelativeTimeFromNow, isWithinPastHours } from '../utils/date.js';
+import CommunityPostBadge from './CommunityPostBadge.jsx';
 
 // --- Icon and Hook Imports ---
 import {
@@ -78,7 +79,7 @@ const buildPostInsights = (htmlContent, fallbackTitle) => {
     return { previewText, wordCount, readingMinutes, readingLabel };
 };
 
-const CardHeader = ({ userId, fallbackUsername, category }) => {
+const CardHeader = ({ userId, fallbackUsername, category, kind }) => {
     const { user, isLoading, error } = useUser(userId);
     if (isLoading) {
         return (
@@ -108,10 +109,17 @@ const CardHeader = ({ userId, fallbackUsername, category }) => {
                     />
                 )}
                 <span className='font-bold text-sm text-gray-800 dark:text-gray-200'>{displayName}</span>
-                <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-professional-blue-600 dark:text-professional-blue-300 px-2.5 py-0.5 rounded-full border border-white/30 dark:border-white/10 bg-white/60 dark:bg-slate-800/50 backdrop-blur shadow-sm">
-                    <FaTag aria-hidden />
-                    {formatCategory(category)}
-                </span>
+                <div className='flex items-center gap-2'>
+                    {kind === 'community' && (
+                        <span className='inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200'>
+                            Community
+                        </span>
+                    )}
+                    <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide font-semibold text-professional-blue-600 dark:text-professional-blue-300 px-2.5 py-0.5 rounded-full border border-white/30 dark:border-white/10 bg-white/60 dark:bg-slate-800/50 backdrop-blur shadow-sm">
+                        <FaTag aria-hidden />
+                        {formatCategory(category)}
+                    </span>
+                </div>
             </div>
             <button
                 type='button'
@@ -123,7 +131,7 @@ const CardHeader = ({ userId, fallbackUsername, category }) => {
         </div>
     );
 };
-CardHeader.propTypes = { userId: PropTypes.string, fallbackUsername: PropTypes.string, category: PropTypes.string };
+CardHeader.propTypes = { userId: PropTypes.string, fallbackUsername: PropTypes.string, category: PropTypes.string, kind: PropTypes.string };
 
 
 const CardMedia = ({
@@ -142,10 +150,16 @@ const CardMedia = ({
     isTrending = false,
     isFresh = false,
 }) => {
-    const mediaType = post.mediaType || 'image';
+    const galleryAssets = Array.isArray(post.mediaAssets) ? [...post.mediaAssets].sort((a, b) => (a.order || 0) - (b.order || 0)) : [];
+    const coverIndex = Number.isInteger(post.coverAssetIndex) ? post.coverAssetIndex : 0;
+    const primaryAsset = post.mediaUrl
+        ? { url: post.mediaUrl, type: post.mediaType || 'image' }
+        : galleryAssets[coverIndex] || galleryAssets[0];
+    const mediaType = primaryAsset?.type || post.mediaType || 'image';
     const fallbackImage = post.image || null;
-    const mediaUrl = post.mediaUrl || fallbackImage;
-    const shouldRenderVideo = mediaType === 'video' && !!post.mediaUrl;
+    const mediaUrl = primaryAsset?.url || fallbackImage;
+    const shouldRenderVideo = mediaType === 'video' && !!mediaUrl;
+    const shouldRenderAudio = mediaType === 'audio' && !!mediaUrl;
 
     const [mediaOrientation, setMediaOrientation] = useState('landscape');
     const [isMediaLoading, setIsMediaLoading] = useState(Boolean(mediaUrl));
@@ -258,6 +272,10 @@ const CardMedia = ({
                         onLoadedMetadata={handleVideoMetadata}
                         onError={handleMediaError}
                     />
+                ) : shouldRenderAudio ? (
+                    <div className='flex h-full items-center justify-center bg-slate-100 p-4 dark:bg-slate-800'>
+                        <audio src={mediaUrl} controls className='w-full' />
+                    </div>
                 ) : (
                     <img
                         src={mediaUrl}
@@ -283,6 +301,11 @@ const CardMedia = ({
                 {isTrending && (
                     <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500/90 to-rose-500/90 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-amber-500/20">
                         <FaFire aria-hidden /> Trending
+                    </span>
+                )}
+                {galleryAssets.length > 1 && (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-700 shadow-sm ring-1 ring-slate-200 backdrop-blur dark:bg-slate-800/80 dark:text-slate-100 dark:ring-slate-700">
+                        Gallery • {galleryAssets.length}
                     </span>
                 )}
                 {!isTrending && isFresh && (
@@ -852,6 +875,7 @@ export default function PostCard({ post }) {
                     userId={post.userId}
                     fallbackUsername={post?.authorName || post?.username || post?.author}
                     category={post?.category}
+                    kind={post?.kind}
                 />
 
                 <CardMedia
@@ -912,7 +936,16 @@ PostCard.propTypes = {
         bookmarkedBy: PropTypes.arrayOf(PropTypes.string),
         mediaUrl: PropTypes.string,
         image: PropTypes.string,
-        mediaType: PropTypes.oneOf(['image', 'video']),
+        mediaType: PropTypes.oneOf(['image', 'video', 'audio', 'document']),
+        mediaAssets: PropTypes.arrayOf(
+            PropTypes.shape({
+                url: PropTypes.string.isRequired,
+                type: PropTypes.oneOf(['image', 'video', 'audio', 'document']),
+                caption: PropTypes.string,
+                order: PropTypes.number,
+            })
+        ),
+        coverAssetIndex: PropTypes.number,
         authorName: PropTypes.string,
         username: PropTypes.string,
         author: PropTypes.string,

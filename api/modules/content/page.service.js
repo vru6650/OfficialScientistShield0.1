@@ -239,53 +239,96 @@ export const updatePage = async ({ pageId, userId, isAdmin, body }) => {
         throw errorHandler(404, 'Page not found.');
     }
 
-    const { title, slug, description, sections, status, seo = {} } = body;
+    const { title, slug, description, sections, status, seo } = body ?? {};
+    const previousStatus = page.status;
+    const previousTitle = page.title;
+    const previousDescription = page.description;
+    const previousSeo = page.seo || {};
 
-    if (!title?.toString().trim()) {
-        throw errorHandler(400, 'Title is required.');
+    const hasTitleUpdate = title !== undefined;
+    const hasSlugUpdate = slug !== undefined;
+    const hasDescriptionUpdate = description !== undefined;
+    const hasSectionsUpdate = sections !== undefined;
+    const hasStatusUpdate = status !== undefined;
+    const hasSeoUpdate = seo !== undefined && seo !== null;
+
+    if (hasTitleUpdate) {
+        const normalizedTitle = title?.toString().trim();
+        if (!normalizedTitle) {
+            throw errorHandler(400, 'Title is required.');
+        }
+        page.title = normalizedTitle;
     }
 
-    const normalizedSlug = slugify(slug || title);
+    const effectiveTitle = page.title;
 
-    if (normalizedSlug !== page.slug) {
-        const slugExists = await findPageBySlugExcludingId(normalizedSlug, page._id);
-        if (slugExists) {
-            throw errorHandler(409, 'A page with this slug already exists.');
+    const slugSource = hasSlugUpdate ? slug : hasTitleUpdate ? title : null;
+    const trimmedSlugSource = slugSource?.toString().trim();
+    if (trimmedSlugSource) {
+        const normalizedSlug = slugify(trimmedSlugSource);
+        if (normalizedSlug !== page.slug) {
+            const slugExists = await findPageBySlugExcludingId(normalizedSlug, page._id);
+            if (slugExists) {
+                throw errorHandler(409, 'A page with this slug already exists.');
+            }
+            page.slug = normalizedSlug;
         }
     }
 
-    const sanitizedSections = sanitizeSections(sections);
-    const normalizedStatus = status === 'published' ? 'published' : 'draft';
-    const previousStatus = page.status;
+    if (hasDescriptionUpdate) {
+        page.description = description?.toString().trim() ?? '';
+    }
+    const effectiveDescription = page.description;
 
-    page.title = title.trim();
-    page.slug = normalizedSlug;
-    page.description = description?.toString().trim() ?? '';
-    page.status = normalizedStatus;
-    page.sections = sanitizedSections;
-    page.seo = {
-        metaTitle: seo.metaTitle?.toString().trim() || title.trim(),
-        metaDescription: seo.metaDescription?.toString().trim() || description?.toString().trim() || '',
-        keywords: normalizeKeywords(seo.keywords),
-    };
+    if (hasSectionsUpdate) {
+        page.sections = sanitizeSections(sections);
+    }
+
+    if (hasStatusUpdate) {
+        const normalizedStatus = status === 'published' ? 'published' : 'draft';
+        page.status = normalizedStatus;
+
+        if (normalizedStatus === 'published' && !page.publishedAt) {
+            page.publishedAt = new Date();
+        }
+
+        if (normalizedStatus === 'draft') {
+            page.publishedAt = undefined;
+        }
+    }
+
+    const nextSeo = { ...previousSeo };
+    if (hasSeoUpdate) {
+        nextSeo.metaTitle = seo?.metaTitle?.toString().trim() || effectiveTitle;
+        nextSeo.metaDescription =
+            seo?.metaDescription?.toString().trim() ||
+            effectiveDescription ||
+            '';
+        nextSeo.keywords = normalizeKeywords(seo?.keywords);
+    } else {
+        if (hasTitleUpdate && (!previousSeo.metaTitle || previousSeo.metaTitle === previousTitle)) {
+            nextSeo.metaTitle = effectiveTitle;
+        }
+        if (
+            hasDescriptionUpdate &&
+            (!previousSeo.metaDescription || previousSeo.metaDescription === previousDescription)
+        ) {
+            nextSeo.metaDescription = effectiveDescription || '';
+        }
+    }
+
+    page.seo = nextSeo;
     page.updatedBy = userId;
-
-    if (normalizedStatus === 'published' && !page.publishedAt) {
-        page.publishedAt = new Date();
-    }
-
-    if (normalizedStatus === 'draft') {
-        page.publishedAt = undefined;
-    }
 
     await page.save();
 
     const pageObject = page.toObject();
     pageObject.sections = sortSections(pageObject.sections);
 
-    if (normalizedStatus === 'published') {
+    const currentStatus = page.status;
+    if (currentStatus === 'published') {
         await indexSearchDocument('page', page);
-    } else if (previousStatus === 'published') {
+    } else if (previousStatus === 'published' && currentStatus !== 'published') {
         await removeSearchDocument('page', page._id.toString());
     }
 

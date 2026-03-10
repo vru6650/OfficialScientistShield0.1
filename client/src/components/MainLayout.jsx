@@ -1,13 +1,40 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 
 import ScrollToTop from './ScrollToTop';
 import RouteProgressBar from './RouteProgressBar.jsx';
 import PageAnnouncer from './PageAnnouncer.jsx';
 import RestOverlay from './RestOverlay';
-import MacWindowManager from './desktop/MacWindowManager.jsx';
-import Dock from './Dock.jsx';
+
+const MacWindowManager = lazy(() => import('./desktop/MacWindowManager.jsx'));
+const Dock = lazy(() => import('./Dock.jsx'));
+
+const Stage = ({ effects, children }) => {
+    const brightness = effects?.brightness ?? 1;
+    const contrast = effects?.contrast ?? 1;
+
+    return (
+        <main
+            id="main-content"
+            role="main"
+            tabIndex={-1}
+            className="liquid-stage liquid-app-shell relative min-h-screen overflow-hidden pt-8 pb-24 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300/70"
+            style={{ filter: `brightness(${brightness}) contrast(${contrast})` }}
+        >
+            <div aria-hidden className="liquid-stage__backdrop">
+                <span className="liquid-stage__blob liquid-stage__blob--cyan" />
+                <span className="liquid-stage__blob liquid-stage__blob--violet" />
+                <span className="liquid-stage__blob liquid-stage__blob--amber" />
+                <span className="liquid-stage__mesh" />
+                <span className="liquid-stage__glint" />
+                <span className="liquid-stage__noise" />
+            </div>
+            <div className="relative z-10">
+                {children}
+            </div>
+        </main>
+    );
+};
 
 export default function MainLayout() {
     const location = useLocation();
@@ -37,6 +64,24 @@ export default function MainLayout() {
         return `Scientist Shield · ${formatted}`;
     }, [location.pathname]);
 
+    useEffect(() => {
+        const warmChunks = () => {
+            import('./desktop/MacWindowManager.jsx');
+            import('./Dock.jsx');
+        };
+
+        const idle = typeof window !== 'undefined' && window.requestIdleCallback;
+        const handle = idle ? idle(warmChunks) : setTimeout(warmChunks, 0);
+
+        return () => {
+            if (idle && typeof window.cancelIdleCallback === 'function') {
+                window.cancelIdleCallback(handle);
+            } else {
+                clearTimeout(handle);
+            }
+        };
+    }, []);
+
     const renderMainContent = useCallback(() => <Outlet />, []);
 
     return (
@@ -53,28 +98,18 @@ export default function MainLayout() {
             ) : null}
             <RestOverlay />
             <PageAnnouncer />
-            <motion.main
-                id="main-content"
-                role="main"
-                tabIndex={-1}
-                className="liquid-stage liquid-app-shell relative min-h-screen overflow-hidden pt-8 pb-24 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300/70"
-                style={{ filter: `brightness(${effects.brightness || 1}) contrast(${effects.contrast || 1})` }}
-            >
-                <div aria-hidden className="liquid-stage__backdrop">
-                    <span className="liquid-stage__blob liquid-stage__blob--cyan" />
-                    <span className="liquid-stage__blob liquid-stage__blob--violet" />
-                    <span className="liquid-stage__blob liquid-stage__blob--amber" />
-                    <span className="liquid-stage__mesh" />
-                    <span className="liquid-stage__glint" />
-                    <span className="liquid-stage__noise" />
-                </div>
-                <MacWindowManager
-                    windowTitle={windowTitle}
-                    renderMainContent={renderMainContent}
-                    activeLocation={location}
-                />
-                <Dock />
-            </motion.main>
+            <Stage effects={effects}>
+                <Suspense fallback={<Outlet />}>
+                    <MacWindowManager
+                        windowTitle={windowTitle}
+                        renderMainContent={renderMainContent}
+                        activeLocation={location}
+                    />
+                    <Suspense fallback={null}>
+                        <Dock />
+                    </Suspense>
+                </Suspense>
+            </Stage>
         </>
     );
 }
