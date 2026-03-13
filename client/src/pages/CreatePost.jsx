@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     Alert,
     Badge,
     Button,
-    FileInput,
     Modal,
     Progress,
     Select,
@@ -20,7 +19,6 @@ import {
 } from 'react-icons/hi';
 import {
     HiOutlineCheckCircle,
-    HiOutlineCloudArrowUp,
     HiOutlineDocumentText,
     HiOutlineEye,
     HiOutlineRocketLaunch,
@@ -29,32 +27,35 @@ import {
 } from 'react-icons/hi2';
 
 import FloatingPreviewWindow from '../components/FloatingPreviewWindow';
+import PostIllustrationStudio from '../components/PostIllustrationStudio';
 import PostLivePreview from '../components/PostLivePreview';
+import PostMediaStudio from '../components/PostMediaStudio';
 import TiptapEditor from '../components/TiptapEditor';
-import { useCloudinaryUpload } from '../hooks/useCloudinaryUpload';
+import { ARTICLE_POST_CATEGORY_OPTIONS } from '../constants/postCategories.js';
 import { createPost as createPostRequest } from '../services/postService';
+import {
+    buildPostIllustrationFormState,
+    buildPostMediaFormState,
+    coercePostIllustrationState,
+    coercePostMediaState,
+} from '../utils/postMedia.js';
 import '../Tiptap.css';
 
 const DRAFT_KEY = 'postDraft';
+const INITIAL_STUDIO_STATUS = Object.freeze({
+    isUploading: false,
+    hasPendingFile: false,
+    error: null,
+});
 
 const initialForm = Object.freeze({
     title: '',
     slug: '',
     category: 'uncategorized',
-    mediaUrl: null,
-    mediaType: null,
     content: '',
+    ...buildPostMediaFormState({ mediaAssets: [] }),
+    ...buildPostIllustrationFormState({ illustrations: [] }),
 });
-
-const categoryOptions = [
-    { value: 'uncategorized', label: 'Uncategorized' },
-    { value: 'javascript', label: 'JavaScript' },
-    { value: 'reactjs', label: 'React.js' },
-    { value: 'nextjs', label: 'Next.js' },
-    { value: 'technology', label: 'Technology' },
-    { value: 'devops', label: 'DevOps' },
-    { value: 'ai-ml', label: 'AI / ML' },
-];
 
 const QUICK_STARTS = [
     {
@@ -97,18 +98,6 @@ const QUICK_STARTS = [
         `,
     },
 ];
-
-const SUPPORTED_MEDIA_TYPES = Object.freeze([
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'image/gif',
-    'video/mp4',
-    'video/webm',
-    'video/quicktime',
-]);
-
-const MEDIA_ACCEPT_ATTR = SUPPORTED_MEDIA_TYPES.join(',');
 
 const stripHtml = (value = '') => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -153,14 +142,17 @@ const normalizeDraftPayload = (rawDraft) => {
         return normalizeDraftPayload(rawDraft.formData);
     }
 
+    const mediaState = coercePostMediaState(rawDraft);
+    const illustrationState = coercePostIllustrationState(rawDraft);
+
     return {
         ...initialForm,
         ...rawDraft,
+        ...mediaState,
+        ...illustrationState,
         title: rawDraft.title?.toString() ?? '',
         slug: rawDraft.slug?.toString() ?? '',
         category: rawDraft.category?.toString() || 'uncategorized',
-        mediaUrl: rawDraft.mediaUrl ?? null,
-        mediaType: rawDraft.mediaType ?? null,
         content: rawDraft.content?.toString() ?? '',
     };
 };
@@ -178,33 +170,8 @@ const getSavedDraft = () => {
     }
 };
 
-const renderMediaPreview = (form) => {
-    if (!form.mediaUrl) {
-        return null;
-    }
-
-    if (form.mediaType === 'video') {
-        return (
-            <video
-                src={form.mediaUrl}
-                controls
-                className='h-64 w-full rounded-2xl object-cover'
-            />
-        );
-    }
-
-    return (
-        <img
-            src={form.mediaUrl}
-            alt={form.title || 'Uploaded cover'}
-            className='h-64 w-full rounded-2xl object-cover'
-        />
-    );
-};
-
 export default function CreatePost() {
     const navigate = useNavigate();
-    const fileInputRef = useRef(null);
     const [form, setForm] = useState(() => ({ ...initialForm }));
     const [pendingDraft, setPendingDraft] = useState(null);
     const [showModal, setShowModal] = useState(false);
@@ -214,28 +181,30 @@ export default function CreatePost() {
     const [lastAppliedTemplate, setLastAppliedTemplate] = useState('');
     const [publishError, setPublishError] = useState(null);
     const [isPublishing, setIsPublishing] = useState(false);
-    const [selectedFile, setSelectedFile] = useState(null);
     const [showPreviewWindow, setShowPreviewWindow] = useState(true);
+    const [mediaStudioKey, setMediaStudioKey] = useState(0);
+    const [illustrationStudioKey, setIllustrationStudioKey] = useState(0);
+    const [mediaStudioStatus, setMediaStudioStatus] = useState({
+        ...INITIAL_STUDIO_STATUS,
+    });
+    const [illustrationStudioStatus, setIllustrationStudioStatus] = useState({
+        ...INITIAL_STUDIO_STATUS,
+    });
 
-    const {
-        upload,
-        progress,
-        error: uploadError,
-        isUploading,
-        cancelUpload,
-        reset,
-    } = useCloudinaryUpload();
-
-    const resetSelectedFileInput = () => {
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+    const resetAssetStudios = () => {
+        setMediaStudioKey((currentKey) => currentKey + 1);
+        setIllustrationStudioKey((currentKey) => currentKey + 1);
+        setMediaStudioStatus({ ...INITIAL_STUDIO_STATUS });
+        setIllustrationStudioStatus({ ...INITIAL_STUDIO_STATUS });
     };
 
     useEffect(() => {
         const savedDraft = getSavedDraft();
         const hasSavedDraft = Boolean(
-            savedDraft.title.trim() || stripHtml(savedDraft.content) || savedDraft.mediaUrl
+            savedDraft.title.trim()
+            || stripHtml(savedDraft.content)
+            || savedDraft.mediaUrl
+            || savedDraft.illustrations?.length
         );
 
         if (hasSavedDraft) {
@@ -253,7 +222,10 @@ export default function CreatePost() {
         }
 
         const hasDraftContent = Boolean(
-            form.title.trim() || stripHtml(form.content) || form.mediaUrl
+            form.title.trim()
+            || stripHtml(form.content)
+            || form.mediaUrl
+            || form.illustrations?.length
         );
 
         if (!hasDraftContent) {
@@ -299,6 +271,11 @@ export default function CreatePost() {
     );
     const titleLength = form.title.trim().length;
     const formattedCategory = useMemo(() => formatCategoryLabel(form.category), [form.category]);
+    const mediaAssetCount = form.mediaAssets?.length || 0;
+    const illustrationCount = form.illustrations?.length || 0;
+    const hasActiveUpload = mediaStudioStatus.isUploading || illustrationStudioStatus.isUploading;
+    const hasPendingAssetSelection =
+        mediaStudioStatus.hasPendingFile || illustrationStudioStatus.hasPendingFile;
 
     const readiness = useMemo(() => {
         const checks = [
@@ -306,11 +283,11 @@ export default function CreatePost() {
             plainText ? 1 : 0,
             form.slug.trim() ? 1 : 0,
             form.category !== 'uncategorized' ? 1 : 0,
-            form.mediaUrl ? 1 : 0,
+            mediaAssetCount > 0 ? 1 : 0,
         ];
 
         return Math.round((checks.reduce((sum, value) => sum + value, 0) / checks.length) * 100);
-    }, [form.category, form.mediaUrl, form.slug, form.title, plainText]);
+    }, [form.category, form.slug, form.title, mediaAssetCount, plainText]);
 
     const excerpt = useMemo(() => {
         if (!plainText) {
@@ -441,11 +418,16 @@ export default function CreatePost() {
             plainText
                 ? `Opening preview: ${excerpt}`
                 : 'Lead with the sharpest tension, outcome, or promise in the first paragraph.',
-            form.mediaUrl
-                ? 'Cover media is in place. Use it to reinforce the payoff, not distract from it.'
-                : 'Add a cover visual or demo clip if the post benefits from a fast visual cue.',
+            mediaAssetCount > 1
+                ? `${mediaAssetCount} media assets are ready. Keep the lead item aligned with the article payoff.`
+                : form.mediaUrl
+                    ? 'Lead media is in place. Use it to reinforce the payoff, not distract from it.'
+                    : 'Add a visual, clip, audio segment, or document if the post benefits from richer media.',
+            illustrationCount
+                ? `${illustrationCount} illustrations are staged. Tight alt text and clear credits matter as much as the imagery.`
+                : 'Use illustrations when the post needs diagrams, annotated frames, or concept art beyond the lead media.',
         ],
-        [excerpt, form.mediaUrl, form.title, plainText]
+        [excerpt, form.mediaUrl, form.title, illustrationCount, mediaAssetCount, plainText]
     );
 
     const appliedTemplateLabel = useMemo(
@@ -478,10 +460,21 @@ export default function CreatePost() {
             {
                 id: 'post-media',
                 label: 'Cover',
-                ready: Boolean(form.mediaUrl),
-                detail: form.mediaUrl
-                    ? `${form.mediaType || 'Media'} attached.`
-                    : 'Optional image or short demo clip.',
+                ready: mediaAssetCount > 0,
+                detail:
+                    mediaAssetCount > 1
+                        ? `${mediaAssetCount} media assets staged.`
+                        : form.mediaUrl
+                            ? `${form.mediaType || 'Media'} attached.`
+                            : 'Optional image, video, audio, or document.',
+            },
+            {
+                id: 'post-illustrations',
+                label: 'Illustrations',
+                ready: illustrationCount > 0,
+                detail: illustrationCount
+                    ? `${illustrationCount} illustrations staged.`
+                    : 'Optional diagrams, artwork, or supporting frames.',
             },
             {
                 id: 'post-editor',
@@ -504,12 +497,13 @@ export default function CreatePost() {
         [
             appliedTemplateLabel,
             form.category,
+            illustrationCount,
             form.mediaType,
-            form.mediaUrl,
             form.slug,
             form.title,
             headingCount,
             lastAppliedTemplate,
+            mediaAssetCount,
             plainText,
             readiness,
             wordCount,
@@ -551,21 +545,34 @@ export default function CreatePost() {
             },
             {
                 sectionId: 'post-media',
-                label: 'Cover media',
-                ready: Boolean(form.mediaUrl),
-                detail: form.mediaUrl
-                    ? `${form.mediaType || 'media'} uploaded`
-                    : 'Optional, but useful for scannability.',
+                label: 'Multimedia deck',
+                ready: mediaAssetCount > 0,
+                detail:
+                    mediaAssetCount > 1
+                        ? `${mediaAssetCount} assets attached`
+                        : form.mediaUrl
+                            ? `${form.mediaType || 'media'} attached`
+                            : 'Optional, but useful for scannability.',
+                optional: true,
+            },
+            {
+                sectionId: 'post-illustrations',
+                label: 'Illustrations',
+                ready: illustrationCount > 0,
+                detail: illustrationCount
+                    ? `${illustrationCount} visuals attached`
+                    : 'Optional visual sequence or diagram set.',
                 optional: true,
             },
         ],
         [
             form.category,
+            illustrationCount,
             form.mediaType,
-            form.mediaUrl,
             form.slug,
             form.title,
             formattedCategory,
+            mediaAssetCount,
             plainText,
             titleLength,
             wordCount,
@@ -636,9 +643,7 @@ export default function CreatePost() {
         if (pendingDraft) {
             setForm(pendingDraft);
         }
-        reset();
-        setSelectedFile(null);
-        resetSelectedFileInput();
+        resetAssetStudios();
         setPendingDraft(null);
         setShowModal(false);
         setDraftResolved(true);
@@ -646,9 +651,7 @@ export default function CreatePost() {
 
     const handleDismissDraft = () => {
         localStorage.removeItem(DRAFT_KEY);
-        reset();
-        setSelectedFile(null);
-        resetSelectedFileInput();
+        resetAssetStudios();
         setForm({ ...initialForm });
         setPendingDraft(null);
         setShowModal(false);
@@ -656,13 +659,7 @@ export default function CreatePost() {
     };
 
     const handleClearDraft = () => {
-        if (isUploading) {
-            cancelUpload();
-        }
-
-        reset();
-        setSelectedFile(null);
-        resetSelectedFileInput();
+        resetAssetStudios();
         setPublishError(null);
         setForm({ ...initialForm });
         setPendingDraft(null);
@@ -688,47 +685,6 @@ export default function CreatePost() {
         }));
     };
 
-    const handleUploadMedia = async () => {
-        if (!selectedFile) {
-            return;
-        }
-
-        setPublishError(null);
-
-        try {
-            const mediaType = selectedFile.type.startsWith('image/') ? 'image' : 'video';
-            const url = await upload(selectedFile, {
-                allowedTypes: SUPPORTED_MEDIA_TYPES,
-                maxSizeMB: mediaType === 'image' ? 5 : 50,
-            });
-
-            setForm((currentForm) => ({
-                ...currentForm,
-                mediaUrl: url,
-                mediaType,
-            }));
-            setSelectedFile(null);
-            resetSelectedFileInput();
-        } catch (error) {
-            console.error('Media upload failed:', error);
-        }
-    };
-
-    const handleRemoveMedia = () => {
-        if (isUploading) {
-            cancelUpload();
-        }
-
-        reset();
-        setSelectedFile(null);
-        resetSelectedFileInput();
-        setForm((currentForm) => ({
-            ...currentForm,
-            mediaUrl: null,
-            mediaType: null,
-        }));
-    };
-
     const handlePublish = async () => {
         setPublishError(null);
 
@@ -742,13 +698,13 @@ export default function CreatePost() {
             return;
         }
 
-        if (isUploading) {
-            setPublishError('Wait for the media upload to finish before publishing.');
+        if (hasActiveUpload) {
+            setPublishError('Wait for all asset uploads to finish before publishing.');
             return;
         }
 
-        if (selectedFile) {
-            setPublishError('Upload the selected media or clear it before publishing.');
+        if (hasPendingAssetSelection) {
+            setPublishError('Upload or clear every selected asset before publishing.');
             return;
         }
 
@@ -764,6 +720,7 @@ export default function CreatePost() {
             setDraftStatus('idle');
             setLastSavedAt(null);
             setForm({ ...initialForm });
+            resetAssetStudios();
             navigate(`/post/${savedPost.slug}`);
         } catch (error) {
             setPublishError(error.message || 'Unable to publish the post.');
@@ -1059,7 +1016,7 @@ export default function CreatePost() {
                                             value={form.category}
                                             onChange={handleFieldChange('category')}
                                         >
-                                            {categoryOptions.map((option) => (
+                                            {ARTICLE_POST_CATEGORY_OPTIONS.map((option) => (
                                                 <option key={option.value} value={option.value}>
                                                     {option.label}
                                                 </option>
@@ -1132,101 +1089,40 @@ export default function CreatePost() {
                                 ))}
                             </div>
 
-                            <div id='post-media' className='liquid-hybrid-tile space-y-4 p-5'>
-                                <div className='flex flex-wrap items-center justify-between gap-3'>
-                                    <div className='space-y-1'>
-                                        <div className='flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white'>
-                                            <HiOutlineCloudArrowUp className='h-4 w-4 text-sky-500' />
-                                            Lead media
-                                        </div>
-                                        <p className='text-sm text-slate-600 dark:text-slate-300'>
-                                            Upload an image or short demo clip to anchor the story.
-                                        </p>
-                                    </div>
-                                    {form.mediaUrl ? (
-                                        <Badge color='info'>{form.mediaType || 'image'}</Badge>
-                                    ) : null}
-                                </div>
+                            <div id='post-media' className='liquid-hybrid-tile p-5'>
+                                <PostMediaStudio
+                                    key={mediaStudioKey}
+                                    value={form}
+                                    title={form.title}
+                                    onChange={(mediaState) => {
+                                        setPublishError(null);
+                                        setForm((currentForm) => ({
+                                            ...currentForm,
+                                            ...mediaState,
+                                        }));
+                                    }}
+                                    onStatusChange={setMediaStudioStatus}
+                                    heading='Assemble an advanced multimedia deck'
+                                    copy='Combine visuals, demo reels, audio notes, and supporting docs in one post. Pick the lead asset and the published post will render the rest as a gallery.'
+                                />
+                            </div>
 
-                                <div className='flex flex-col gap-3'>
-                                    <FileInput
-                                        ref={fileInputRef}
-                                        helperText='JPG, PNG, WEBP, GIF, MP4, WEBM, or MOV.'
-                                        type='file'
-                                        accept={MEDIA_ACCEPT_ATTR}
-                                        onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
-                                        disabled={isUploading}
-                                        className='max-w-xl cursor-pointer rounded-xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-700 dark:bg-slate-900/80'
-                                    />
-                                    <div className='flex flex-wrap items-center gap-3'>
-                                        <Button
-                                            type='button'
-                                            onClick={handleUploadMedia}
-                                            disabled={!selectedFile || isUploading}
-                                            className='bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-400 text-white shadow-md ring-1 ring-sky-300 transition hover:shadow-lg focus:ring-2 focus:ring-sky-300 dark:ring-sky-500/70'
-                                        >
-                                            {isUploading ? 'Uploading…' : 'Upload media'}
-                                        </Button>
-                                        {form.mediaUrl ? (
-                                            <Button
-                                                type='button'
-                                                color='light'
-                                                onClick={handleRemoveMedia}
-                                                disabled={isUploading}
-                                                className='border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
-                                            >
-                                                Remove media
-                                            </Button>
-                                        ) : null}
-                                        {selectedFile ? (
-                                            <span className='text-sm text-slate-500 dark:text-slate-400'>
-                                                {selectedFile.name}
-                                            </span>
-                                        ) : null}
-                                    </div>
-                                </div>
-
-                                {isUploading ? (
-                                    <div className='flex items-center gap-3'>
-                                        <Progress progress={progress} color='teal' className='flex-1' />
-                                        <span className='text-sm font-semibold text-slate-600 dark:text-slate-200'>
-                                            {progress}%
-                                        </span>
-                                    </div>
-                                ) : null}
-
-                                {uploadError ? (
-                                    <Alert color='failure'>{uploadError}</Alert>
-                                ) : null}
-
-                                {!selectedFile && !form.mediaUrl ? (
-                                    <div className='grid gap-3 md:grid-cols-3'>
-                                        <article className='create-post-mini-stat'>
-                                            <span className='create-post-mini-stat__label'>Tutorials</span>
-                                            <span className='create-post-mini-stat__value text-sm'>
-                                                Use a crisp screenshot or flow diagram.
-                                            </span>
-                                        </article>
-                                        <article className='create-post-mini-stat'>
-                                            <span className='create-post-mini-stat__label'>Product updates</span>
-                                            <span className='create-post-mini-stat__value text-sm'>
-                                                A short demo clip usually lands faster than text alone.
-                                            </span>
-                                        </article>
-                                        <article className='create-post-mini-stat'>
-                                            <span className='create-post-mini-stat__label'>Performance</span>
-                                            <span className='create-post-mini-stat__value text-sm'>
-                                                Keep images under 5MB and clips under 50MB.
-                                            </span>
-                                        </article>
-                                    </div>
-                                ) : null}
-
-                                {form.mediaUrl ? (
-                                    <div className='overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800'>
-                                        {renderMediaPreview(form)}
-                                    </div>
-                                ) : null}
+                            <div id='post-illustrations' className='liquid-hybrid-tile p-5'>
+                                <PostIllustrationStudio
+                                    key={illustrationStudioKey}
+                                    value={form}
+                                    title={form.title}
+                                    onChange={(illustrationState) => {
+                                        setPublishError(null);
+                                        setForm((currentForm) => ({
+                                            ...currentForm,
+                                            ...illustrationState,
+                                        }));
+                                    }}
+                                    onStatusChange={setIllustrationStudioStatus}
+                                    heading='Build an illustration sequence'
+                                    copy='Attach diagrams, concept art, or annotated frames as a dedicated illustration board. Captions, alt text, and credits ship with the post.'
+                                />
                             </div>
 
                             <div id='post-editor' className='create-post-editor-shell mt-5'>
@@ -1234,6 +1130,7 @@ export default function CreatePost() {
                                     content={form.content}
                                     onChange={handleContentChange}
                                     placeholder='Sketch the opening, share the payoff, and outline the journey...'
+                                    enableLottieEmbeds
                                 />
                             </div>
 
@@ -1333,7 +1230,7 @@ export default function CreatePost() {
                                 <Button
                                     type='button'
                                     onClick={handlePublish}
-                                    disabled={isPublishing || isUploading}
+                                    disabled={isPublishing || hasActiveUpload}
                                     className='mt-4 w-full bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500 text-white shadow-lg shadow-sky-500/20 ring-1 ring-sky-300 transition hover:shadow-xl focus:ring-2 focus:ring-sky-300 dark:ring-sky-500/70'
                                 >
                                     {isPublishing ? (
@@ -1515,7 +1412,7 @@ export default function CreatePost() {
                         <Button
                             type='button'
                             onClick={handlePublish}
-                            disabled={isPublishing || isUploading}
+                            disabled={isPublishing || hasActiveUpload}
                             className='bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500 text-white shadow-lg shadow-sky-500/20 ring-1 ring-sky-300 transition hover:shadow-xl focus:ring-2 focus:ring-sky-300 dark:ring-sky-500/70'
                         >
                             {isPublishing ? (

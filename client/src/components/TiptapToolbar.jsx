@@ -3,7 +3,7 @@ import {
     FaBold, FaItalic, FaStrikethrough, FaListUl, FaListOl, FaQuoteLeft,
     FaCode, FaLink, FaImage, FaYoutube, FaTable, FaSubscript, FaSuperscript,
     FaHighlighter, FaTasks, FaAlignLeft, FaAlignCenter, FaAlignRight, FaAlignJustify,
-    FaUndo, FaRedo, FaEraser, FaMinus, FaLaptopCode, FaPalette,
+    FaUndo, FaRedo, FaEraser, FaMinus, FaLaptopCode, FaPalette, FaPlayCircle,
 } from 'react-icons/fa';
 import {
     LuHeading1, LuHeading2, LuHeading3,
@@ -11,7 +11,14 @@ import {
 import { Button, Tooltip } from 'flowbite-react';
 import { motion } from 'framer-motion';
 
-const TiptapToolbar = ({ editor, onAddImage, isUploading, onAddYoutubeVideo, onAddCodeSnippet }) => {
+const TiptapToolbar = ({
+    editor,
+    onAddImage,
+    isUploading,
+    onAddYoutubeVideo,
+    onAddCodeSnippet,
+    onAddLottieAnimation,
+}) => {
     const setLink = useCallback(() => {
         if (!editor) return;
         const previousUrl = editor.getAttributes('link').href;
@@ -231,6 +238,13 @@ const TiptapToolbar = ({ editor, onAddImage, isUploading, onAddYoutubeVideo, onA
                         <FaLaptopCode />
                     </MotionButton>
                 </Tooltip>
+                {onAddLottieAnimation ? (
+                    <Tooltip content="Add Lottie or dotLottie Animation">
+                        <MotionButton onClick={onAddLottieAnimation} whileTap={{ scale: 0.95 }} size="sm" outline>
+                            <FaPlayCircle />
+                        </MotionButton>
+                    </Tooltip>
+                ) : null}
             </Button.Group>
 
             {editor.isActive('table') && (

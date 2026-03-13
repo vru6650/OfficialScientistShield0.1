@@ -44,6 +44,18 @@ const postSchema = new mongoose.Schema(
             default: () => [],
         },
         coverAssetIndex: { type: Number, default: 0 },
+        illustrations: {
+            type: [
+                {
+                    url: { type: String, required: true },
+                    alt: { type: String, default: '' },
+                    caption: { type: String, default: '' },
+                    credit: { type: String, default: '' },
+                    order: { type: Number, default: 0 },
+                },
+            ],
+            default: () => [],
+        },
         category: {
             type: String,
             default: 'uncategorized',

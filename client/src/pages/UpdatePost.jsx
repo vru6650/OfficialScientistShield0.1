@@ -5,8 +5,6 @@ import {
     Alert,
     Badge,
     Button,
-    FileInput,
-    Progress,
     Select,
     Spinner,
     TextInput,
@@ -15,20 +13,30 @@ import {
 import {
     HiOutlineArrowPathRoundedSquare,
     HiOutlineCheckCircle,
-    HiOutlineCloudArrowUp,
     HiOutlineDocumentText,
     HiOutlineEye,
     HiOutlineRocketLaunch,
     HiOutlineSparkles,
     HiOutlineSwatch,
 } from 'react-icons/hi2';
+import PostIllustrationStudio from '../components/PostIllustrationStudio';
+import PostMediaStudio from '../components/PostMediaStudio';
 import PostLivePreview from '../components/PostLivePreview';
 import TiptapEditor from '../components/TiptapEditor';
+import { ARTICLE_POST_CATEGORY_OPTIONS } from '../constants/postCategories.js';
 import '../Tiptap.css';
-import { useCloudinaryUpload } from '../hooks/useCloudinaryUpload';
 import { getPost, updatePost } from '../services/postService';
+import {
+    coercePostIllustrationState,
+    coercePostMediaState,
+} from '../utils/postMedia.js';
 
 const stripHtml = (value = '') => value.replace(/<[^>]*>/g, ' ');
+const INITIAL_STUDIO_STATUS = Object.freeze({
+    isUploading: false,
+    hasPendingFile: false,
+    error: null,
+});
 
 const generateSlug = (title) => {
     if (!title) return '';
@@ -40,15 +48,28 @@ const generateSlug = (title) => {
         .replace(/--+/g, '-');
 };
 
+const formatCategoryLabel = (category = 'uncategorized') =>
+    category
+        .split(/[-_\s]+/)
+        .filter(Boolean)
+        .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+        .join(' ');
+
 export default function UpdatePost() {
     const { postId } = useParams();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({});
-    const [file, setFile] = useState(null);
     const debounceTimeout = useRef(null);
     const latestContentRef = useRef(undefined);
-
-    const { isUploading, error: uploadError, progress, upload, cancelUpload } = useCloudinaryUpload();
+    const [mediaStudioKey, setMediaStudioKey] = useState(0);
+    const [illustrationStudioKey, setIllustrationStudioKey] = useState(0);
+    const [mediaStudioStatus, setMediaStudioStatus] = useState({
+        ...INITIAL_STUDIO_STATUS,
+    });
+    const [illustrationStudioStatus, setIllustrationStudioStatus] = useState({
+        ...INITIAL_STUDIO_STATUS,
+    });
+    const [submitError, setSubmitError] = useState(null);
 
     const { data: initialPost, isLoading } = useQuery({
         queryKey: ['post', postId],
@@ -58,9 +79,30 @@ export default function UpdatePost() {
 
     useEffect(() => {
         if (initialPost) {
-            setFormData(initialPost);
+            setFormData({
+                ...initialPost,
+                ...coercePostMediaState(initialPost),
+                ...coercePostIllustrationState(initialPost),
+            });
             latestContentRef.current = initialPost.content || '';
         }
+    }, [initialPost]);
+
+    useEffect(() => () => {
+        if (debounceTimeout.current) {
+            clearTimeout(debounceTimeout.current);
+        }
+    }, []);
+
+    const legacyPosterImage = useMemo(() => {
+        if (!initialPost?.image) {
+            return null;
+        }
+
+        const hasImageAsset = Array.isArray(initialPost.mediaAssets)
+            && initialPost.mediaAssets.some((asset) => asset?.type === 'image');
+
+        return hasImageAsset ? null : initialPost.image;
     }, [initialPost]);
 
     const updateMutation = useMutation({
@@ -68,6 +110,27 @@ export default function UpdatePost() {
             updatePost({ ...variables, formData: nextFormData }),
         onSuccess: (data) => navigate(`/post/${data.slug}`),
     });
+    const categoryOptions = useMemo(() => {
+        const currentCategory = formData?.category?.trim();
+
+        if (
+            !currentCategory
+            || ARTICLE_POST_CATEGORY_OPTIONS.some((option) => option.value === currentCategory)
+        ) {
+            return ARTICLE_POST_CATEGORY_OPTIONS;
+        }
+
+        return [
+            ...ARTICLE_POST_CATEGORY_OPTIONS,
+            {
+                value: currentCategory,
+                label: formatCategoryLabel(currentCategory),
+            },
+        ];
+    }, [formData?.category]);
+    const hasActiveUpload = mediaStudioStatus.isUploading || illustrationStudioStatus.isUploading;
+    const hasPendingAssetSelection =
+        mediaStudioStatus.hasPendingFile || illustrationStudioStatus.hasPendingFile;
 
     const wordCount = useMemo(() => {
         const text = stripHtml(formData?.content || '').trim();
@@ -87,22 +150,8 @@ export default function UpdatePost() {
         return Math.round((parts.reduce((acc, val) => acc + val, 0) / parts.length) * 100);
     }, [formData?.category, formData?.content, formData?.mediaUrl, formData?.title]);
 
-    const handleUploadMedia = async () => {
-        if (!file) return;
-        try {
-            const options = {
-                allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/webm'],
-                maxSizeMB: 10,
-            };
-            const downloadURL = await upload(file, options);
-            const type = file.type.startsWith('image/') ? 'image' : 'video';
-            setFormData((prev) => ({ ...prev, mediaUrl: downloadURL, mediaType: type }));
-        } catch (err) {
-            console.error('Upload failed or was canceled:', err.message);
-        }
-    };
-
     const handleContentChange = (content) => {
+        setSubmitError(null);
         latestContentRef.current = content;
         if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
         debounceTimeout.current = setTimeout(() => {
@@ -112,6 +161,18 @@ export default function UpdatePost() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setSubmitError(null);
+
+        if (hasActiveUpload) {
+            setSubmitError('Wait for all asset uploads to finish before updating the post.');
+            return;
+        }
+
+        if (hasPendingAssetSelection) {
+            setSubmitError('Upload or clear every selected asset before updating the post.');
+            return;
+        }
+
         if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
         const nextFormData = {
             ...formData,
@@ -127,9 +188,23 @@ export default function UpdatePost() {
     };
 
     const handleRevert = () => {
+        if (debounceTimeout.current) {
+            clearTimeout(debounceTimeout.current);
+            debounceTimeout.current = null;
+        }
+
         if (initialPost) {
-            setFormData(initialPost);
+            setFormData({
+                ...initialPost,
+                ...coercePostMediaState(initialPost),
+                ...coercePostIllustrationState(initialPost),
+            });
             latestContentRef.current = initialPost.content || '';
+            setMediaStudioKey((currentKey) => currentKey + 1);
+            setIllustrationStudioKey((currentKey) => currentKey + 1);
+            setMediaStudioStatus({ ...INITIAL_STUDIO_STATUS });
+            setIllustrationStudioStatus({ ...INITIAL_STUDIO_STATUS });
+            setSubmitError(null);
         }
     };
 
@@ -217,11 +292,11 @@ export default function UpdatePost() {
                                         value={formData.category || 'uncategorized'}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                     >
-                                        <option value='uncategorized'>Select a category</option>
-                                        <option value='javascript'>JavaScript</option>
-                                        <option value='reactjs'>React.js</option>
-                                        <option value='nextjs'>Next.js</option>
-                                        <option value='technology'>Technology</option>
+                                        {categoryOptions.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
                                     </Select>
                                 </div>
                                 <div className='rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-600 shadow-inner dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300'>
@@ -240,55 +315,31 @@ export default function UpdatePost() {
                             <div className='flex flex-wrap items-center justify-between gap-3'>
                                 <div>
                                     <p className='text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>Step 2</p>
-                                    <h2 className='text-xl font-semibold text-slate-900 dark:text-white'>Media</h2>
-                                    <p className='text-sm text-slate-600 dark:text-slate-300'>Swap in a sharper cover image or an updated demo clip.</p>
+                                    <h2 className='text-xl font-semibold text-slate-900 dark:text-white'>Multimedia</h2>
+                                    <p className='text-sm text-slate-600 dark:text-slate-300'>Upgrade the post with a richer media stack, then choose which asset leads the story.</p>
                                 </div>
-                                <div className='inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-200'>
-                                    <HiOutlineCloudArrowUp className='h-4 w-4 text-sky-500' />
-                                    {isUploading ? 'Uploading…' : 'Ready for upload'}
-                                </div>
+                                <Badge color='info'>
+                                    {(formData.mediaAssets?.length || 0)} attached
+                                </Badge>
                             </div>
 
-                            <div className='mt-4 flex flex-col gap-3 rounded-2xl border border-dashed border-sky-200 bg-sky-50/70 p-4 shadow-inner dark:border-sky-500/50 dark:bg-sky-900/30'>
-                                <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-                                    <FileInput
-                                        helperText='JPG, PNG, GIF, MP4, or WEBM. Up to 10MB.'
-                                        type='file'
-                                        accept='image/*,video/*'
-                                        onChange={(e) => setFile(e.target.files[0])}
-                                        disabled={isUploading}
-                                        className='max-w-xl cursor-pointer rounded-xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-700 dark:bg-slate-900/80'
-                                    />
-                                    <div className='flex items-center gap-2'>
-                                        <Button
-                                            type='button'
-                                            onClick={handleUploadMedia}
-                                            disabled={isUploading || !file}
-                                            className='bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-400 text-white shadow-md ring-1 ring-sky-300 transition hover:shadow-lg focus:ring-2 focus:ring-sky-300 dark:ring-sky-500/70'
-                                        >
-                                            {isUploading ? 'Uploading…' : 'Upload media'}
-                                        </Button>
-                                        {isUploading && (
-                                            <Button size='xs' color='light' type='button' onClick={cancelUpload} className='border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'>
-                                                Cancel
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
-                                {isUploading && (
-                                    <div className='flex items-center gap-3'>
-                                        <Progress progress={progress} className='flex-grow' color='teal' />
-                                        <span className='text-sm font-semibold text-slate-600 dark:text-slate-200'>{progress}%</span>
-                                    </div>
-                                )}
-                                {uploadError && <Alert color='failure'>{uploadError}</Alert>}
-                                {formData.mediaUrl && !isUploading && (
-                                    formData.mediaType === 'image' ? (
-                                        <img src={formData.mediaUrl} alt='upload preview' className='w-full rounded-xl border border-slate-200 shadow-sm dark:border-slate-800' />
-                                    ) : (
-                                        <video src={formData.mediaUrl} controls className='w-full rounded-xl border border-slate-200 shadow-sm dark:border-slate-800' />
-                                    )
-                                )}
+                            <div className='mt-4'>
+                                <PostMediaStudio
+                                    key={mediaStudioKey}
+                                    value={formData}
+                                    title={formData.title}
+                                    legacyPosterImage={legacyPosterImage}
+                                    onChange={(mediaState) => {
+                                        setSubmitError(null);
+                                        setFormData((currentFormData) => ({
+                                            ...currentFormData,
+                                            ...mediaState,
+                                        }));
+                                    }}
+                                    onStatusChange={setMediaStudioStatus}
+                                    heading='Refine the post media reel'
+                                    copy='Swap in sharper assets, preserve supporting files, and control which item becomes the hero on the published post.'
+                                />
                             </div>
                         </div>
 
@@ -296,6 +347,37 @@ export default function UpdatePost() {
                             <div className='flex flex-wrap items-center justify-between gap-3'>
                                 <div>
                                     <p className='text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>Step 3</p>
+                                    <h2 className='text-xl font-semibold text-slate-900 dark:text-white'>Illustrations</h2>
+                                    <p className='text-sm text-slate-600 dark:text-slate-300'>Attach diagrams, concept art, or supporting frames with captions, alt text, and credits.</p>
+                                </div>
+                                <Badge color='info'>
+                                    {(formData.illustrations?.length || 0)} staged
+                                </Badge>
+                            </div>
+
+                            <div className='mt-4'>
+                                <PostIllustrationStudio
+                                    key={illustrationStudioKey}
+                                    value={formData}
+                                    title={formData.title}
+                                    onChange={(illustrationState) => {
+                                        setSubmitError(null);
+                                        setFormData((currentFormData) => ({
+                                            ...currentFormData,
+                                            ...illustrationState,
+                                        }));
+                                    }}
+                                    onStatusChange={setIllustrationStudioStatus}
+                                    heading='Refine the illustration board'
+                                    copy='Keep the visual sequence ordered and readable. Alt text, captions, and credits stay attached to each frame.'
+                                />
+                            </div>
+                        </div>
+
+                        <div className='rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-lg shadow-slate-200/60 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-slate-900/60'>
+                            <div className='flex flex-wrap items-center justify-between gap-3'>
+                                <div>
+                                    <p className='text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>Step 4</p>
                                     <h2 className='text-xl font-semibold text-slate-900 dark:text-white'>Body</h2>
                                     <p className='text-sm text-slate-600 dark:text-slate-300'>Update the content with inline formatting, embeds, and code blocks.</p>
                                 </div>
@@ -310,6 +392,7 @@ export default function UpdatePost() {
                                     content={formData.content || ''}
                                     onChange={handleContentChange}
                                     placeholder='Sketch the change, clarify the why, and highlight the outcome...'
+                                    enableLottieEmbeds
                                 />
                             </div>
                         </div>
@@ -334,7 +417,7 @@ export default function UpdatePost() {
                                 </Button>
                                 <Button
                                     type='submit'
-                                    disabled={updateMutation.isPending || isUploading}
+                                    disabled={updateMutation.isPending || hasActiveUpload}
                                     className='bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500 text-white shadow-md ring-1 ring-sky-300 transition hover:shadow-lg focus:ring-2 focus:ring-sky-300 dark:ring-sky-500/70'
                                 >
                                     {updateMutation.isPending ? (
@@ -349,9 +432,9 @@ export default function UpdatePost() {
                             </div>
                         </div>
 
-                        {updateMutation.isError && (
+                        {(submitError || updateMutation.isError) && (
                             <Alert className='mt-2' color='failure'>
-                                {updateMutation.error.message}
+                                {submitError || updateMutation.error.message}
                             </Alert>
                         )}
                     </form>

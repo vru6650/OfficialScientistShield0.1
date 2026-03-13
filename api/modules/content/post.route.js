@@ -20,6 +20,13 @@ const nullableOptionalString = z.preprocess(
     (value) => (value === null || value === '' ? undefined : value),
     z.string().trim().optional()
 );
+const illustrationSchema = z.object({
+    url: z.string().trim().url(),
+    alt: z.string().trim().max(180).optional(),
+    caption: z.string().trim().max(280).optional(),
+    credit: z.string().trim().max(140).optional(),
+    order: z.coerce.number().int().min(0).optional(),
+});
 
 const createPostBody = z
     .object({
@@ -42,6 +49,7 @@ const createPostBody = z
             .max(8)
             .optional(),
         coverAssetIndex: z.coerce.number().int().min(0).optional(),
+        illustrations: z.array(illustrationSchema).max(12).optional(),
     })
     .passthrough();
 
@@ -66,6 +74,7 @@ const updatePostBody = z
             .max(8)
             .optional(),
         coverAssetIndex: z.coerce.number().int().min(0).optional(),
+        illustrations: z.array(illustrationSchema).max(12).optional(),
     })
     .passthrough();
 

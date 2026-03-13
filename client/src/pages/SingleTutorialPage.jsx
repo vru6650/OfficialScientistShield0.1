@@ -20,6 +20,7 @@ import InteractiveCodeBlock from '../components/InteractiveCodeBlock.jsx';
 import InteractiveReadingSurface from '../components/InteractiveReadingSurface.jsx';
 import ReadingControlCenter from '../components/ReadingControlCenter';
 import useReadingSettings from '../hooks/useReadingSettings';
+import EmbeddedSnippetPreview from '../components/EmbeddedSnippetPreview.jsx';
 import { apiFetch } from '../utils/apiFetch';
 
 import '../Tiptap.css';
@@ -309,7 +310,15 @@ export default function SingleTutorialPage() {
         return chapterToUse;
     }, [tutorial, chapterSlug]);
 
-    const sanitizedContent = useMemo(() => activeChapter?.content ? DOMPurify.sanitize(activeChapter.content) : '', [activeChapter?.content]);
+    const sanitizedContent = useMemo(
+        () =>
+            activeChapter?.content
+                ? DOMPurify.sanitize(activeChapter.content, {
+                    ADD_ATTR: ['data-snippet-id'],
+                })
+                : '',
+        [activeChapter?.content]
+    );
     const headings = useMemo(() => {
         if (!sanitizedContent) return [];
         const tempDiv = document.createElement('div');
@@ -460,15 +469,10 @@ export default function SingleTutorialPage() {
             if (domNode.type === 'tag' && domNode.name === 'div' && domNode.attribs['data-snippet-id']) {
                 const snippetId = domNode.attribs['data-snippet-id'];
                 return (
-                    <Suspense
-                        fallback={
-                            <div className="liquid-hybrid-tile rounded-2xl border border-white/20 bg-white/70 p-4 text-sm text-slate-600 shadow-inner dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-300">
-                                Loading interactive snippet...
-                            </div>
-                        }
-                    >
-                        <CodeEditor snippetId={snippetId} />
-                    </Suspense>
+                    <EmbeddedSnippetPreview
+                        snippetId={snippetId}
+                        className='my-6'
+                    />
                 );
             }
         }

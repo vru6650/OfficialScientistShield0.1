@@ -42,7 +42,7 @@ const renderMedia = (asset) => {
     return (
         <img
             src={asset.url}
-            alt={asset.caption || 'Gallery item'}
+            alt={asset.alt || asset.caption || 'Gallery item'}
             className='h-full w-full rounded-2xl object-contain bg-slate-900/70'
         />
     );
@@ -137,7 +137,11 @@ export default function GalleryCarousel({ items, initialIndex = 0 }) {
                                     <span className='rounded bg-slate-200 px-2 py-1 text-[10px] font-semibold dark:bg-slate-700'>DOC</span>
                                 </div>
                             ) : (
-                                <img src={asset.url} alt={asset.caption || `Media ${idx + 1}`} className='h-16 w-full rounded-lg object-cover' />
+                                <img
+                                    src={asset.url}
+                                    alt={asset.alt || asset.caption || `Media ${idx + 1}`}
+                                    className='h-16 w-full rounded-lg object-cover'
+                                />
                             )}
                             <div className='absolute left-1 top-1 rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm backdrop-blur dark:bg-slate-900/80 dark:text-slate-100 flex items-center gap-1'>
                                 <Icon className='h-3 w-3' />
@@ -147,8 +151,17 @@ export default function GalleryCarousel({ items, initialIndex = 0 }) {
                     );
                 })}
             </div>
-            {active?.caption && (
-                <p className='text-sm text-slate-600 dark:text-slate-300'>{active.caption}</p>
+            {(active?.caption || active?.credit) && (
+                <div className='space-y-1'>
+                    {active.caption ? (
+                        <p className='text-sm text-slate-600 dark:text-slate-300'>{active.caption}</p>
+                    ) : null}
+                    {active.credit ? (
+                        <p className='text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>
+                            Illustration credit: {active.credit}
+                        </p>
+                    ) : null}
+                </div>
             )}
         </div>
     );
@@ -159,7 +172,9 @@ GalleryCarousel.propTypes = {
         PropTypes.shape({
             url: PropTypes.string.isRequired,
             type: PropTypes.oneOf(['image', 'video', 'audio', 'document']),
+            alt: PropTypes.string,
             caption: PropTypes.string,
+            credit: PropTypes.string,
             order: PropTypes.number,
         })
     ),

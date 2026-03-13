@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Editor, { DiffEditor } from '@monaco-editor/react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button, ToggleSwitch, Spinner, Alert } from 'flowbite-react';
 import { useSelector } from 'react-redux';
 import {
@@ -185,6 +186,8 @@ const languageMeta = {
 
 export default function CodeEditor({ initialCode = {}, language = 'javascript', snippetId, workspaceId }) {
     const { theme } = useSelector((state) => state.theme);
+    const { currentUser } = useSelector((state) => state.user || {});
+    const queryClient = useQueryClient();
     const editorRef = useRef(null);
     const outputRef = useRef(null);
     const previewRef = useRef(null);
@@ -261,6 +264,10 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
     const baselineInitRef = useRef(false);
     const [cursorPos, setCursorPos] = useState({ lineNumber: 1, column: 1 });
     const [isSaved, setIsSaved] = useState(true);
+    const [isPersistingSnippet, setIsPersistingSnippet] = useState(false);
+    const [hasPendingSnippetChanges, setHasPendingSnippetChanges] = useState(false);
+    const [snippetSaveError, setSnippetSaveError] = useState(null);
+    const [snippetSaveMessage, setSnippetSaveMessage] = useState('');
     const getLanguageMeta = useCallback((lang) => {
         if (!lang) return { label: 'CODE', Icon: FaCode, badge: 'bg-slate-700 text-slate-100' };
         const meta = languageMeta[lang.toLowerCase()];
@@ -289,6 +296,7 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
     const [runToLineTarget, setRunToLineTarget] = useState(null);
     const [selectedDebugFrame, setSelectedDebugFrame] = useState(null);
     const [selectedDebugObjectId, setSelectedDebugObjectId] = useState(null);
+    const canSaveSnippet = Boolean(snippetId && currentUser?.isAdmin);
 
     const handleEditorDidMount = (editor, monaco) => {
         editorRef.current = editor;
@@ -346,14 +354,19 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
     };
 
 
-    const handleCodeChange = (newCode) => {
+    const handleCodeChange = useCallback((newCode) => {
         const activeLang = isWebMode ? webTab : selectedLanguage;
         setCodes(prevCodes => ({
             ...prevCodes,
             [activeLang]: newCode
         }));
         setIsSaved(false);
-    };
+        if (canSaveSnippet) {
+            setHasPendingSnippetChanges(true);
+        }
+        setSnippetSaveMessage('');
+        setSnippetSaveError(null);
+    }, [canSaveSnippet, isWebMode, selectedLanguage, webTab]);
 
     const buildPreviewHtml = () => {
         const html = codes.html || '';
@@ -428,6 +441,46 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
         }
     };
 
+    const saveSnippet = useCallback(async () => {
+        if (!canSaveSnippet) {
+            return;
+        }
+
+        setIsPersistingSnippet(true);
+        setSnippetSaveError(null);
+        setSnippetSaveMessage('');
+
+        try {
+            const response = await apiFetch(`/api/v1/code-snippet/${snippetId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    html: codes.html,
+                    css: codes.css,
+                    js: codes.javascript,
+                    cpp: codes.cpp,
+                    python: codes.python,
+                    java: codes.java,
+                    csharp: codes.csharp,
+                }),
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(payload.message || 'Failed to save code snippet.');
+            }
+
+            queryClient.setQueryData(['codeSnippet', snippetId], payload);
+            setHasPendingSnippetChanges(false);
+            setSnippetSaveMessage('Snippet saved');
+        } catch (error) {
+            setSnippetSaveError(error.message || 'Failed to save code snippet.');
+        } finally {
+            setIsPersistingSnippet(false);
+        }
+    }, [canSaveSnippet, codes.cpp, codes.css, codes.csharp, codes.html, codes.java, codes.javascript, codes.python, queryClient, snippetId]);
+
     useEffect(() => {
         setEditorTheme(theme === 'dark' ? 'vs-dark' : 'vs-light');
     }, [theme]);
@@ -450,6 +503,9 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
 
     useEffect(() => {
         setHasAppliedSnippet(false);
+        setHasPendingSnippetChanges(false);
+        setSnippetSaveError(null);
+        setSnippetSaveMessage('');
     }, [snippetId]);
 
     // Initialize diff baselines once from first resolved codes
@@ -693,6 +749,9 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
             setWebTab(snippetHasHtml ? 'html' : 'css');
         }
         setHasAppliedSnippet(true);
+        setHasPendingSnippetChanges(false);
+        setSnippetSaveError(null);
+        setSnippetSaveMessage('');
     }, [snippetId, snippet, hasAppliedSnippet, language, selectedLanguage]);
 
     // Apply locally saved state (codes + settings) after snippet load
@@ -761,6 +820,9 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
         });
         setConsoleOutput('');
         setRunError(null);
+        setHasPendingSnippetChanges(false);
+        setSnippetSaveError(null);
+        setSnippetSaveMessage('');
         if (isWebMode) updatePreview();
     };
 
@@ -885,6 +947,9 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
         entries.push({ id: 'format', label: 'Format Code', action: formatCode });
         entries.push({ id: 'find', label: 'Find', action: openFind });
         entries.push({ id: 'copy', label: 'Copy Code', action: copyCode });
+        if (canSaveSnippet) {
+            entries.push({ id: 'save-snippet', label: 'Save Snippet', action: saveSnippet });
+        }
         entries.push({ id: 'download', label: 'Download Code', action: downloadCode });
         entries.push({ id: 'upload', label: 'Upload From File…', action: () => fileInputRef.current?.click() });
         entries.push({ id: 'webmode', label: `${isWebMode ? 'Disable' : 'Enable'} Web Preview`, action: () => setIsWebMode(v => !v) });
@@ -908,7 +973,7 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
             }});
         }
         return entries;
-    }, [isWebMode, runCode, resetCode, formatCode, openFind, copyCode, downloadCode, splitVertical, showMinimap, showLineNumbers, wordWrap, showDiff, setBaselineForActive, showOutputPanel, editorTheme, selectedLanguage, debugActive]);
+    }, [canSaveSnippet, copyCode, debugActive, downloadCode, editorTheme, formatCode, isWebMode, openFind, resetCode, runCode, saveSnippet, selectedLanguage, setBaselineForActive, showDiff, showLineNumbers, showMinimap, showOutputPanel, splitVertical, wordWrap]);
 
     const filteredCommands = useMemo(() => {
         const q = cmdQuery.trim().toLowerCase();
@@ -932,10 +997,20 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, [isCmdOpen, filteredCommands, cmdIndex]);
-    const { currentUser } = useSelector((state) => state.user || {});
     const navItems = isWebMode ? ['html', 'css', 'javascript'] : supportedLanguages;
     const activeLangKey = isWebMode ? webTab : selectedLanguage;
     const activeLanguageMeta = getLanguageMeta(activeLangKey);
+    const saveStatusLabel = snippetSaveError
+        ? 'Snippet save failed'
+        : isPersistingSnippet
+          ? 'Saving snippet...'
+          : canSaveSnippet && hasPendingSnippetChanges
+            ? 'Snippet changes not saved'
+            : snippetSaveMessage
+              ? snippetSaveMessage
+              : isSaved
+                ? 'Saved'
+                : 'Saving locally...';
     const stageClass = splitVertical ? 'flex flex-row gap-4' : 'flex flex-col gap-4';
     const controlButtonClass = 'inline-flex items-center gap-2 rounded-md border border-slate-700/70 bg-slate-900/60 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-200 shadow-sm transition hover:bg-slate-800/70 hover:text-white';
     const ghostButtonClass = 'inline-flex items-center gap-2 rounded-md border border-slate-700/70 bg-slate-900/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-200 shadow-sm transition hover:bg-slate-800/70 hover:text-white';
@@ -1118,6 +1193,17 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
                             <button type="button" className={ghostButtonClass} onClick={resetCode}>
                                 <FaRedo className="text-xs" /> Reset
                             </button>
+                            {canSaveSnippet && (
+                                <button
+                                    type="button"
+                                    className={`${ghostButtonClass} border-cyan-500/60 text-cyan-100 hover:border-cyan-400/80`}
+                                    onClick={saveSnippet}
+                                    disabled={isPersistingSnippet || !hasPendingSnippetChanges}
+                                >
+                                    {isPersistingSnippet ? <Spinner size="sm" /> : <FaSave className="text-xs" />}
+                                    {isPersistingSnippet ? 'Saving Snippet' : 'Save Snippet'}
+                                </button>
+                            )}
                             {!isWebMode && debugSupported.has(selectedLanguage) && (
                                 !debugActive ? (
                                     <button
@@ -1519,7 +1605,7 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
                         <span>Wrap {wordWrap === 'on' ? 'On' : 'Off'}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                        <span>{isSaved ? 'Saved' : 'Saving…'}</span>
+                        <span>{saveStatusLabel}</span>
                         <span>UTF-8</span>
                         <span className="hidden items-center gap-1 text-slate-500 md:inline-flex">
                             <FaKeyboard className="text-xs" /> Ctrl+Shift+P

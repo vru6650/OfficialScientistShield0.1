@@ -28,3 +28,30 @@ export const getCodeSnippet = async ({ snippetId }) => {
     }
     return snippet;
 };
+
+export const updateCodeSnippet = async ({ snippetId, body, isAdmin }) => {
+    if (!isAdmin) {
+        throw errorHandler(403, 'You are not allowed to update a code snippet');
+    }
+
+    const updateFields = {};
+    const snippetFields = ['html', 'css', 'js', 'cpp', 'python', 'java', 'csharp'];
+
+    snippetFields.forEach((field) => {
+        if (body?.[field] !== undefined) {
+            updateFields[field] = String(body[field] ?? '');
+        }
+    });
+
+    const snippet = await CodeSnippet.findByIdAndUpdate(
+        snippetId,
+        updateFields,
+        { new: true, runValidators: true }
+    );
+
+    if (!snippet) {
+        throw errorHandler(404, 'Code snippet not found.');
+    }
+
+    return snippet;
+};

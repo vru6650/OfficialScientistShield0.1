@@ -14,6 +14,7 @@ import {
 } from 'react-icons/hi2';
 import PostCard from '../components/PostCard';
 import PostCardSkeleton from '../components/skeletons/PostCardSkeleton';
+import { ARTICLE_POST_CATEGORY_OPTIONS } from '../constants/postCategories.js';
 import useDebounce from '../hooks/useDebounce';
 import { getPosts } from '../services/postService';
 import { formatRelativeTimeFromNow } from '../utils/date';
@@ -25,10 +26,7 @@ const categoryChips = [
     { value: 'show-and-tell', label: 'Show & Tell' },
     { value: 'help', label: 'Help' },
     { value: 'tips', label: 'Tips' },
-    { value: 'javascript', label: 'JavaScript' },
-    { value: 'reactjs', label: 'React.js' },
-    { value: 'nextjs', label: 'Next.js' },
-    { value: 'technology', label: 'Technology' },
+    ...ARTICLE_POST_CATEGORY_OPTIONS.filter((option) => option.value !== 'uncategorized'),
     { value: 'html', label: 'HTML' },
     { value: 'css', label: 'CSS' },
     { value: 'node.js', label: 'Node.js' },

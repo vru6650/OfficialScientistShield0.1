@@ -23,13 +23,12 @@ const readSettings = () => {
     const raw = JSON.parse(localStorage.getItem(REST_SETTINGS_KEY) || 'null') || {};
     return {
       muted: Boolean(raw.muted),
-      notify: Boolean(raw.notify),
       vibrate: Boolean(raw.vibrate),
       autoRepeat: Boolean(raw.autoRepeat),
       dim: typeof raw.dim === 'number' ? Math.max(0, Math.min(0.9, raw.dim)) : 0.7,
       defaultDuration: Math.max(1, Math.floor(Number(raw.defaultDuration || 5))),
     };
-  } catch { return { muted: false, notify: false, vibrate: false, autoRepeat: false, dim: 0.7, defaultDuration: 5 }; }
+  } catch { return { muted: false, vibrate: false, autoRepeat: false, dim: 0.7, defaultDuration: 5 }; }
 };
 
 const readUiVolume = () => {
@@ -100,14 +99,6 @@ export default function RestOverlay() {
       if (diffMs <= 0) {
         // End
         if (!settings.muted) beepOnce();
-        try {
-          if (settings.notify && typeof Notification !== 'undefined') {
-            if (Notification.permission === 'granted') new Notification('Rest finished', { body: 'Time to get back!' });
-            else if (Notification.permission === 'default') {
-              Notification.requestPermission().then((perm) => { if (perm === 'granted') new Notification('Rest finished', { body: 'Time to get back!' }); });
-            }
-          }
-        } catch {}
         try { if (settings.vibrate && navigator.vibrate) navigator.vibrate([120, 80, 120]); } catch {}
 
         // Auto repeat if enabled
@@ -166,7 +157,7 @@ export default function RestOverlay() {
             >
               <div className="text-sm font-semibold uppercase tracking-wider text-white/70">Time to Rest</div>
               <div className="mt-2 text-6xl font-extrabold tabular-nums">{formatTime(remaining)}</div>
-              <div className="mt-2 text-sm text-white/70">Pause and relax. We’ll let you know when it’s time.</div>
+              <div className="mt-2 text-sm text-white/70">Pause and relax. This timer stays visible here until your break ends.</div>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <button
                   type="button"

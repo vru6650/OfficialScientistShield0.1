@@ -36,6 +36,36 @@ export const sanitizeMediaAssets = (mediaAssets) => {
         .map((asset, idx) => ({ ...asset, order: idx }));
 };
 
+export const sanitizeIllustrations = (illustrations) => {
+    if (!Array.isArray(illustrations)) {
+        return [];
+    }
+
+    return illustrations
+        .map((illustration, index) => {
+            const url = illustration?.url?.toString().trim();
+            if (!url) {
+                return null;
+            }
+
+            const alt = illustration?.alt?.toString().trim() || '';
+            const caption = illustration?.caption?.toString().trim() || '';
+            const credit = illustration?.credit?.toString().trim() || '';
+            const order = Number.isFinite(Number(illustration?.order))
+                ? Number(illustration.order)
+                : index;
+
+            return { url, alt, caption, credit, order };
+        })
+        .filter(Boolean)
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .slice(0, 12)
+        .map((illustration, index) => ({
+            ...illustration,
+            order: index,
+        }));
+};
+
 export const normalizeCoverAssetIndex = ({ mediaAssets, requestedCoverAssetIndex }) => {
     const maxIndex = Math.max((mediaAssets?.length || 0) - 1, 0);
     const requestedIndex = Number.isInteger(requestedCoverAssetIndex)
@@ -92,6 +122,7 @@ export const createPost = async ({ userId, isAdmin, body }) => {
         fallbackTitle: body?.title,
     });
     const mediaAssets = sanitizeMediaAssets(body.mediaAssets);
+    const illustrations = sanitizeIllustrations(body.illustrations);
     const derivedMedia = derivePostMediaFields({
         mediaAssets,
         coverAssetIndex: normalizeCoverAssetIndex({
@@ -112,6 +143,7 @@ export const createPost = async ({ userId, isAdmin, body }) => {
             kind,
             category: body?.category || (kind === 'community' ? 'community' : 'uncategorized'),
             mediaAssets,
+            illustrations,
             ...derivedMedia,
         });
         await indexSearchDocument('post', savedPost);
@@ -254,6 +286,10 @@ export const updatePost = async ({ postId, userId, isAdmin, body }) => {
             mediaType: updateFields.mediaType,
             image: updateFields.image,
         }));
+    }
+
+    if (body?.illustrations !== undefined) {
+        updateFields.illustrations = sanitizeIllustrations(body.illustrations);
     }
 
     try {

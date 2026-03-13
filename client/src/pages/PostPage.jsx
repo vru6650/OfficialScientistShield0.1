@@ -3,7 +3,7 @@ import { Button, Alert, Tooltip, Modal } from 'flowbite-react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import DOMPurify from 'dompurify';
-import { Suspense, lazy, useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import hljs from 'highlight.js';
 import ImageViewer from 'react-simple-image-viewer';
 import { Helmet } from 'react-helmet-async';
@@ -19,14 +19,19 @@ import ReadingProgressBar from '../components/ReadingProgressBar';
 import SocialShare from '../components/SocialShare';
 import ClapButton from '../components/ClapButton';
 import VideoPlayer from '../components/VideoPlayer';
+import LottieAnimationPlayer from '../components/LottieAnimationPlayer.jsx';
 import ReadingControlCenter from '../components/ReadingControlCenter';
 import useReadingSettings from '../hooks/useReadingSettings';
 import InteractiveReadingSurface from '../components/InteractiveReadingSurface.jsx';
 import PagedReader from '../components/PagedReader.jsx';
 import GalleryCarousel from '../components/media/GalleryCarousel.jsx';
+import EmbeddedSnippetPreview from '../components/EmbeddedSnippetPreview.jsx';
+import {
+    getPostIllustrationGalleryItems,
+    getPrimaryPostAsset,
+    getSortedPostMediaAssets,
+} from '../utils/postMedia.js';
 import '../Tiptap.css';
-
-const CodeEditor = lazy(() => import('../components/CodeEditor'));
 
 // --- API fetching functions ---
 const fetchPostBySlug = async (postSlug) => {
@@ -124,7 +129,21 @@ export default function PostPage() {
         // Allow safe video iframes (YouTube / Vimeo) while keeping other sanitation in place.
         const clean = DOMPurify.sanitize(html, {
             ADD_TAGS: ['iframe'],
-            ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'src', 'width', 'height', 'title', 'loading', 'referrerpolicy'],
+            ADD_ATTR: [
+                'allow',
+                'allowfullscreen',
+                'data-snippet-id',
+                'frameborder',
+                'src',
+                'width',
+                'height',
+                'title',
+                'loading',
+                'referrerpolicy',
+                'data-lottie-autoplay',
+                'data-lottie-loop',
+                'data-lottie-src',
+            ],
         });
 
         if (typeof document === 'undefined') return clean;
@@ -355,21 +374,8 @@ export default function PostPage() {
 
     const metaDescription = useMemo(() => createMetaDescription(post?.content), [post?.content]);
 
-    const sortedMedia = useMemo(
-        () => (post?.mediaAssets ?? []).slice().sort((a, b) => (a.order || 0) - (b.order || 0)),
-        [post?.mediaAssets]
-    );
-
-    const primaryAsset = useMemo(() => {
-        if (!post) return null;
-        if (post.mediaUrl) return { url: post.mediaUrl, type: post.mediaType || 'image' };
-        if (sortedMedia.length) {
-            const idx = Number.isInteger(post.coverAssetIndex) ? post.coverAssetIndex : 0;
-            return sortedMedia[idx] || sortedMedia[0];
-        }
-        if (post.image) return { url: post.image, type: 'image' };
-        return null;
-    }, [post, sortedMedia]);
+    const sortedMedia = useMemo(() => getSortedPostMediaAssets(post), [post]);
+    const primaryAsset = useMemo(() => getPrimaryPostAsset(post), [post]);
 
     const readingStats = useMemo(() => {
         if (!sanitizedContent) return { wordCount: 0, readingMinutes: 0 };
@@ -405,6 +411,10 @@ export default function PostPage() {
     const galleryItems = useMemo(
         () => sortedMedia.filter((asset) => asset?.url).slice(0, 8),
         [sortedMedia]
+    );
+    const illustrationItems = useMemo(
+        () => getPostIllustrationGalleryItems(post),
+        [post]
     );
 
     const heroBackgroundStyle = useMemo(() => {
@@ -552,15 +562,20 @@ export default function PostPage() {
             if (domNode.type === 'tag' && domNode.name === 'div' && domNode.attribs['data-snippet-id']) {
                 const snippetId = domNode.attribs['data-snippet-id'];
                 return (
-                    <Suspense
-                        fallback={
-                            <div className="liquid-hybrid-tile rounded-2xl border border-white/30 bg-white/70 p-4 text-sm text-slate-500 shadow-inner dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-300">
-                                Loading interactive snippet...
-                            </div>
-                        }
-                    >
-                        <CodeEditor snippetId={snippetId} />
-                    </Suspense>
+                    <EmbeddedSnippetPreview
+                        snippetId={snippetId}
+                        className='my-6'
+                    />
+                );
+            }
+            if (domNode.type === 'tag' && domNode.name === 'div' && domNode.attribs['data-lottie-src']) {
+                return (
+                    <LottieAnimationPlayer
+                        src={domNode.attribs['data-lottie-src']}
+                        autoplay={domNode.attribs['data-lottie-autoplay'] !== 'false'}
+                        loop={domNode.attribs['data-lottie-loop'] !== 'false'}
+                        className='my-6'
+                    />
                 );
             }
         }
@@ -877,6 +892,18 @@ export default function PostPage() {
                                 />
                             )}
                         </div>
+
+                        {illustrationItems.length > 0 && (
+                            <section className='liquid-hybrid-tile space-y-4 p-5 shadow-xl'>
+                                <div className='flex items-center justify-between text-sm font-semibold text-slate-700 dark:text-slate-200'>
+                                    <span>Illustrations</span>
+                                    <span className='text-xs text-slate-500 dark:text-slate-400'>
+                                        {illustrationItems.length} frames
+                                    </span>
+                                </div>
+                                <GalleryCarousel items={illustrationItems} />
+                            </section>
+                        )}
 
                         <div className='liquid-hybrid-tile flex flex-col gap-6 p-6 shadow-xl sm:flex-row sm:items-center sm:justify-between'>
                             <div className='flex flex-1 flex-col items-start gap-4 sm:flex-row sm:items-center'>

@@ -5,6 +5,7 @@ import {
     derivePostMediaFields,
     normalizeCoverAssetIndex,
     resolvePostSlug,
+    sanitizeIllustrations,
     sanitizeMediaAssets,
 } from './post.service.js';
 
@@ -59,6 +60,47 @@ test('sanitizeMediaAssets removes invalid items and normalizes ordering', () => 
 
 test('sanitizeMediaAssets returns an empty list for non-array values', () => {
     assert.deepEqual(sanitizeMediaAssets(undefined), []);
+});
+
+test('sanitizeIllustrations trims metadata and normalizes illustration ordering', () => {
+    const result = sanitizeIllustrations([
+        {
+            url: ' https://cdn.example.com/sketch-two.webp ',
+            alt: ' Storyboard frame ',
+            caption: ' Transition beat ',
+            credit: ' Studio Team ',
+            order: 4,
+        },
+        { url: '' },
+        {
+            url: 'https://cdn.example.com/sketch-one.webp',
+            alt: ' Opening visual ',
+            caption: ' Intro scene ',
+            credit: '  ',
+            order: 1,
+        },
+    ]);
+
+    assert.deepEqual(result, [
+        {
+            url: 'https://cdn.example.com/sketch-one.webp',
+            alt: 'Opening visual',
+            caption: 'Intro scene',
+            credit: '',
+            order: 0,
+        },
+        {
+            url: 'https://cdn.example.com/sketch-two.webp',
+            alt: 'Storyboard frame',
+            caption: 'Transition beat',
+            credit: 'Studio Team',
+            order: 1,
+        },
+    ]);
+});
+
+test('sanitizeIllustrations returns an empty list for non-array values', () => {
+    assert.deepEqual(sanitizeIllustrations(undefined), []);
 });
 
 test('normalizeCoverAssetIndex clamps to the available media asset range', () => {
