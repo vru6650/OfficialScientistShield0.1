@@ -1,14 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
-import Particles, { initParticlesEngine } from "@tsparticles/react";
-import { loadSlim } from "@tsparticles/slim";
+import { useEffect, useMemo, useState } from 'react';
+import Particles, { initParticlesEngine } from '@tsparticles/react';
+import { loadSlim } from '@tsparticles/slim';
 import { useMediaQuery } from 'react-responsive';
 
 export default function ParticlesBackground() {
     const [init, setInit] = useState(false);
-    const prefersDarkMode = useMediaQuery({ query: '(prefers-color-scheme: dark)' });
     const isMobile = useMediaQuery({ query: '(max-width: 768px)' });
-
-    const currentMode = prefersDarkMode ? 'dark' : 'light';
 
     useEffect(() => {
         initParticlesEngine(async (engine) => {
@@ -22,7 +19,7 @@ export default function ParticlesBackground() {
         () => ({
             background: {
                 color: {
-                    value: "transparent",
+                    value: 'transparent',
                 },
             },
             fpsLimit: isMobile ? 60 : 120,
@@ -30,7 +27,7 @@ export default function ParticlesBackground() {
                 events: {
                     onHover: {
                         enable: !isMobile,
-                        mode: "grab", // Change to grab for a more sci-fi feel
+                        mode: 'grab', // Change to grab for a more sci-fi feel
                         parallax: {
                             enable: true,
                             force: 60,
@@ -39,7 +36,7 @@ export default function ParticlesBackground() {
                     },
                     onClick: {
                         enable: true,
-                        mode: "push",
+                        mode: 'push',
                     },
                     resize: true,
                 },
@@ -48,7 +45,7 @@ export default function ParticlesBackground() {
                         distance: 200,
                         links: {
                             opacity: 0.8,
-                            color: currentMode === 'dark' ? "#00e5ff" : "#3b82f6",
+                            color: '#3b82f6',
                         },
                     },
                     push: {
@@ -62,12 +59,11 @@ export default function ParticlesBackground() {
             },
             particles: {
                 color: {
-                    // More vibrant, sci-fi color palette
-                    value: currentMode === 'dark' ? ["#8b5cf6", "#3b82f6", "#00e5ff"] : ["#d1d1d1", "#a0aec0", "#718096"],
+                    value: ['#d1d1d1', '#a0aec0', '#718096'],
                 },
                 links: {
                     color: {
-                        value: currentMode === 'dark' ? "#4b5563" : "#d1d1d1",
+                        value: '#d1d1d1',
                     },
                     distance: 180,
                     enable: true,
@@ -76,7 +72,7 @@ export default function ParticlesBackground() {
                     triangles: {
                         enable: true,
                         color: {
-                            value: currentMode === 'dark' ? "#3b82f6" : "#cbd5e0",
+                            value: '#cbd5e0',
                         },
                         opacity: 0.05,
                     },
@@ -140,14 +136,14 @@ export default function ParticlesBackground() {
                         frequency: 0.05,
                         opacity: 1,
                         color: {
-                            value: "#FFFFFF",
+                            value: '#FFFFFF',
                         },
                     },
                 },
             },
             detectRetina: true,
         }),
-        [currentMode, isMobile],
+        [isMobile],
     );
 
     if (init) {
@@ -155,7 +151,7 @@ export default function ParticlesBackground() {
             <Particles
                 id="tsparticles"
                 options={options}
-                className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none"
+                className="absolute left-0 top-0 z-0 h-full w-full pointer-events-none"
             />
         );
     }

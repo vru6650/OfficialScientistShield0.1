@@ -22,6 +22,21 @@ const formatCategoryLabel = (category = 'uncategorized') =>
         .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
         .join(' ');
 
+const createSummaryPreview = (summary = '', content = '', fallbackTitle = '') => {
+    const manualSummary = stripHtml(summary);
+    if (manualSummary) {
+        return manualSummary;
+    }
+
+    const contentPreview = stripHtml(content);
+    const base = contentPreview || fallbackTitle || '';
+    if (!base) {
+        return '';
+    }
+
+    return base.length > 220 ? `${base.slice(0, 220).replace(/[.,;:\s]+$/, '')}…` : base;
+};
+
 const hasRenderableBodyContent = (html = '') => {
     if (!html) {
         return false;
@@ -231,6 +246,10 @@ export default function PostLivePreview({
         [sanitizedContent]
     );
     const categoryLabel = formatCategoryLabel(post?.category || 'uncategorized');
+    const summaryPreview = useMemo(
+        () => createSummaryPreview(post?.summary, post?.content, previewTitle),
+        [post?.content, post?.summary, previewTitle]
+    );
 
     return (
         <div
@@ -274,6 +293,11 @@ export default function PostLivePreview({
                     {post?.slug ? (
                         <p className='text-xs font-medium uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500'>
                             /{post.slug}
+                        </p>
+                    ) : null}
+                    {summaryPreview ? (
+                        <p className='max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300'>
+                            {summaryPreview}
                         </p>
                     ) : null}
                 </div>

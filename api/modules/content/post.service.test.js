@@ -5,6 +5,7 @@ import {
     derivePostMediaFields,
     normalizeCoverAssetIndex,
     resolvePostSlug,
+    resolvePostSummary,
     sanitizeIllustrations,
     sanitizeMediaAssets,
 } from './post.service.js';
@@ -25,6 +26,41 @@ test('resolvePostSlug falls back to the title when custom slug is empty', () => 
     });
 
     assert.equal(result, 'ship-the-create-post-upgrade');
+});
+
+test('resolvePostSummary prefers an explicit summary and strips markup', () => {
+    const result = resolvePostSummary({
+        requestedSummary: '  <strong>Sharp launch recap</strong> for readers.  ',
+        fallbackTitle: 'Ignored title',
+        fallbackContent: '<p>Ignored content</p>',
+    });
+
+    assert.equal(result, 'Sharp launch recap for readers.');
+});
+
+test('resolvePostSummary falls back to trimmed content when summary is blank', () => {
+    const result = resolvePostSummary({
+        requestedSummary: '   ',
+        fallbackTitle: 'Fallback title',
+        fallbackContent:
+            '<p>This post explains the new publishing workflow, why the summary matters, and how the preview stack stays consistent across cards and metadata.</p>',
+    });
+
+    assert.equal(
+        result,
+        'This post explains the new publishing workflow, why the summary matters, and how the preview stack stays consistent across cards and metadata.'
+    );
+});
+
+test('resolvePostSummary truncates generated summaries to the schema limit', () => {
+    const result = resolvePostSummary({
+        requestedSummary: '',
+        fallbackTitle: 'Fallback title',
+        fallbackContent: '<p>' + 'A'.repeat(600) + '</p>',
+    });
+
+    assert.equal(result.length, 280);
+    assert.equal(result.endsWith('…'), true);
 });
 
 test('sanitizeMediaAssets removes invalid items and normalizes ordering', () => {

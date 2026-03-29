@@ -7,6 +7,7 @@ import { HiOutlineExclamationCircle, HiArrowPath, HiMagnifyingGlass, HiSparkles,
 import { getAdminPosts, deletePost } from '../services/postService';
 import useDebounce from '../hooks/useDebounce';
 import { getPostPreviewImage, getPrimaryPostAsset } from '../utils/postMedia.js';
+import { getPostPath } from '../utils/postPath.js';
 
 export default function DashPosts() {
   const { currentUser } = useSelector((state) => state.user);
@@ -186,22 +187,39 @@ export default function DashPosts() {
                   <Table.HeadCell>Actions</Table.HeadCell>
                 </Table.Head>
                 <Table.Body className='divide-y'>
-                  {posts.map((post) => (
+                  {posts.map((post) => {
+                      const postPath = getPostPath(post);
+
+                      return (
                       <Table.Row key={post._id} className='bg-white dark:border-gray-700 dark:bg-gray-800'>
                         <Table.Cell>{new Date(post.updatedAt).toLocaleDateString()}</Table.Cell>
                         <Table.Cell>
-                          <Link to={`/post/${post.slug}`}>
-                            <div className='flex items-center gap-2'>
-                              {mediaIcon(post)}
-                              {renderPreview(post)}
-                              {Array.isArray(post.mediaAssets) && post.mediaAssets.length > 1 && (
-                                  <Badge color='gray'>{post.mediaAssets.length} items</Badge>
-                              )}
-                            </div>
-                          </Link>
+                          {postPath ? (
+                              <Link to={postPath}>
+                                <div className='flex items-center gap-2'>
+                                  {mediaIcon(post)}
+                                  {renderPreview(post)}
+                                  {Array.isArray(post.mediaAssets) && post.mediaAssets.length > 1 && (
+                                      <Badge color='gray'>{post.mediaAssets.length} items</Badge>
+                                  )}
+                                </div>
+                              </Link>
+                          ) : (
+                              <div className='flex items-center gap-2'>
+                                {mediaIcon(post)}
+                                {renderPreview(post)}
+                                {Array.isArray(post.mediaAssets) && post.mediaAssets.length > 1 && (
+                                    <Badge color='gray'>{post.mediaAssets.length} items</Badge>
+                                )}
+                              </div>
+                          )}
                         </Table.Cell>
                         <Table.Cell>
-                          <Link className='font-medium text-gray-900 dark:text-white' to={`/post/${post.slug}`}>{post.title}</Link>
+                          {postPath ? (
+                              <Link className='font-medium text-gray-900 dark:text-white' to={postPath}>{post.title}</Link>
+                          ) : (
+                              <span className='font-medium text-gray-900 dark:text-white'>{post.title}</span>
+                          )}
                         </Table.Cell>
                         <Table.Cell>
                           <div className='flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300'>
@@ -235,7 +253,8 @@ export default function DashPosts() {
                           </div>
                         </Table.Cell>
                       </Table.Row>
-                  ))}
+                      );
+                  })}
                 </Table.Body>
               </Table>
               {hasNextPage && (

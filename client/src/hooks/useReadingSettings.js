@@ -9,7 +9,7 @@ export const marginStyleMap = {
     wide: '2.25rem',
 };
 
-const defaultSettings = {
+export const defaultSettings = {
     fontSize: 18,
     fontFamily: 'serif',
     fontWeight: 400,
@@ -19,7 +19,8 @@ const defaultSettings = {
     paragraphSpacing: 1.25, // New setting
     pageWidth: 'comfortable',
     pageMargin: 'medium',
-    theme: 'auto',
+    theme: 'day',
+    pageColor: '',
     textAlign: 'left',
     brightness: 1,
     focusMode: false,
@@ -45,13 +46,54 @@ const widthStyleMap = {
     comfortable: '720px',
     spacious: '860px',
 };
+const READER_SURFACE_KEYS = new Set(['day', 'sepia', 'mint']);
 
 const themeClassMap = {
     day: 'reading-theme-day',
     sepia: 'reading-theme-sepia',
-    mint: 'reading-theme-mint', // New theme class
-    dusk: 'reading-theme-dusk', // New theme class
-    night: 'reading-theme-night',
+    mint: 'reading-theme-mint',
+};
+
+const readerSurfaceMap = {
+    day: 'linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95))',
+    sepia: 'linear-gradient(180deg, rgba(247, 242, 231, 0.98), rgba(239, 229, 210, 0.96))',
+    mint: 'linear-gradient(180deg, rgba(240, 253, 244, 0.98), rgba(220, 252, 231, 0.96))',
+};
+
+export const normalizeHexColor = (value = '') => {
+    const normalizedValue = String(value).trim();
+    if (/^#[0-9a-f]{3}$/i.test(normalizedValue)) {
+        return `#${normalizedValue.slice(1).split('').map((segment) => `${segment}${segment}`).join('')}`.toLowerCase();
+    }
+
+    return /^#[0-9a-f]{6}$/i.test(normalizedValue) ? normalizedValue.toLowerCase() : '';
+};
+
+const hexToRgba = (value, alpha) => {
+    const normalizedValue = normalizeHexColor(value);
+    if (!normalizedValue) {
+        return '';
+    }
+
+    const red = Number.parseInt(normalizedValue.slice(1, 3), 16);
+    const green = Number.parseInt(normalizedValue.slice(3, 5), 16);
+    const blue = Number.parseInt(normalizedValue.slice(5, 7), 16);
+
+    return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+};
+
+export const resolveReaderPageSurface = (theme = 'day') => readerSurfaceMap[theme] || readerSurfaceMap.day;
+
+export const resolveReaderPageTint = ({ theme = 'day', pageColor = '' } = {}) => {
+    const normalizedPageColor = normalizeHexColor(pageColor);
+    if (!normalizedPageColor) {
+        return '';
+    }
+
+    const topTint = hexToRgba(normalizedPageColor, 0.58);
+    const bottomTint = hexToRgba(normalizedPageColor, 0.42);
+
+    return `linear-gradient(180deg, ${topTint}, ${bottomTint})`;
 };
 
 const getStoredSettings = () => {
@@ -64,9 +106,11 @@ const getStoredSettings = () => {
             return defaultSettings;
         }
         const parsed = JSON.parse(stored);
+        const theme = READER_SURFACE_KEYS.has(parsed?.theme) ? parsed.theme : defaultSettings.theme;
         return {
             ...defaultSettings,
             ...parsed,
+            theme,
         };
     } catch (error) {
         console.error('Failed to parse reading preferences:', error);
@@ -98,6 +142,14 @@ export default function useReadingSettings() {
         () => marginStyleMap[settings.pageMargin] || marginStyleMap.medium,
         [settings.pageMargin]
     );
+    const readerPageSurface = useMemo(
+        () => resolveReaderPageSurface(settings.theme),
+        [settings.theme]
+    );
+    const readerPageTint = useMemo(
+        () => resolveReaderPageTint({ theme: settings.theme, pageColor: settings.pageColor }),
+        [settings.pageColor, settings.theme]
+    );
 
     const contentStyles = useMemo(() => {
         const filterParts = [`brightness(${settings.brightness})`];
@@ -113,6 +165,8 @@ export default function useReadingSettings() {
             fontWeight: settings.fontWeight,
             textAlign: settings.textAlign,
             '--paragraph-spacing': `${settings.paragraphSpacing}em`, // New CSS variable for paragraph spacing
+            '--reader-page-surface': readerPageSurface || undefined,
+            '--reader-page-tint': readerPageTint || undefined,
             fontFamily: fontFamilyMap[settings.fontFamily] || fontFamilyMap.serif,
             filter: filterParts.join(' '),
             paddingInline: contentPadding,
@@ -126,6 +180,8 @@ export default function useReadingSettings() {
         settings.fontFamily,
         settings.textAlign,
         settings.paragraphSpacing,
+        readerPageSurface,
+        readerPageTint,
         settings.brightness,
         settings.highContrast,
         contentPadding
@@ -134,10 +190,7 @@ export default function useReadingSettings() {
     const contentMaxWidth = useMemo(() => widthStyleMap[settings.pageWidth] || widthStyleMap.comfortable, [settings.pageWidth]);
 
     const surfaceClass = useMemo(() => {
-        if (settings.theme === 'auto') {
-            return '';
-        }
-        return themeClassMap[settings.theme] || '';
+        return themeClassMap[settings.theme] || themeClassMap.day;
     }, [settings.theme]);
 
     return {

@@ -12,6 +12,28 @@ import {
 } from './post.repository.js';
 
 const allowedMediaTypes = new Set(['image', 'video', 'audio', 'document']);
+const SUMMARY_MAX_LENGTH = 280;
+const stripHtml = (value = '') =>
+    String(value)
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&[a-z]+;/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+const truncateSummary = (value = '', maxLength = SUMMARY_MAX_LENGTH) => {
+    const sanitized = stripHtml(value);
+    if (sanitized.length <= maxLength) {
+        return sanitized;
+    }
+
+    const safeLength = Math.max(1, maxLength - 1);
+    const truncated = sanitized.slice(0, safeLength).replace(/[.,;:\s]+$/, '');
+    return `${truncated}…`;
+};
+
 export const sanitizeMediaAssets = (mediaAssets) => {
     if (!Array.isArray(mediaAssets)) {
         return [];
@@ -106,6 +128,19 @@ export const resolvePostSlug = ({ requestedSlug, fallbackTitle }) => {
     return generateSlug(String(fallbackTitle ?? ''));
 };
 
+export const resolvePostSummary = ({
+    requestedSummary,
+    fallbackTitle,
+    fallbackContent,
+}) => {
+    const preferredSummary = truncateSummary(requestedSummary);
+    if (preferredSummary) {
+        return preferredSummary;
+    }
+
+    return truncateSummary(fallbackContent || fallbackTitle || '');
+};
+
 export const createPost = async ({ userId, isAdmin, body }) => {
     const kind = body?.kind === 'community' ? 'community' : 'article';
 
@@ -120,6 +155,11 @@ export const createPost = async ({ userId, isAdmin, body }) => {
     const slug = resolvePostSlug({
         requestedSlug: body?.slug,
         fallbackTitle: body?.title,
+    });
+    const summary = resolvePostSummary({
+        requestedSummary: body?.summary,
+        fallbackTitle: body?.title,
+        fallbackContent: body?.content,
     });
     const mediaAssets = sanitizeMediaAssets(body.mediaAssets);
     const illustrations = sanitizeIllustrations(body.illustrations);
@@ -139,6 +179,7 @@ export const createPost = async ({ userId, isAdmin, body }) => {
         const savedPost = await createPostRecord({
             ...body,
             slug,
+            summary,
             userId,
             kind,
             category: body?.category || (kind === 'community' ? 'community' : 'uncategorized'),
@@ -177,6 +218,7 @@ export const getPosts = async ({ query }) => {
         ...(query.searchTerm && {
             $or: [
                 { title: { $regex: query.searchTerm, $options: 'i' } },
+                { summary: { $regex: query.searchTerm, $options: 'i' } },
                 { content: { $regex: query.searchTerm, $options: 'i' } },
             ],
         }),
@@ -228,6 +270,8 @@ export const updatePost = async ({ postId, userId, isAdmin, body }) => {
     }
 
     const updateFields = {};
+    const nextTitle = body?.title !== undefined ? body.title : post.title;
+    const nextContent = body?.content !== undefined ? body.content : post.content;
 
     if (body?.title !== undefined) {
         updateFields.title = body.title;
@@ -250,10 +294,22 @@ export const updatePost = async ({ postId, userId, isAdmin, body }) => {
     if (body?.slug !== undefined) {
         updateFields.slug = resolvePostSlug({
             requestedSlug: body.slug,
-            fallbackTitle: body?.title !== undefined ? body.title : post.title,
+            fallbackTitle: nextTitle,
         });
     } else if (body?.title !== undefined) {
         updateFields.slug = resolvePostSlug({ fallbackTitle: body.title });
+    }
+    if (body?.summary !== undefined) {
+        updateFields.summary = resolvePostSummary({
+            requestedSummary: body.summary,
+            fallbackTitle: nextTitle,
+            fallbackContent: nextContent,
+        });
+    } else if (!post.summary && (body?.title !== undefined || body?.content !== undefined)) {
+        updateFields.summary = resolvePostSummary({
+            fallbackTitle: nextTitle,
+            fallbackContent: nextContent,
+        });
     }
 
     if (body?.mediaAssets !== undefined) {

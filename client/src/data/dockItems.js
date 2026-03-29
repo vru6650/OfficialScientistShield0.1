@@ -6,7 +6,6 @@ import toolsIcon from '../assets/dock/tools.svg';
 import problemsIcon from '../assets/dock/problems.svg';
 import dashboardIcon from '../assets/dock/dashboard.svg';
 import quickAddIcon from '../assets/dock/quick-add.svg';
-import themeIcon from '../assets/dock/theme.svg';
 import fileManagerIcon from '../assets/dock/file-manager.svg';
 import settingsIcon from '../assets/dock/settings.svg';
 import communityIcon from '../assets/dock/community.svg';
@@ -127,15 +126,6 @@ export const quickAddDockItem = {
     iconAlt: 'Open quick add shortcuts',
 };
 
-export const themeDockItem = {
-    key: 'theme',
-    type: 'theme',
-    label: 'Theme',
-    iconSrc: buildIconSrc('theme', themeIcon),
-    fallbackIconSrc: themeIcon,
-    iconAlt: 'Toggle theme',
-};
-
 export const settingsDockItem = {
     key: 'settings',
     type: 'settings',
@@ -145,12 +135,11 @@ export const settingsDockItem = {
     iconAlt: 'Open settings',
 };
 
-export const baseDockSequence = [...baseDockItems, quickAddDockItem, settingsDockItem, themeDockItem];
+export const baseDockSequence = [...baseDockItems, quickAddDockItem, settingsDockItem];
 
 export const dockSequenceWithDashboard = [
     ...baseDockItems,
     dashboardDockItem,
     quickAddDockItem,
     settingsDockItem,
-    themeDockItem,
 ];

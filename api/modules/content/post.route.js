@@ -20,6 +20,10 @@ const nullableOptionalString = z.preprocess(
     (value) => (value === null || value === '' ? undefined : value),
     z.string().trim().optional()
 );
+const optionalSummaryString = z.preprocess(
+    (value) => (value === null ? '' : value),
+    z.string().trim().max(280).optional()
+);
 const illustrationSchema = z.object({
     url: z.string().trim().url(),
     alt: z.string().trim().max(180).optional(),
@@ -31,6 +35,7 @@ const illustrationSchema = z.object({
 const createPostBody = z
     .object({
         title: nonEmptyStringSchema,
+        summary: optionalSummaryString,
         content: nonEmptyStringSchema,
         slug: nullableOptionalString,
         category: z.string().optional(),
@@ -56,6 +61,7 @@ const createPostBody = z
 const updatePostBody = z
     .object({
         title: z.string().trim().optional(),
+        summary: optionalSummaryString,
         content: z.string().trim().optional(),
         slug: nullableOptionalString,
         category: z.string().optional(),

@@ -16,12 +16,9 @@ import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { marginStyleMap } from '../hooks/useReadingSettings';
 
 const themeOptions = [
-    { id: 'auto', label: 'Auto', swatch: 'bg-gradient-to-r from-slate-200 via-white to-slate-200', description: 'Follow site theme' },
     { id: 'day', label: 'Day', swatch: 'bg-white border border-slate-200', description: 'Bright background' },
     { id: 'sepia', label: 'Sepia', swatch: 'bg-[#f7f2e7] border border-[#e0d3b8]', description: 'Warm sepia tone' },
     { id: 'mint', label: 'Mint', swatch: 'bg-[#f0fdf4] border border-[#bbf7d0]', description: 'Cool green tint' },
-    { id: 'dusk', label: 'Dusk', swatch: 'bg-[#1e293b] border border-[#334155]', description: 'Soft dark mode' },
-    { id: 'night', label: 'Night', swatch: 'bg-slate-900 border border-slate-700', description: 'Low-light mode' },
 ];
 
 const fontOptions = [
@@ -75,12 +72,9 @@ const readingAidOptions = [
 ];
 
 const themePreviewClassMap = {
-    auto: 'bg-white/90 text-slate-800 border-slate-200/70 dark:bg-slate-900/80 dark:text-slate-100 dark:border-slate-700/70',
     day: 'bg-white text-slate-900 border-slate-200',
     sepia: 'bg-[#f7f2e7] text-[#5b4636] border-[#d6c5aa]',
     mint: 'bg-[#f0fdf4] text-[#14532d] border-[#bbf7d0]',
-    dusk: 'bg-[#1e293b] text-[#cbd5e1] border-[#334155]',
-    night: 'bg-slate-900 text-slate-100 border-slate-700',
 };
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
@@ -187,7 +181,7 @@ export default function ReadingControlCenter({ settings, onChange, onReset }) {
         paddingInline: marginStyleMap[settings.pageMargin] || marginStyleMap.medium,
     }), [settings]);
 
-    const previewThemeClass = themePreviewClassMap[settings.theme] || themePreviewClassMap.auto;
+    const previewThemeClass = themePreviewClassMap[settings.theme] || themePreviewClassMap.day;
 
     const handleFontSizeChange = (direction) => {
         const next = direction === 'increase' ? settings.fontSize + 1 : settings.fontSize - 1;
@@ -388,7 +382,7 @@ export default function ReadingControlCenter({ settings, onChange, onReset }) {
                         {/* The rest of the controls remain unchanged */}
                         <div className="max-h-[40vh] overflow-y-auto pr-2 space-y-6">
                             <section className="space-y-3">
-                                <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Theme</h4>
+                                <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Surface</h4>
                                 <div className="grid grid-cols-2 gap-3">
                                     {themeOptions.map(option => (
                                         <button

@@ -27,6 +27,8 @@ import { HiDotsHorizontal } from 'react-icons/hi';
 import { useLike } from '../hooks/useLike';
 import { useBookmark } from '../hooks/useBookmark';
 import useUser from '../hooks/useUser';
+import { includesId } from '../utils/id.js';
+import { getAbsolutePostUrl, getPostPath } from '../utils/postPath.js';
 
 // --- SUB-COMPONENTS for Instagram-style Layout ---
 
@@ -51,10 +53,12 @@ const stripHtml = (htmlContent) => {
         .trim();
 };
 
-const buildPostInsights = (htmlContent, fallbackTitle) => {
+const buildPostInsights = ({ htmlContent, fallbackTitle, summary }) => {
     const sanitizedText = stripHtml(htmlContent);
-    const baseText = sanitizedText || fallbackTitle || '';
-    const words = baseText ? baseText.split(/\s+/).filter(Boolean) : [];
+    const summaryText = stripHtml(summary);
+    const previewBaseText = summaryText || sanitizedText || fallbackTitle || '';
+    const readingBaseText = sanitizedText || previewBaseText;
+    const words = readingBaseText ? readingBaseText.split(/\s+/).filter(Boolean) : [];
     const wordCount = words.length;
     const readingMinutes = wordCount === 0 ? 0 : Math.max(1, Math.ceil(wordCount / 200));
 
@@ -66,9 +70,9 @@ const buildPostInsights = (htmlContent, fallbackTitle) => {
     }
 
     const maxPreviewLength = 180;
-    let previewText = baseText;
-    if (baseText.length > maxPreviewLength) {
-        const truncated = baseText.slice(0, maxPreviewLength);
+    let previewText = previewBaseText;
+    if (previewBaseText.length > maxPreviewLength) {
+        const truncated = previewBaseText.slice(0, maxPreviewLength);
         previewText = `${truncated.replace(/[.,;:\s]+$/, '')}…`;
     }
 
@@ -586,16 +590,17 @@ const CardBody = ({
     formattedCategory,
 }) => {
     const safeCaption = insights.previewText || 'Untitled post';
-    const hasSlug = Boolean(post?.slug);
-    const showMoreLink = (safeCaption.endsWith('…') || safeCaption.endsWith('...')) && hasSlug;
+    const postPath = getPostPath(post);
+    const hasPostPath = Boolean(postPath);
+    const showMoreLink = (safeCaption.endsWith('…') || safeCaption.endsWith('...')) && hasPostPath;
 
     return (
         <div className="px-3 pb-3 text-sm text-gray-800 dark:text-gray-200">
             <div className="flex flex-col gap-3">
                 <div>
                     <h3 className="text-base font-semibold leading-snug text-gray-900 transition-colors hover:text-professional-blue-500 dark:text-gray-100 dark:hover:text-professional-blue-300">
-                        {hasSlug ? (
-                            <Link to={`/post/${post.slug}`}>
+                        {hasPostPath ? (
+                            <Link to={postPath}>
                                 {post.title}
                             </Link>
                         ) : (
@@ -621,7 +626,7 @@ const CardBody = ({
                     <p className="line-clamp-4">{safeCaption}</p>
                     {showMoreLink ? (
                         <Link
-                            to={`/post/${post.slug}`}
+                            to={postPath}
                             className="group mt-3 inline-flex items-center gap-2 text-sm font-semibold text-professional-blue-600 transition-colors hover:text-professional-blue-500 dark:text-professional-blue-300 dark:hover:text-professional-blue-200"
                         >
                             Continue reading
@@ -677,7 +682,8 @@ export default function PostCard({ post }) {
     const { user: author } = useUser(post.userId);
 
     const [showLikeHeart, setShowLikeHeart] = useState(false);
-    const hasShareTarget = Boolean(post?.slug);
+    const postPath = getPostPath(post);
+    const hasShareTarget = Boolean(postPath);
     const [shareTooltip, setShareTooltip] = useState(hasShareTarget ? 'Share' : 'Link unavailable');
     const shareResetTimeoutRef = useRef(null);
 
@@ -695,11 +701,10 @@ export default function PostCard({ post }) {
     }, []);
 
     useEffect(() => {
-        setShareTooltip(post?.slug ? 'Share' : 'Link unavailable');
-    }, [post?.slug]);
+        setShareTooltip(postPath ? 'Share' : 'Link unavailable');
+    }, [postPath]);
 
-    const postSlug = post?.slug ?? null;
-    const shareResetLabel = postSlug ? 'Share' : 'Link unavailable';
+    const shareResetLabel = postPath ? 'Share' : 'Link unavailable';
 
     const scheduleShareTooltipReset = useCallback(() => {
         if (shareResetTimeoutRef.current) {
@@ -750,7 +755,10 @@ export default function PostCard({ post }) {
         initialClaps: post?.claps ?? 0,
         initialClappedBy: post?.clappedBy ?? [],
     });
-    const { isBookmarked, isLoading: isBookmarkLoading, handleBookmark } = useBookmark(post.bookmarkedBy?.includes(currentUser?._id), postId);
+    const { isBookmarked, isLoading: isBookmarkLoading, handleBookmark } = useBookmark(
+        includesId(post.bookmarkedBy, currentUser?._id),
+        postId,
+    );
 
     const handleActionClick = useCallback((e, actionHandler) => {
         e.preventDefault();
@@ -766,7 +774,7 @@ export default function PostCard({ post }) {
         const interactiveElement = event?.target?.closest('button, a, input, textarea, select, label');
         if (interactiveElement) return;
 
-        if (!postSlug) return;
+        if (!postPath) return;
 
         if (navigationTimeoutRef.current) {
             clearTimeout(navigationTimeoutRef.current);
@@ -774,11 +782,11 @@ export default function PostCard({ post }) {
 
         navigationTimeoutRef.current = setTimeout(() => {
             navigationTimeoutRef.current = null;
-            if (postSlug) {
-                navigate(`/post/${postSlug}`);
+            if (postPath) {
+                navigate(postPath);
             }
         }, 180);
-    }, [navigate, postSlug]);
+    }, [navigate, postPath]);
 
     const handleMediaDoubleClick = useCallback((e) => {
         e.preventDefault();
@@ -799,11 +807,8 @@ export default function PostCard({ post }) {
     }, [canInteractWithPost, currentUser, handleLike, isLiked, navigate]);
 
     const shareUrl = useMemo(() => {
-        if (!postSlug || typeof window === 'undefined') {
-            return '';
-        }
-        return `${window.location.origin}/post/${postSlug}`;
-    }, [postSlug]);
+        return getAbsolutePostUrl(post);
+    }, [post]);
 
     const shareData = useMemo(() => ({
         title: post.title,
@@ -815,7 +820,7 @@ export default function PostCard({ post }) {
         e.preventDefault();
         e.stopPropagation();
 
-        if (!postSlug || !shareData.url) {
+        if (!postPath || !shareData.url) {
             updateShareTooltip('Link unavailable');
             return;
         }
@@ -836,11 +841,15 @@ export default function PostCard({ post }) {
 
         const copied = await copyToClipboard(shareData.url);
         updateShareTooltip(copied ? 'Link copied!' : 'Copy failed');
-    }, [copyToClipboard, shareData, postSlug, updateShareTooltip]);
+    }, [copyToClipboard, shareData, postPath, updateShareTooltip]);
 
     const insights = useMemo(
-        () => buildPostInsights(post.content, post.title),
-        [post.content, post.title],
+        () => buildPostInsights({
+            htmlContent: post.content,
+            fallbackTitle: post.title,
+            summary: post.summary,
+        }),
+        [post.content, post.summary, post.title],
     );
     const likeTotal = useMemo(() => (Number.isFinite(likeCount) ? likeCount : 0), [likeCount]);
     const isTrending = useMemo(() => likeTotal >= 50, [likeTotal]);
@@ -890,7 +899,7 @@ export default function PostCard({ post }) {
                     isBookmarked={isBookmarked}
                     disableLikes={!canInteractWithPost || isLikeLoading}
                     disableBookmarks={!canInteractWithPost || isBookmarkLoading}
-                    disableShare={!post?.slug}
+                    disableShare={!postPath}
                     // Badges
                     readingLabel={insights.readingMinutes > 0 ? insights.readingLabel : undefined}
                     isTrending={isTrending}
@@ -905,7 +914,7 @@ export default function PostCard({ post }) {
                     shareTooltip={shareTooltip}
                     disableLikes={!canInteractWithPost}
                     disableBookmarks={!canInteractWithPost}
-                    disableShare={!post?.slug}
+                    disableShare={!postPath}
                 />
 
                 <CardBody

@@ -122,8 +122,9 @@ const createSummary = (text = '', maxLength = 280) => {
     if (sanitized.length <= maxLength) {
         return sanitized;
     }
-    const truncated = sanitized.slice(0, maxLength);
-    return `${truncated.replace(/[.,;:\s]+$/, '')}…`;
+    const safeLength = Math.max(1, maxLength - 1);
+    const truncated = sanitized.slice(0, safeLength).replace(/[.,;:\s]+$/, '');
+    return `${truncated}…`;
 };
 
 const toArrayOfStrings = (value) => {
@@ -191,7 +192,7 @@ const normalizeDocument = (type, document) => {
         const content = stripHtml(plain.content || '');
         return {
             ...base,
-            summary: createSummary(plain.content || plain.title || ''),
+            summary: createSummary(plain.summary || plain.content || plain.title || ''),
             content,
             authorId: plain.userId ? String(plain.userId) : null,
             tags: [],

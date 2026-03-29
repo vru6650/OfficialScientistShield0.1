@@ -7,6 +7,7 @@ import {
     Button,
     Select,
     Spinner,
+    Textarea,
     TextInput,
     Tooltip,
 } from 'flowbite-react';
@@ -72,7 +73,7 @@ export default function UpdatePost() {
     const [submitError, setSubmitError] = useState(null);
 
     const { data: initialPost, isLoading } = useQuery({
-        queryKey: ['post', postId],
+        queryKey: ['post', 'id', postId],
         queryFn: () => getPost(postId),
         enabled: !!postId,
     });
@@ -137,6 +138,23 @@ export default function UpdatePost() {
         if (!text) return 0;
         return text.split(/\s+/).length;
     }, [formData?.content]);
+    const summaryCharacterCount = useMemo(
+        () => formData?.summary?.trim()?.length || 0,
+        [formData?.summary]
+    );
+    const summaryPreview = useMemo(() => {
+        const manualSummary = formData?.summary?.trim();
+        if (manualSummary) {
+            return manualSummary;
+        }
+
+        const text = stripHtml(formData?.content || '').trim();
+        if (!text) {
+            return 'Leave the summary blank to derive it from the updated post body.';
+        }
+
+        return text.length > 180 ? `${text.slice(0, 180)}...` : text;
+    }, [formData?.content, formData?.summary]);
 
     const readTime = useMemo(() => (wordCount ? Math.max(1, Math.ceil(wordCount / 180)) : 0), [wordCount]);
 
@@ -308,6 +326,31 @@ export default function UpdatePost() {
                                         </div>
                                     </div>
                                 </div>
+                                <div className='rounded-xl border border-slate-200 bg-white/80 p-4 shadow-inner dark:border-slate-800 dark:bg-slate-900/70'>
+                                    <div className='flex items-center justify-between gap-3'>
+                                        <label
+                                            htmlFor='summary'
+                                            className='text-sm font-semibold text-slate-900 dark:text-white'
+                                        >
+                                            Summary
+                                        </label>
+                                        <span className='text-xs font-medium text-slate-500 dark:text-slate-400'>
+                                            {summaryCharacterCount}/280
+                                        </span>
+                                    </div>
+                                    <Textarea
+                                        id='summary'
+                                        rows={3}
+                                        maxLength={280}
+                                        value={formData.summary || ''}
+                                        onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                                        className='mt-3'
+                                        placeholder='Optional teaser for cards, search, and social previews.'
+                                    />
+                                    <p className='mt-2 text-xs text-slate-500 dark:text-slate-400'>
+                                        Clear it to fall back to the post body preview.
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
@@ -465,6 +508,17 @@ export default function UpdatePost() {
                                     </p>
                                     <p className='text-xs text-slate-500 dark:text-slate-400'>Keeps readers' attention span in check.</p>
                                 </div>
+                            </div>
+                            <div className='mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700 shadow-inner dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-200'>
+                                <div className='flex items-center justify-between gap-3'>
+                                    <span className='font-semibold text-slate-900 dark:text-white'>Summary preview</span>
+                                    <span className='text-xs font-medium text-slate-500 dark:text-slate-400'>
+                                        {summaryCharacterCount ? 'Custom' : 'Auto'}
+                                    </span>
+                                </div>
+                                <p className='mt-2 leading-6 text-slate-600 dark:text-slate-300'>
+                                    {summaryPreview}
+                                </p>
                             </div>
                             <div className='mt-4'>
                                 <div className='flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300'>

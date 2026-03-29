@@ -7,6 +7,7 @@ import {
     Progress,
     Select,
     Spinner,
+    Textarea,
     TextInput,
 } from 'flowbite-react';
 import { useNavigate } from 'react-router-dom';
@@ -52,6 +53,7 @@ const initialForm = Object.freeze({
     title: '',
     slug: '',
     category: 'uncategorized',
+    summary: '',
     content: '',
     ...buildPostMediaFormState({ mediaAssets: [] }),
     ...buildPostIllustrationFormState({ illustrations: [] }),
@@ -153,6 +155,7 @@ const normalizeDraftPayload = (rawDraft) => {
         title: rawDraft.title?.toString() ?? '',
         slug: rawDraft.slug?.toString() ?? '',
         category: rawDraft.category?.toString() || 'uncategorized',
+        summary: rawDraft.summary?.toString() ?? '',
         content: rawDraft.content?.toString() ?? '',
     };
 };
@@ -202,6 +205,7 @@ export default function CreatePost() {
         const savedDraft = getSavedDraft();
         const hasSavedDraft = Boolean(
             savedDraft.title.trim()
+            || savedDraft.summary?.trim()
             || stripHtml(savedDraft.content)
             || savedDraft.mediaUrl
             || savedDraft.illustrations?.length
@@ -223,6 +227,7 @@ export default function CreatePost() {
 
         const hasDraftContent = Boolean(
             form.title.trim()
+            || form.summary.trim()
             || stripHtml(form.content)
             || form.mediaUrl
             || form.illustrations?.length
@@ -296,6 +301,11 @@ export default function CreatePost() {
 
         return plainText.length > 180 ? `${plainText.slice(0, 180)}...` : plainText;
     }, [plainText]);
+    const summaryPreview = useMemo(
+        () => form.summary.trim() || excerpt,
+        [excerpt, form.summary]
+    );
+    const summaryCharacterCount = form.summary.trim().length;
 
     const draftStatusLabel = useMemo(() => {
         if (!form.title.trim() && !plainText) {
@@ -416,7 +426,9 @@ export default function CreatePost() {
                 ? `Headline check: ${form.title}`
                 : 'Write the headline before polishing the rest. It sharpens every later choice.',
             plainText
-                ? `Opening preview: ${excerpt}`
+                ? form.summary.trim()
+                    ? `Summary locked: ${form.summary.trim()}`
+                    : `Opening preview: ${excerpt}`
                 : 'Lead with the sharpest tension, outcome, or promise in the first paragraph.',
             mediaAssetCount > 1
                 ? `${mediaAssetCount} media assets are ready. Keep the lead item aligned with the article payoff.`
@@ -427,7 +439,15 @@ export default function CreatePost() {
                 ? `${illustrationCount} illustrations are staged. Tight alt text and clear credits matter as much as the imagery.`
                 : 'Use illustrations when the post needs diagrams, annotated frames, or concept art beyond the lead media.',
         ],
-        [excerpt, form.mediaUrl, form.title, illustrationCount, mediaAssetCount, plainText]
+        [
+            excerpt,
+            form.mediaUrl,
+            form.summary,
+            form.title,
+            illustrationCount,
+            mediaAssetCount,
+            plainText,
+        ]
     );
 
     const appliedTemplateLabel = useMemo(
@@ -544,6 +564,15 @@ export default function CreatePost() {
                 optional: false,
             },
             {
+                sectionId: 'post-essentials',
+                label: 'Summary',
+                ready: Boolean(form.summary.trim()),
+                detail: form.summary.trim()
+                    ? `${summaryCharacterCount}/280 characters`
+                    : 'Optional custom teaser for cards and sharing.',
+                optional: true,
+            },
+            {
                 sectionId: 'post-media',
                 label: 'Multimedia deck',
                 ready: mediaAssetCount > 0,
@@ -574,8 +603,10 @@ export default function CreatePost() {
             formattedCategory,
             mediaAssetCount,
             plainText,
+            summaryCharacterCount,
             titleLength,
             wordCount,
+            form.summary,
         ]
     );
 
@@ -1063,6 +1094,31 @@ export default function CreatePost() {
                                             </span>
                                         </article>
                                     </div>
+
+                                    <div className='space-y-2 lg:col-span-2'>
+                                        <div className='flex items-center justify-between gap-3'>
+                                            <label
+                                                className='text-sm font-semibold text-slate-900 dark:text-white'
+                                                htmlFor='post-summary'
+                                            >
+                                                Summary
+                                            </label>
+                                            <span className='text-xs font-medium text-slate-500 dark:text-slate-400'>
+                                                {summaryCharacterCount}/280
+                                            </span>
+                                        </div>
+                                        <Textarea
+                                            id='post-summary'
+                                            rows={3}
+                                            maxLength={280}
+                                            value={form.summary}
+                                            onChange={handleFieldChange('summary')}
+                                            placeholder='Optional teaser for cards, search, and social previews.'
+                                        />
+                                        <p className='text-xs text-slate-500 dark:text-slate-400'>
+                                            Leave it blank to generate a preview from the post body.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1138,10 +1194,10 @@ export default function CreatePost() {
                                 <article className='create-post-excerpt-card'>
                                     <div className='flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white'>
                                         <HiOutlineDocumentText className='h-4 w-4 text-sky-500' />
-                                        Live excerpt
+                                        Summary preview
                                     </div>
                                     <p className='mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300'>
-                                        {excerpt}
+                                        {summaryPreview}
                                     </p>
                                 </article>
 

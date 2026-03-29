@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { apiFetch } from '../utils/apiFetch';
+import { idsMatch, includesId, removeId } from '../utils/id.js';
 
 // API function to bookmark/unbookmark a post
 const bookmarkPost = async (postId, token) => {
@@ -34,9 +35,9 @@ export const useBookmark = (initialIsBookmarked, postId) => {
     }, [initialIsBookmarked]);
 
     const updateBookmarkInPost = (post, shouldAdd, userId) => {
-        if (!post || post._id !== postId) return post;
+        if (!post || !idsMatch(post._id, postId)) return post;
         const bookmarkedBy = Array.isArray(post.bookmarkedBy) ? post.bookmarkedBy : [];
-        const alreadyBookmarked = bookmarkedBy.includes(userId);
+        const alreadyBookmarked = includesId(bookmarkedBy, userId);
 
         if (shouldAdd) {
             if (alreadyBookmarked) return post;
@@ -44,7 +45,7 @@ export const useBookmark = (initialIsBookmarked, postId) => {
         }
 
         if (!alreadyBookmarked) return post;
-        return { ...post, bookmarkedBy: bookmarkedBy.filter(id => id !== userId) };
+        return { ...post, bookmarkedBy: removeId(bookmarkedBy, userId) };
     };
 
     const updateBookmarkInCollection = (collection, shouldAdd, userId) => {

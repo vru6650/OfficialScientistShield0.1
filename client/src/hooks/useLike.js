@@ -3,27 +3,117 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { togglePostClap } from '../services/postService';
-
-const normalizeIds = (values) => {
-    if (!Array.isArray(values)) {
-        return [];
-    }
-    return values.map((value) => value?.toString()).filter(Boolean);
-};
+import { idsMatch, normalizeId, normalizeIdList } from '../utils/id.js';
 
 const toSafeCount = (value) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 };
 
+const arraysShallowEqual = (left, right) => {
+    if (left === right) {
+        return true;
+    }
+
+    if (left.length !== right.length) {
+        return false;
+    }
+
+    return left.every((value, index) => value === right[index]);
+};
+
+const updateLikeInPost = (
+    post,
+    { targetPostId, userId, optimisticIsLiked, optimisticLikeCount },
+) => {
+    if (!post || !idsMatch(post._id, targetPostId)) {
+        return post;
+    }
+
+    const existing = normalizeIdList(post.clappedBy);
+    const updatedClappedBy = optimisticIsLiked
+        ? Array.from(new Set([...existing, userId]))
+        : existing.filter((id) => id !== userId);
+    const nextLikeCount = toSafeCount(optimisticLikeCount);
+
+    if (
+        toSafeCount(post.claps) === nextLikeCount
+        && arraysShallowEqual(existing, updatedClappedBy)
+    ) {
+        return post;
+    }
+
+    return {
+        ...post,
+        claps: nextLikeCount,
+        clappedBy: updatedClappedBy,
+    };
+};
+
+const updateLikeInCollection = (collection, payload) => {
+    if (!collection) {
+        return collection;
+    }
+
+    if (Array.isArray(collection)) {
+        let hasChanged = false;
+        const updated = collection.map((item) => {
+            const next = updateLikeInPost(item, payload);
+            if (next !== item) {
+                hasChanged = true;
+            }
+            return next;
+        });
+
+        return hasChanged ? updated : collection;
+    }
+
+    if (Array.isArray(collection.posts)) {
+        const updatedPosts = updateLikeInCollection(collection.posts, payload);
+        if (updatedPosts === collection.posts) {
+            return collection;
+        }
+
+        return {
+            ...collection,
+            posts: updatedPosts,
+        };
+    }
+
+    if (Array.isArray(collection.pages)) {
+        let hasChanged = false;
+        const updatedPages = collection.pages.map((page) => {
+            const updatedPosts = updateLikeInCollection(page.posts, payload);
+            if (updatedPosts !== page.posts) {
+                hasChanged = true;
+                return {
+                    ...page,
+                    posts: updatedPosts,
+                };
+            }
+
+            return page;
+        });
+
+        return hasChanged
+            ? {
+                ...collection,
+                pages: updatedPages,
+            }
+            : collection;
+    }
+
+    return updateLikeInPost(collection, payload);
+};
+
 export const useLike = ({ postId, initialClaps = 0, initialClappedBy = [] }) => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { currentUser } = useSelector((state) => state.user);
-    const currentUserId = currentUser?._id ?? null;
+    const currentUserId = normalizeId(currentUser?._id) || null;
 
     const normalizedClappedBy = useMemo(
-        () => normalizeIds(initialClappedBy),
+        () => normalizeIdList(initialClappedBy),
         [initialClappedBy],
     );
 
@@ -54,50 +144,56 @@ export const useLike = ({ postId, initialClaps = 0, initialClappedBy = [] }) => 
                 return undefined;
             }
 
-            await queryClient.cancelQueries({ queryKey: ['post', targetPostId] });
-            const previousPost = queryClient.getQueryData(['post', targetPostId]);
+            await queryClient.cancelQueries({ queryKey: ['posts'] });
+            await queryClient.cancelQueries({ queryKey: ['post'] });
+
+            const postsQueries = queryClient.getQueriesData({ queryKey: ['posts'] });
+            const postQueries = queryClient.getQueriesData({ queryKey: ['post'] });
 
             const previousLikeCount = likeCount;
             const previousIsLiked = isLiked;
             const optimisticIsLiked = !previousIsLiked;
-
             const optimisticLikeCount = Math.max(
                 0,
                 previousLikeCount + (optimisticIsLiked ? 1 : -1),
             );
+            const optimisticPayload = {
+                targetPostId,
+                userId: currentUserId,
+                optimisticIsLiked,
+                optimisticLikeCount,
+            };
 
             setIsLiked(optimisticIsLiked);
             setLikeCount(optimisticLikeCount);
 
-            queryClient.setQueryData(['post', targetPostId], (oldData) => {
-                if (!oldData) {
-                    return oldData;
-                }
+            postsQueries.forEach(([queryKey]) => {
+                queryClient.setQueryData(queryKey, (oldData) =>
+                    updateLikeInCollection(oldData, optimisticPayload),
+                );
+            });
 
-                const existing = normalizeIds(oldData.clappedBy);
-
-                const updatedClappedBy = optimisticIsLiked
-                    ? Array.from(new Set([...existing, currentUserId]))
-                    : existing.filter((id) => id !== currentUserId);
-
-                return {
-                    ...oldData,
-                    claps: optimisticLikeCount,
-                    clappedBy: updatedClappedBy,
-                };
+            postQueries.forEach(([queryKey]) => {
+                queryClient.setQueryData(queryKey, (oldData) =>
+                    updateLikeInCollection(oldData, optimisticPayload),
+                );
             });
 
             return {
                 targetPostId,
-                previousPost,
+                postsQueries,
+                postQueries,
                 previousLikeCount,
                 previousIsLiked,
             };
         },
         onError: (error, _variables, context) => {
-            if (context?.targetPostId) {
-                queryClient.setQueryData(['post', context.targetPostId], context.previousPost);
-            }
+            context?.postsQueries?.forEach(([queryKey, data]) => {
+                queryClient.setQueryData(queryKey, data);
+            });
+            context?.postQueries?.forEach(([queryKey, data]) => {
+                queryClient.setQueryData(queryKey, data);
+            });
             if (typeof context?.previousLikeCount === 'number') {
                 setLikeCount(context.previousLikeCount);
             }
@@ -111,17 +207,14 @@ export const useLike = ({ postId, initialClaps = 0, initialClappedBy = [] }) => 
             setLikeCount(toSafeCount(data.claps));
 
             if (currentUserId) {
-                setIsLiked(normalizeIds(data.clappedBy).includes(currentUserId));
+                setIsLiked(normalizeIdList(data.clappedBy).includes(currentUserId));
             } else {
                 setIsLiked(false);
             }
         },
-        onSettled: (_data, _error, targetPostId) => {
-            if (!targetPostId) {
-                return;
-            }
+        onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['posts'] });
-            queryClient.invalidateQueries({ queryKey: ['post', targetPostId] });
+            queryClient.invalidateQueries({ queryKey: ['post'] });
         },
     });
 

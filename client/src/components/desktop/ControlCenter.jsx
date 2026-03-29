@@ -5,19 +5,19 @@ import {
     HiOutlineArrowPathRoundedSquare,
     HiOutlineBolt,
     HiOutlineCog6Tooth,
-    HiOutlineComputerDesktop,
     HiOutlineCursorArrowRays,
     HiOutlineDevicePhoneMobile,
     HiOutlineLink,
-    HiOutlineMoon,
     HiOutlinePhoto,
     HiOutlineSparkles,
     HiOutlineSwatch,
-    HiOutlineSun,
     HiOutlineWifi,
     HiOutlineXMark,
 } from 'react-icons/hi2';
 import settingsIcon from '../../assets/dock/settings.svg';
+import { deriveCustomAccentPreset, normalizeThemeAccent } from '../../utils/themeAccent.js';
+import ThemeToggle from '../ThemeToggle.jsx';
+import { useTheme } from '../ThemeContext.jsx';
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const DOCK_CUSTOM_ICON_STORAGE_KEY = 'dock.customIcons.v1';
@@ -27,19 +27,20 @@ export default function ControlCenter({
     open,
     effects,
     focusMode,
-    theme,
     surfacePreset,
     onClose,
     onChangeEffects,
     onToggleFocusMode,
-    onToggleTheme,
     surfacePresets,
     accentPreset,
+    customAccent,
     wallpaperMode,
     accentPresets,
     wallpaperOptions,
     onSelectSurfacePreset,
     onSelectAccentPreset,
+    onApplyCustomAccent,
+    onResetCustomAccent,
     onSelectWallpaperMode,
     onOpenMissionControl,
     onOpenQuickLook,
@@ -47,26 +48,75 @@ export default function ControlCenter({
     onDuplicateWindow,
     onApplyWindowLayout,
 }) {
+    const { themeMode, resolvedTheme, systemTheme } = useTheme();
     const [settingsIconChoice, setSettingsIconChoice] = useState('default');
     const [settingsIconInput, setSettingsIconInput] = useState('');
     const [settingsIconPreview, setSettingsIconPreview] = useState(settingsIcon);
+    const [customAccentInput, setCustomAccentInput] = useState(customAccent);
     const brightness = clamp(Number(effects?.brightness ?? 1), 0.4, 1.6);
     const contrast = clamp(Number(effects?.contrast ?? 1), 0.6, 1.6);
     const veil = clamp(Number(effects?.veil ?? 0), 0, 0.75);
     const reduceMotion = Boolean(effects?.reduceMotion);
-    const autoHideMenuBar = effects?.autoHideMenuBar !== false;
     const selectedSurfacePreset = useMemo(
         () => surfacePresets.find((preset) => preset.key === surfacePreset) || surfacePresets[0] || null,
         [surfacePreset, surfacePresets]
+    );
+    const selectedWallpaperOption = useMemo(
+        () => wallpaperOptions.find((option) => option.key === wallpaperMode) || wallpaperOptions[0] || null,
+        [wallpaperMode, wallpaperOptions]
+    );
+    const appearanceSummary = selectedSurfacePreset?.label || 'Liquid Glass';
+    const appearanceBadgeLabel = `${appearanceSummary} surface`;
+    const themeSummary = useMemo(() => {
+        if (themeMode === 'system') {
+            return `System theme (${systemTheme} now)`;
+        }
+
+        return resolvedTheme === 'dark' ? 'Dark mode' : 'Light mode';
+    }, [resolvedTheme, systemTheme, themeMode]);
+    const themeBadgeLabel = useMemo(() => {
+        if (themeMode === 'system') {
+            return `Theme follows system (${systemTheme})`;
+        }
+
+        return `${resolvedTheme === 'dark' ? 'Dark' : 'Light'} theme active`;
+    }, [resolvedTheme, systemTheme, themeMode]);
+    const customAccentPreset = useMemo(
+        () => deriveCustomAccentPreset(customAccent),
+        [customAccent]
+    );
+    const normalizedCustomAccent = useMemo(
+        () => normalizeThemeAccent(customAccentInput),
+        [customAccentInput]
+    );
+    const accentSwatches = useMemo(
+        () => [
+            ...accentPresets,
+            {
+                ...customAccentPreset,
+                mood:
+                    accentPreset === 'custom'
+                        ? `Live ${customAccent.toUpperCase()}`
+                        : 'Create your own hue',
+            },
+        ],
+        [accentPreset, accentPresets, customAccent, customAccentPreset]
+    );
+    const customAccentDirty = Boolean(
+        normalizedCustomAccent &&
+            (normalizedCustomAccent !== customAccent || accentPreset !== 'custom')
     );
 
     const statusLabel = useMemo(() => {
         const focus = focusMode ? 'Focus on' : 'Focus off';
         const motion = reduceMotion ? 'Motion reduced' : 'Motion fluid';
-        const themeLabel = theme === 'dark' ? 'Dark' : 'Light';
-        const surface = selectedSurfacePreset?.label || 'Liquid Glass';
-        return `${focus} • ${motion} • ${themeLabel} • ${surface}`;
-    }, [focusMode, reduceMotion, selectedSurfacePreset?.label, theme]);
+        const wallpaper = selectedWallpaperOption?.label || 'Dynamic';
+        return `${focus} • ${motion} • ${themeSummary} • ${appearanceSummary} • ${wallpaper} wallpaper`;
+    }, [appearanceSummary, focusMode, reduceMotion, selectedWallpaperOption?.label, themeSummary]);
+
+    useEffect(() => {
+        setCustomAccentInput(customAccent);
+    }, [customAccent]);
 
     const quickToggleItems = useMemo(
         () => [
@@ -79,14 +129,6 @@ export default function ControlCenter({
                 onClick: onToggleFocusMode,
             },
             {
-                key: 'theme',
-                label: 'Appearance',
-                sub: theme === 'dark' ? 'Dark' : 'Light',
-                icon: theme === 'dark' ? HiOutlineMoon : HiOutlineSun,
-                active: theme === 'dark',
-                onClick: onToggleTheme,
-            },
-            {
                 key: 'motion',
                 label: 'Motion',
                 sub: reduceMotion ? 'Reduced' : 'Fluid',
@@ -94,16 +136,8 @@ export default function ControlCenter({
                 active: reduceMotion,
                 onClick: () => onChangeEffects({ ...effects, reduceMotion: !reduceMotion }),
             },
-            {
-                key: 'menubar',
-                label: 'Menu Bar',
-                sub: autoHideMenuBar ? 'Auto-hide' : 'Pinned',
-                icon: HiOutlineComputerDesktop,
-                active: autoHideMenuBar,
-                onClick: () => onChangeEffects({ ...effects, autoHideMenuBar: !autoHideMenuBar }),
-            },
         ],
-        [autoHideMenuBar, effects, focusMode, onChangeEffects, onToggleFocusMode, onToggleTheme, reduceMotion, theme]
+        [effects, focusMode, onChangeEffects, onToggleFocusMode, reduceMotion]
     );
 
     const syncSettingsIcon = useCallback(() => {
@@ -204,6 +238,17 @@ export default function ControlCenter({
         return 'Default glass gear';
     }, [settingsIconChoice]);
 
+    const handleCustomAccentHexChange = useCallback((event) => {
+        const rawValue = event.target.value.replace(/[^#0-9a-f]/gi, '');
+        if (!rawValue) {
+            setCustomAccentInput('');
+            return;
+        }
+
+        const prefixedValue = rawValue.startsWith('#') ? rawValue : `#${rawValue}`;
+        setCustomAccentInput(`#${prefixedValue.slice(1, 7)}`.toLowerCase());
+    }, []);
+
     if (!open) return null;
 
     return (
@@ -222,12 +267,12 @@ export default function ControlCenter({
                                 {focusMode ? 'Focus on' : 'Focus off'}
                             </span>
                             <span className="macos-control-center__hero-badge">
-                                {theme === 'dark' ? <HiOutlineMoon className="h-4 w-4" /> : <HiOutlineSun className="h-4 w-4" />}
-                                {theme === 'dark' ? 'Dark appearance' : 'Light appearance'}
+                                <HiOutlineSparkles className="h-4 w-4" />
+                                {themeMode === 'system' ? `System ${systemTheme}` : `${resolvedTheme} mode`}
                             </span>
                             <span className="macos-control-center__hero-badge">
-                                <HiOutlineComputerDesktop className="h-4 w-4" />
-                                {autoHideMenuBar ? 'Menu bar auto-hide' : 'Menu bar pinned'}
+                                <HiOutlineSwatch className="h-4 w-4" />
+                                {appearanceBadgeLabel}
                             </span>
                         </div>
                     </div>
@@ -261,10 +306,11 @@ export default function ControlCenter({
                                 <p className="macos-control-center__section-title">System overview</p>
                                 <p className="macos-control-center__section-sub">Presence, spaces, and live status</p>
                             </div>
-                            <span className="macos-control-center__section-meta">3 quick states</span>
+                            <span className="macos-control-center__section-meta">Workspace status</span>
                         </header>
                         <div className="macos-control-center__status-row" aria-label="Active settings">
-                            <span className="macos-control-center__pill macos-control-center__pill--accent">Live workspace status</span>
+                            <span className="macos-control-center__pill">{themeBadgeLabel}</span>
+                            <span className="macos-control-center__pill macos-control-center__pill--accent">{appearanceSummary} surface</span>
                             <span className="macos-control-center__pill">Brightness {Math.round(brightness * 100)}%</span>
                             <span className="macos-control-center__pill">Contrast {Math.round(contrast * 100)}%</span>
                         </div>
@@ -273,7 +319,7 @@ export default function ControlCenter({
                                 <div className="macos-control-center__tile-head">
                                     <div>
                                         <p className="macos-control-center__tile-title">Quick Toggles</p>
-                                        <p className="macos-control-center__tile-sub">Presence, appearance, motion</p>
+                                        <p className="macos-control-center__tile-sub">Presence and motion</p>
                                     </div>
                                     <HiOutlineAdjustmentsHorizontal className="h-5 w-5 text-slate-400 dark:text-slate-300" />
                                 </div>
@@ -355,14 +401,6 @@ export default function ControlCenter({
                                 <div className="macos-control-center__chip-row">
                                     <button
                                         type="button"
-                                        className={`macos-control-center__chip ${theme === 'dark' ? 'macos-control-center__chip--active' : ''}`}
-                                        onClick={onToggleTheme}
-                                    >
-                                        {theme === 'dark' ? <HiOutlineSun className="h-4 w-4" /> : <HiOutlineMoon className="h-4 w-4" />}
-                                        {theme === 'dark' ? 'Light' : 'Dark'}
-                                    </button>
-                                    <button
-                                        type="button"
                                         className={`macos-control-center__chip ${reduceMotion ? 'macos-control-center__chip--active' : 'macos-control-center__chip--ghost'}`}
                                         onClick={() => onChangeEffects({ ...effects, reduceMotion: !reduceMotion })}
                                     >
@@ -429,15 +467,26 @@ export default function ControlCenter({
                         <header className="macos-control-center__section-head">
                             <div>
                                 <p className="macos-control-center__section-title">Personalization</p>
-                                <p className="macos-control-center__section-sub">Accent and wallpaper pairings</p>
+                                <p className="macos-control-center__section-sub">Theme, accent, and wallpaper pairings</p>
                             </div>
                             <span className="macos-control-center__section-meta">Your vibe</span>
                         </header>
                         <div className="macos-control-center__row">
                             <div className="macos-control-center__tile macos-control-center__tile--column">
+                                <ThemeToggle
+                                    themeMode={themeMode}
+                                    resolvedTheme={resolvedTheme}
+                                    systemTheme={systemTheme}
+                                    reduceMotion={reduceMotion}
+                                    onChange={(mode) => onChangeEffects({ themeMode: mode })}
+                                />
+                            </div>
+                        </div>
+                        <div className="macos-control-center__row">
+                            <div className="macos-control-center__tile macos-control-center__tile--column">
                                 <div className="macos-control-center__tile-head">
                                     <div>
-                                        <p className="macos-control-center__tile-title">Appearance</p>
+                                        <p className="macos-control-center__tile-title">Surface & Accent</p>
                                         <p className="macos-control-center__tile-sub">Surface style, accent, and highlight</p>
                                     </div>
                                     <HiOutlineSwatch className="h-5 w-5 text-slate-400 dark:text-slate-300" />
@@ -462,12 +511,16 @@ export default function ControlCenter({
                                     ))}
                                 </div>
                                 <div className="macos-control-center__swatches" role="group" aria-label="Accent color">
-                                    {accentPresets.map((preset) => (
+                                    {accentSwatches.map((preset) => (
                                         <button
                                             key={preset.key}
                                             type="button"
                                             className={`macos-control-center__swatch ${accentPreset === preset.key ? 'macos-control-center__swatch--active' : ''}`}
-                                            onClick={() => onSelectAccentPreset(preset.key)}
+                                            onClick={() =>
+                                                preset.key === 'custom'
+                                                    ? onApplyCustomAccent(normalizedCustomAccent || customAccent)
+                                                    : onSelectAccentPreset(preset.key)
+                                            }
                                             aria-pressed={accentPreset === preset.key}
                                         >
                                             <span
@@ -484,6 +537,77 @@ export default function ControlCenter({
                                             </div>
                                         </button>
                                     ))}
+                                </div>
+                                <div className="macos-control-center__accent-lab">
+                                    <div className="macos-control-center__accent-lab-head">
+                                        <div>
+                                            <p className="macos-control-center__accent-lab-title">Accent Studio</p>
+                                            <p className="macos-control-center__accent-lab-sub">
+                                                {accentPreset === 'custom'
+                                                    ? `Custom accent live at ${customAccent.toUpperCase()}.`
+                                                    : 'Build a personal accent and apply it instantly.'}
+                                            </p>
+                                        </div>
+                                        <span className={`macos-control-center__pill ${accentPreset === 'custom' ? 'macos-control-center__pill--accent' : ''}`}>
+                                            {accentPreset === 'custom' ? 'Custom live' : 'Preset active'}
+                                        </span>
+                                    </div>
+                                    <div className="macos-control-center__accent-lab-grid">
+                                        <label className="macos-control-center__accent-field">
+                                            <span className="macos-control-center__accent-field-label">Color</span>
+                                            <div className="macos-control-center__accent-picker">
+                                                <input
+                                                    type="color"
+                                                    value={normalizedCustomAccent || customAccent}
+                                                    onChange={(event) => setCustomAccentInput(event.target.value)}
+                                                    aria-label="Pick a custom accent color"
+                                                    className="macos-control-center__accent-color-input"
+                                                />
+                                                <span
+                                                    className="macos-control-center__accent-preview"
+                                                    style={{ background: customAccentPreset.gradient }}
+                                                    aria-hidden="true"
+                                                />
+                                            </div>
+                                        </label>
+                                        <label className="macos-control-center__accent-field">
+                                            <span className="macos-control-center__accent-field-label">Hex</span>
+                                            <input
+                                                type="text"
+                                                inputMode="text"
+                                                value={customAccentInput}
+                                                onChange={handleCustomAccentHexChange}
+                                                placeholder="#7c8cff"
+                                                aria-label="Custom accent hex color"
+                                                className="macos-control-center__accent-hex-input"
+                                            />
+                                        </label>
+                                    </div>
+                                    <div className="macos-control-center__chip-row">
+                                        <button
+                                            type="button"
+                                            className={`macos-control-center__chip ${customAccentDirty ? 'macos-control-center__chip--active' : 'macos-control-center__chip--ghost'}`}
+                                            onClick={() => {
+                                                if (!normalizedCustomAccent) return;
+                                                onApplyCustomAccent(normalizedCustomAccent);
+                                            }}
+                                            disabled={!normalizedCustomAccent}
+                                        >
+                                            <HiOutlineSparkles className="h-4 w-4" />
+                                            Apply custom
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="macos-control-center__chip macos-control-center__chip--ghost"
+                                            onClick={onResetCustomAccent}
+                                        >
+                                            <HiOutlineArrowPathRoundedSquare className="h-4 w-4" />
+                                            Reset accent
+                                        </button>
+                                    </div>
+                                    <p className="macos-control-center__accent-lab-meta">
+                                        Custom accents generate a matching strong shade and highlight gradient automatically.
+                                    </p>
                                 </div>
                             </div>
                             <div className="macos-control-center__tile macos-control-center__tile--column">
@@ -609,7 +733,7 @@ export default function ControlCenter({
                         <header className="macos-control-center__section-head">
                             <div>
                                 <p className="macos-control-center__section-title">Connectivity & Layout</p>
-                                <p className="macos-control-center__section-sub">Wi‑Fi and workspace chrome</p>
+                                <p className="macos-control-center__section-sub">Wi‑Fi and window tools</p>
                             </div>
                             <span className="macos-control-center__section-meta">Stable</span>
                         </header>
@@ -642,14 +766,6 @@ export default function ControlCenter({
                                     <HiOutlineArrowPathRoundedSquare className="h-5 w-5 text-slate-400 dark:text-slate-300" />
                                 </div>
                                 <div className="macos-control-center__chip-row">
-                                    <button
-                                        type="button"
-                                        className={`macos-control-center__chip ${autoHideMenuBar ? 'macos-control-center__chip--active' : 'macos-control-center__chip--ghost'}`}
-                                        onClick={() => onChangeEffects({ ...effects, autoHideMenuBar: !autoHideMenuBar })}
-                                    >
-                                        <HiOutlineComputerDesktop className="h-4 w-4" />
-                                        {autoHideMenuBar ? 'Menu bar auto-hide' : 'Menu bar pinned'}
-                                    </button>
                                     <button type="button" className="macos-control-center__chip macos-control-center__chip--ghost" onClick={() => onOpenWindowSwitcher(1)}>
                                         <HiOutlineArrowPathRoundedSquare className="h-4 w-4" />
                                         Cycle windows
@@ -663,7 +779,7 @@ export default function ControlCenter({
                                         Quick Look
                                     </button>
                                     <button type="button" className="macos-control-center__chip macos-control-center__chip--ghost" onClick={() => onApplyWindowLayout('full')}>
-                                        <HiOutlineComputerDesktop className="h-4 w-4" />
+                                        <HiOutlineAdjustmentsHorizontal className="h-4 w-4" />
                                         Fill stage
                                     </button>
                                     <button type="button" className="macos-control-center__chip macos-control-center__chip--ghost" onClick={() => onApplyWindowLayout('center')}>
@@ -727,16 +843,14 @@ ControlCenter.propTypes = {
         contrast: PropTypes.number,
         veil: PropTypes.number,
         reduceMotion: PropTypes.bool,
-        autoHideMenuBar: PropTypes.bool,
+        themeMode: PropTypes.string,
         surfacePreset: PropTypes.string,
     }).isRequired,
     focusMode: PropTypes.bool.isRequired,
-    theme: PropTypes.string.isRequired,
     surfacePreset: PropTypes.string.isRequired,
     onClose: PropTypes.func.isRequired,
     onChangeEffects: PropTypes.func.isRequired,
     onToggleFocusMode: PropTypes.func.isRequired,
-    onToggleTheme: PropTypes.func.isRequired,
     surfacePresets: PropTypes.arrayOf(
         PropTypes.shape({
             key: PropTypes.string.isRequired,
@@ -745,6 +859,7 @@ ControlCenter.propTypes = {
         })
     ).isRequired,
     accentPreset: PropTypes.string.isRequired,
+    customAccent: PropTypes.string.isRequired,
     wallpaperMode: PropTypes.string.isRequired,
     accentPresets: PropTypes.arrayOf(
         PropTypes.shape({
@@ -764,6 +879,8 @@ ControlCenter.propTypes = {
     ).isRequired,
     onSelectSurfacePreset: PropTypes.func.isRequired,
     onSelectAccentPreset: PropTypes.func.isRequired,
+    onApplyCustomAccent: PropTypes.func.isRequired,
+    onResetCustomAccent: PropTypes.func.isRequired,
     onSelectWallpaperMode: PropTypes.func.isRequired,
     onOpenMissionControl: PropTypes.func.isRequired,
     onOpenQuickLook: PropTypes.func.isRequired,

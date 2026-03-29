@@ -32,6 +32,7 @@ function MacWindow({
         type,
     } = windowData;
     const isFullScreen = Boolean(windowData.isZoomed);
+    const isWorkspaceWindow = Boolean(windowData.isMain || windowData.isAppWindow);
     const IconComponent = windowData.iconComponent || iconComponentForType(type);
 
     const windowClassName = useMemo(
@@ -40,8 +41,8 @@ function MacWindow({
                 reduceMotion ? 'duration-75' : 'duration-300'
             } dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-100 ${
                 isFocused ? 'macos-window--focused ring-2 ring-brand-300/60 dark:ring-brand-500/60' : 'ring-0'
-            } ${isFullScreen ? 'macos-window--fullscreen' : ''} ${isDragging ? 'macos-window--dragging' : ''}`,
-        [isDragging, isFocused, isFullScreen, reduceMotion]
+            } ${isFullScreen ? 'macos-window--fullscreen' : ''} ${isWorkspaceWindow ? 'macos-window--workspace' : ''} ${isDragging ? 'macos-window--dragging' : ''}`,
+        [isDragging, isFocused, isFullScreen, isWorkspaceWindow, reduceMotion]
     );
 
     const motionTransition = reduceMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' };

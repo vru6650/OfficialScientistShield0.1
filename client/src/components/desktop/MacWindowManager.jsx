@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
 import { Routes, useNavigate } from 'react-router-dom';
 import {
@@ -20,12 +19,12 @@ import { buildRouteElements, mainLayoutRoutes } from '../../routes/mainLayoutRou
 import MacWindow from './MacWindow';
 import { renderWindowIcon, iconComponentForType } from './windowIcons';
 import DesktopWallpaper from './DesktopWallpaper.jsx';
+import DesktopDynamicIsland from './DesktopDynamicIsland.jsx';
 import { queryClient } from '../../lib/queryClient.js';
-import { toggleTheme } from '../../redux/theme/themeSlice.js';
-import { signoutSuccess } from '../../redux/user/userSlice.js';
-import DesktopMenuBar from './DesktopMenuBar.jsx';
+import { DEFAULT_CUSTOM_ACCENT, deriveCustomAccentPreset, resolveThemeAccent } from '../../utils/themeAccent.js';
 import ControlCenter from './ControlCenter.jsx';
-import { apiFetch } from '../../utils/apiFetch.js';
+import { useTheme } from '../ThemeContext.jsx';
+import { DEFAULT_THEME_MODE, sanitizeThemeMode } from '../../utils/themeMode.js';
 
 const WindowCommandPalette = lazy(() => import('./WindowCommandPalette.jsx'));
 
@@ -37,8 +36,11 @@ const WINDOW_LIMIT_MESSAGE = `Window limit reached (${MAX_OPEN_WINDOWS}). Close 
 const SINGLE_WINDOW_MODE = false;
 const WINDOW_SESSION_ID = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 const MAIN_WINDOW_ID = 'main-window';
-const MAC_STAGE_MARGIN = 72;
-const MAC_HEADER_HEIGHT = 82;
+const MAC_STAGE_MARGIN = 48;
+const MAC_HEADER_HEIGHT = 52;
+const COMPACT_BREAKPOINT_PX = 768;
+const TABLET_STAGE_BREAKPOINT_PX = 1100;
+const SHORT_VIEWPORT_HEIGHT_PX = 760;
 const HOT_CORNER_STORAGE_KEY = 'scientistshield.desktop.hotCorners.v1';
 const UI_EFFECTS_STORAGE_KEY = 'ui.effects.v1';
 const DEFAULT_EFFECTS = Object.freeze({
@@ -46,11 +48,13 @@ const DEFAULT_EFFECTS = Object.freeze({
     contrast: 1,
     veil: 0,
     reduceMotion: false,
-    autoHideMenuBar: true,
+    themeMode: DEFAULT_THEME_MODE,
     surfacePreset: 'liquid',
     accentPreset: 'system',
+    customAccent: DEFAULT_CUSTOM_ACCENT,
     wallpaperMode: 'liquid',
 });
+const WINDOW_LAYOUT_OPTIONS = Object.freeze({});
 const HOT_CORNER_THRESHOLD_PX = 44;
 const HOT_CORNER_DELAY_MS = 320;
 const HOT_CORNER_DEFAULTS = Object.freeze({
@@ -241,10 +245,13 @@ const sanitizeEffects = (value = {}) => {
     const veil = clampNumber(merged.veil, 0, 1) ?? DEFAULT_EFFECTS.veil;
 
     const reduceMotion = Boolean(merged.reduceMotion);
-    const autoHideMenuBar = merged.autoHideMenuBar !== false;
-
+    const themeMode = sanitizeThemeMode(merged.themeMode);
     const surfacePreset = SURFACE_PRESET_MAP[merged.surfacePreset]?.key ?? DEFAULT_EFFECTS.surfacePreset;
-    const accentPreset = ACCENT_PRESET_MAP[merged.accentPreset]?.key ?? DEFAULT_EFFECTS.accentPreset;
+    const accentPreset =
+        merged.accentPreset === 'custom'
+            ? 'custom'
+            : ACCENT_PRESET_MAP[merged.accentPreset]?.key ?? DEFAULT_EFFECTS.accentPreset;
+    const customAccent = resolveThemeAccent(merged.customAccent, DEFAULT_EFFECTS.customAccent);
     const wallpaperMode = WALLPAPER_MODES.includes(merged.wallpaperMode)
         ? merged.wallpaperMode
         : DEFAULT_EFFECTS.wallpaperMode;
@@ -254,9 +261,10 @@ const sanitizeEffects = (value = {}) => {
         contrast,
         veil,
         reduceMotion,
-        autoHideMenuBar,
+        themeMode,
         surfacePreset,
         accentPreset,
+        customAccent,
         wallpaperMode,
     };
 };
@@ -302,19 +310,96 @@ const APP_ACCENTS = Object.freeze({
 });
 
 const APP_ROUTE_CONFIG = Object.freeze([
-    { key: 'home', label: 'Home', match: (path) => path === '/' || path === '' },
-    { key: 'tutorials', label: 'Tutorials', match: (path) => path.startsWith('/tutorials') },
-    { key: 'quizzes', label: 'Quizzes', match: (path) => path.startsWith('/quizzes') },
-    { key: 'tools', label: 'Tools', match: (path) => path.startsWith('/tools') || path.startsWith('/algorithm-') || path.startsWith('/code-') },
-    { key: 'problems', label: 'Problems', match: (path) => path.startsWith('/problems') },
-    { key: 'projects', label: 'Projects', match: (path) => path.startsWith('/projects') },
-    { key: 'search', label: 'Search', match: (path) => path.startsWith('/search') },
-    { key: 'content', label: 'Content', match: (path) => path.startsWith('/content') },
-    { key: 'dashboard', label: 'Dashboard', match: (path) => path.startsWith('/dashboard') },
-    { key: 'admin', label: 'Admin', match: (path) => path.startsWith('/admin') || path.startsWith('/create-') || path.startsWith('/update-') },
-    { key: 'file-manager', label: 'File Manager', match: (path) => path.startsWith('/file-manager') },
-    { key: 'about', label: 'About', match: (path) => path.startsWith('/about') },
-    { key: 'default', label: 'Stage', match: () => true },
+    {
+        key: 'home',
+        label: 'Home',
+        description: 'Overview of the workspace, latest content, and guided paths.',
+        match: (path) => path === '/' || path === '',
+    },
+    {
+        key: 'tutorials',
+        label: 'Tutorials',
+        description: 'Guided learning paths with filters, progress cues, and curated categories.',
+        match: (path) => path.startsWith('/tutorials'),
+    },
+    {
+        key: 'quizzes',
+        label: 'Quizzes',
+        description: 'Practice assessments, timed checks, and retention-focused drill sessions.',
+        match: (path) => path.startsWith('/quizzes'),
+    },
+    {
+        key: 'tools',
+        label: 'Tools',
+        description: 'Interactive utilities, sandboxes, and focused developer workflows.',
+        match: (path) => path.startsWith('/tools') || path.startsWith('/algorithm-') || path.startsWith('/code-'),
+    },
+    {
+        key: 'problems',
+        label: 'Problems',
+        description: 'Structured coding challenges with filters, hints, and topic-based practice.',
+        match: (path) => path.startsWith('/problems'),
+    },
+    {
+        key: 'projects',
+        label: 'Projects',
+        description: 'Portfolio-ready briefs and production-minded build exercises.',
+        match: (path) => path.startsWith('/projects'),
+    },
+    {
+        key: 'search',
+        label: 'Search',
+        description: 'Cross-library search for posts, tutorials, problems, and published pages.',
+        match: (path) => path.startsWith('/search'),
+    },
+    {
+        key: 'content',
+        label: 'Content',
+        description: 'Published pages and long-form product or learning content.',
+        match: (path) => path.startsWith('/content'),
+    },
+    {
+        key: 'dashboard',
+        label: 'Dashboard',
+        description: 'Private workspace views for profile, moderation, and operations.',
+        match: (path) => path.startsWith('/dashboard'),
+    },
+    {
+        key: 'admin',
+        label: 'Admin',
+        description: 'Creation, updates, and management surfaces for platform content.',
+        match: (path) => path.startsWith('/admin') || path.startsWith('/create-') || path.startsWith('/update-'),
+    },
+    {
+        key: 'file-manager',
+        label: 'File Manager',
+        description: 'Asset browsing and content support for internal publishing workflows.',
+        match: (path) => path.startsWith('/file-manager'),
+    },
+    {
+        key: 'about',
+        label: 'About',
+        description: 'Product story, platform philosophy, and workspace capabilities.',
+        match: (path) => path.startsWith('/about'),
+    },
+    {
+        key: 'community',
+        label: 'Community',
+        description: 'Community onboarding, collaboration signals, and member pathways.',
+        match: (path) => path.startsWith('/community'),
+    },
+    {
+        key: 'posts',
+        label: 'Posts',
+        description: 'Stories, engineering notes, community updates, and product writing.',
+        match: (path) => path.startsWith('/posts') || path.startsWith('/post/'),
+    },
+    {
+        key: 'default',
+        label: 'Stage',
+        description: 'A general workspace surface for browsing and multitasking.',
+        match: () => true,
+    },
 ]);
 
 const APP_WINDOW_ID_PREFIX = 'app';
@@ -502,6 +587,16 @@ function parseStoredLocation(storedLocation, fallbackPath) {
     return null;
 }
 
+function WorkspaceWindowFrame({ children }) {
+    return (
+        <div className="workspace-window-frame">
+            <div className="workspace-window-content">
+                <div className="workspace-window-surface">{children}</div>
+            </div>
+        </div>
+    );
+}
+
 function serializeRouteLocation(location, fallbackPath) {
     if (location && typeof location === 'object') {
         let serializedState = null;
@@ -611,61 +706,9 @@ const DEFAULT_TODOS = [
 
 export default function MacWindowManager({ windowTitle, renderMainContent, activeLocation }) {
     const navigate = useNavigate();
-    const dispatch = useDispatch();
-    const theme = useSelector((state) => state.theme.theme);
-    const { currentUser } = useSelector((state) => state.user);
+    const { resolvedTheme } = useTheme();
     const [activeAppId, setActiveAppId] = useState(null);
     const activeAppIdRef = useRef(null);
-    const handleThemeToggle = useCallback(() => {
-        dispatch(toggleTheme());
-    }, [dispatch]);
-    const profileDetails = useMemo(
-        () => ({
-            name: currentUser?.username || currentUser?.displayName || currentUser?.email || 'Guest',
-            email: currentUser?.email || 'Not signed in',
-            avatar: currentUser?.profilePicture || '',
-            isAdmin: Boolean(currentUser?.isAdmin),
-            isAuthenticated: Boolean(currentUser),
-        }),
-        [currentUser]
-    );
-    const handleSignOut = useCallback(async () => {
-        try {
-            await apiFetch('/api/v1/user/signout', { method: 'POST' });
-        } catch (error) {
-            console.error('Failed to sign out', error);
-        } finally {
-            dispatch(signoutSuccess());
-            navigate('/');
-        }
-    }, [dispatch, navigate]);
-    const handleProfileMenuAction = useCallback(
-        (action) => {
-            switch (action) {
-                case 'profile':
-                    navigate('/dashboard?tab=profile');
-                    return;
-                case 'dashboard':
-                    navigate('/dashboard');
-                    return;
-                case 'admin':
-                    navigate('/admin');
-                    return;
-                case 'sign-in':
-                    navigate('/sign-in');
-                    return;
-                case 'sign-up':
-                    navigate('/sign-up');
-                    return;
-                case 'sign-out':
-                    handleSignOut();
-                    return;
-                default:
-                    return;
-            }
-        },
-        [handleSignOut, navigate]
-    );
     const [windows, setWindows] = useState([]);
     const activePath = activeLocation?.pathname || '/';
     const [closedTypes, setClosedTypes] = useState([]);
@@ -679,7 +722,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
     }));
     const [todos, setTodos] = useState(DEFAULT_TODOS);
     const [isCompact, setIsCompact] = useState(
-        typeof window === 'undefined' ? true : window.innerWidth < 1024
+        typeof window === 'undefined' ? true : isCompactViewport(getViewportDimensions().viewportWidth)
     );
     const [missionControlOpen, setMissionControlOpen] = useState(false);
     const [missionControlFilter, setMissionControlFilter] = useState('all');
@@ -726,7 +769,6 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
     const [windowSwitcher, setWindowSwitcher] = useState(windowSwitcherRef.current);
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
     const [commandPaletteQuery, setCommandPaletteQuery] = useState('');
-    const [clockTime, setClockTime] = useState(() => new Date());
     const controlCenterRef = useRef(null);
 
     const keySymbols = useMemo(() => {
@@ -807,10 +849,9 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
     const windowChannelRef = useRef(null);
     const snapshotCounterRef = useRef(0);
 
-    const menuBarAutoHide = effects?.autoHideMenuBar !== false;
     const layoutOptions = useMemo(
-        () => ({ autoHideMenuBar: menuBarAutoHide }),
-        [menuBarAutoHide]
+        () => WINDOW_LAYOUT_OPTIONS,
+        []
     );
 
     const updateWindowSwitcher = useCallback((updater) => {
@@ -945,8 +986,6 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         if (SINGLE_WINDOW_MODE) {
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
-            const autoHideMenuBar = effects?.autoHideMenuBar !== false;
-            const singleLayoutOptions = { autoHideMenuBar };
             const iconComponent = iconForAppKey(meta.iconKey || meta.routeKey);
             const routeLocation =
                 snapshotLocation(location) || parseStoredLocation(null, meta.fullPath);
@@ -974,7 +1013,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                     },
                     viewportWidth,
                     viewportHeight,
-                    singleLayoutOptions
+                    layoutOptions
                 );
                 return [mainWindow];
             });
@@ -1040,24 +1079,37 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                         : instanceId !== PRIMARY_INSTANCE_ID && !existingOrdinal
                             ? buildWindowInstanceTitle(baseMetaTitle, siblingAppWindows.length + 1)
                             : baseMetaTitle;
-                updated[existingIndex] = {
-                    ...existing,
-                    id: metaId,
-                    type: metaId,
-                    title: nextTitle,
-                    instanceId,
-                    isMain: true,
-                    minimized: false,
-                    minimizedByUser: false,
-                    z: nextZ,
-                    isAppWindow: true,
-                    appRoutePath: meta.fullPath,
-                    appRouteKey: meta.routeKey,
-                    appIconKey: meta.iconKey || meta.routeKey,
-                    appAccent: meta.accent,
-                    routeLocation: routeLocation || parseStoredLocation(null, meta.fullPath),
-                    iconComponent,
+                const fullscreenSnapshot = existing.snapshot ?? {
+                    x: existing.x,
+                    y: existing.y,
+                    width: existing.width,
+                    height: existing.height,
                 };
+                updated[existingIndex] = expandWindowToViewport(
+                    {
+                        ...existing,
+                        id: metaId,
+                        type: metaId,
+                        title: nextTitle,
+                        instanceId,
+                        isMain: true,
+                        minimized: false,
+                        minimizedByUser: false,
+                        isZoomed: true,
+                        snapshot: fullscreenSnapshot,
+                        z: nextZ,
+                        isAppWindow: true,
+                        appRoutePath: meta.fullPath,
+                        appRouteKey: meta.routeKey,
+                        appIconKey: meta.iconKey || meta.routeKey,
+                        appAccent: meta.accent,
+                        routeLocation: routeLocation || parseStoredLocation(null, meta.fullPath),
+                        iconComponent,
+                    },
+                    viewportWidth,
+                    viewportHeight,
+                    layoutOptions
+                );
                 // Remove any stale duplicates of the same app key
                 updated = updated.filter(
                     (win, index) =>
@@ -1073,7 +1125,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                     blockedByLimit = true;
                     return updated;
                 }
-                const shouldZoomPrimary = instanceId === PRIMARY_INSTANCE_ID;
+                const shouldZoomPrimary = true;
                 const nextZ = zRef.current + 1;
                 zRef.current = nextZ;
                 const offsetIndex = siblingAppWindows.length;
@@ -1184,7 +1236,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         if (blockedByLimit) {
             announce(WINDOW_LIMIT_MESSAGE);
         }
-    }, [announce, effects?.autoHideMenuBar, layoutOptions]);
+    }, [announce, layoutOptions]);
 
     useEffect(() => {
         windowsRef.current = windows;
@@ -1226,11 +1278,6 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             navigateToWindowRouteRef.current?.(fallback);
         }
     }, [activeLocation, activePath, windows]);
-
-    useEffect(() => {
-        const timer = setInterval(() => setClockTime(new Date()), 30000);
-        return () => clearInterval(timer);
-    }, []);
 
     // Diagnostics builder for telemetry + snapshots
     const buildWindowDiagnostics = useCallback(
@@ -1377,7 +1424,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
 
             const sanitizedEntries = Array.isArray(payload.windows)
                 ? payload.windows
-                      .map((entry) => sanitizeWindowEntry(entry, viewportWidth, viewportHeight, { autoHideMenuBar: menuBarAutoHide }))
+                      .map((entry) => sanitizeWindowEntry(entry, viewportWidth, viewportHeight, layoutOptions))
                       .filter(Boolean)
                 : [];
 
@@ -1390,11 +1437,11 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 windowTitle,
                 viewportWidth,
                 viewportHeight,
-                { autoHideMenuBar: menuBarAutoHide }
+                layoutOptions
             ).map((win) => {
                 let next = win.isZoomed
-                    ? expandWindowToViewport(win, viewportWidth, viewportHeight, { autoHideMenuBar: menuBarAutoHide })
-                    : clampWindowToViewport(win, viewportWidth, viewportHeight, { autoHideMenuBar: menuBarAutoHide });
+                    ? expandWindowToViewport(win, viewportWidth, viewportHeight, layoutOptions)
+                    : clampWindowToViewport(win, viewportWidth, viewportHeight, layoutOptions);
 
                 let minimized = next.minimized;
                 let minimizedByUser = Boolean(next.minimizedByUser);
@@ -1538,12 +1585,19 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
 
     const accentPresetKey = effects?.accentPreset || DEFAULT_EFFECTS.accentPreset;
     const surfacePresetKey = effects?.surfacePreset || DEFAULT_EFFECTS.surfacePreset;
+    const customAccent = resolveThemeAccent(effects?.customAccent, DEFAULT_EFFECTS.customAccent);
     const accentPreset = useMemo(
-        () => ACCENT_PRESET_MAP[accentPresetKey] || ACCENT_PRESET_MAP.system,
-        [accentPresetKey]
+        () =>
+            accentPresetKey === 'custom'
+                ? deriveCustomAccentPreset(customAccent)
+                : ACCENT_PRESET_MAP[accentPresetKey] || ACCENT_PRESET_MAP.system,
+        [accentPresetKey, customAccent]
     );
     const accentPresetGradient = accentPreset?.gradient || null;
     const wallpaperMode = effects?.wallpaperMode || DEFAULT_EFFECTS.wallpaperMode;
+    const surfacePresetLabel = SURFACE_PRESET_MAP[surfacePresetKey]?.label || 'Liquid Glass';
+    const wallpaperLabel =
+        WALLPAPER_OPTIONS.find((option) => option.key === wallpaperMode)?.label || 'Dynamic';
 
     useEffect(() => {
         if (typeof document === 'undefined') return undefined;
@@ -1551,6 +1605,11 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         const accentColor = accentPreset?.color || '#0A84FF';
         const accentStrong = accentPreset?.strong || accentColor;
         root.setAttribute('data-accent-preset', accentPresetKey);
+        if (accentPresetKey === 'custom') {
+            root.setAttribute('data-custom-accent', customAccent);
+        } else {
+            root.removeAttribute('data-custom-accent');
+        }
 
         if (accentPresetKey === 'system') {
             root.style.removeProperty('--color-accent');
@@ -1567,7 +1626,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         }
 
         return undefined;
-    }, [accentPreset?.color, accentPreset?.strong, accentPresetGradient, accentPresetKey]);
+    }, [accentPreset?.color, accentPreset?.strong, accentPresetGradient, accentPresetKey, customAccent]);
 
     const appWindowSummaries = useMemo(
         () =>
@@ -1590,32 +1649,6 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         () => appWindowSummaries.find((win) => win.isActive) ?? appWindowSummaries[0] ?? null,
         [appWindowSummaries]
     );
-
-    const windowTelemetry = useMemo(
-        () => buildWindowDiagnostics(windowsForUI),
-        [windowsForUI, buildWindowDiagnostics]
-    );
-
-    const formattedClock = useMemo(() => {
-        const formatter =
-            typeof Intl !== 'undefined'
-                ? new Intl.DateTimeFormat(undefined, {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                  })
-                : null;
-        return formatter ? formatter.format(clockTime) : clockTime.toLocaleTimeString();
-    }, [clockTime]);
-
-    const formattedPath = useMemo(() => {
-        if (!activePath || activePath === '/') return 'Home';
-        return activePath
-            .replace(/^\//, '')
-            .split('/')
-            .filter(Boolean)
-            .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-            .join(' / ');
-    }, [activePath]);
 
     useEffect(() => {
         draggingWindowRef.current = draggingWindow;
@@ -1701,7 +1734,8 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         if (typeof window === 'undefined') {
             return { x, y };
         }
-        return clampWindowCoords(x, y, width, height, window.innerWidth, window.innerHeight);
+        const { viewportWidth, viewportHeight } = getViewportDimensions();
+        return clampWindowCoords(x, y, width, height, viewportWidth, viewportHeight);
     }, []);
 
     useEffect(() => {
@@ -1709,9 +1743,9 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             return undefined;
         }
         const handleResize = () => {
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-            const compact = viewportWidth < 1024;
+            const { viewportWidth, viewportHeight } = getViewportDimensions();
+            const compact = isCompactViewport(viewportWidth);
+            const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
             setIsCompact(compact);
             setWindows((wins) =>
                 wins.map((win) => {
@@ -1721,10 +1755,8 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                     if (compact) {
                         return win;
                     }
-                    const maxWidth = Math.max(viewportWidth - 64, 360);
-                    const maxHeight = Math.max(viewportHeight - 140, 260);
-                    const width = clampNumber(win.width ?? 420, 320, maxWidth);
-                    const height = clampNumber(win.height ?? 320, 260, maxHeight);
+                    const width = clampNumber(win.width ?? 420, metrics.minWidth, metrics.maxWidth);
+                    const height = clampNumber(win.height ?? 320, metrics.minHeight, metrics.maxHeight);
                     const { x, y } = clampPosition(win.x, win.y, width, height);
                     return clampWindowToViewport({ ...win, width, height, x, y }, viewportWidth, viewportHeight, layoutOptions);
                 })
@@ -1732,7 +1764,13 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         };
         handleResize();
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        window.visualViewport?.addEventListener('resize', handleResize);
+        window.visualViewport?.addEventListener('scroll', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.visualViewport?.removeEventListener('resize', handleResize);
+            window.visualViewport?.removeEventListener('scroll', handleResize);
+        };
     }, [clampPosition, layoutOptions]);
 
     useEffect(() => {
@@ -1848,8 +1886,6 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
             const routeMeta = resolveAppRouteMeta(activeLocation, windowTitle);
-            const autoHideMenuBar = effects?.autoHideMenuBar !== false;
-            const singleLayoutOptions = { autoHideMenuBar };
             setFocusMode(false);
             setClosedTypes([]);
             const mainWindow = expandWindowToViewport(
@@ -1869,7 +1905,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 },
                 viewportWidth,
                 viewportHeight,
-                singleLayoutOptions
+                layoutOptions
             );
             setWindows([mainWindow]);
             setActiveAppId(MAIN_WINDOW_ID);
@@ -1967,7 +2003,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             setClosedTypes(closedTypesSnapshot);
             persistedClosedTypesRef.current = null;
         }
-    }, [activeLocation, activePath, effects?.autoHideMenuBar, focusMode, layoutOptions, windowTitle]);
+    }, [activeLocation, activePath, focusMode, layoutOptions, windowTitle]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return undefined;
@@ -3500,6 +3536,12 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 return;
             }
 
+            if (metaOrCtrl && event.key === ',') {
+                event.preventDefault();
+                toggleControlCenter();
+                return;
+            }
+
             if (metaOrCtrl && (event.key === '`' || event.key === '~')) {
                 event.preventDefault();
                 focusNextWindow(event.shiftKey ? -1 : 1);
@@ -3625,6 +3667,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         openCommandPalette,
         toggleFocusMode,
         toggleQuickLook,
+        toggleControlCenter,
         openWindowSwitcher,
         cycleWindowSwitcher,
         closeWindowSwitcher,
@@ -3713,13 +3756,16 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
     const renderWindowContent = useCallback(
         (win, options = {}) => {
             if (win.isAppWindow) {
-                const Icon = iconForAppKey(win.appIconKey);
-                const routeLabel = win.appRouteKey
-                    ? win.appRouteKey.replace(/[-_]/g, ' ')
-                    : 'Workspace';
-                const statusLabel = win.minimized ? 'Minimized' : 'Background';
+                const appKey = win.appRouteKey || win.appIconKey || 'default';
+                const Icon = iconForAppKey(appKey);
+                const routeLabel = appLabelForKey(appKey);
                 const forceLive = options.forceLive === true;
                 const shouldRenderLiveRoute = forceLive || (win.id === activeAppId && !win.minimized);
+                const statusLabel = shouldRenderLiveRoute
+                    ? 'Live route'
+                    : win.minimized
+                        ? 'Minimized preview'
+                        : 'Background preview';
 
                 if (!shouldRenderLiveRoute) {
                     return (
@@ -3736,7 +3782,11 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 }
 
                 if (win.id === activeAppId && win.appRoutePath) {
-                    return renderMainContentMemo();
+                    return (
+                        <WorkspaceWindowFrame>
+                            {renderMainContentMemo()}
+                        </WorkspaceWindowFrame>
+                    );
                 }
 
                 if (win.routeLocation) {
@@ -3745,34 +3795,12 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                             `${win.id}-${win.routeLocation.key}`) ||
                             `${win.id}-${win.routeLocation.pathname || ''}${win.routeLocation.search || ''}${win.routeLocation.hash || ''}`;
                     return (
-                        <div className="flex h-full flex-col overflow-hidden rounded-[26px] border border-white/40 bg-white/80 shadow-inner dark:border-white/10 dark:bg-slate-900/60">
-                            <div className="flex-1 overflow-auto">
-                                <WindowRouteRenderer
-                                    key={locationKey}
-                                    location={win.routeLocation}
-                                />
-                            </div>
-                            <div className="flex items-center justify-between gap-3 border-t border-white/40 bg-white/70 px-4 py-2 text-[0.58rem] uppercase tracking-[0.32em] text-slate-500 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-400">
-                                <span className="inline-flex items-center gap-2">
-                                    <span
-                                        className="flex h-6 w-6 items-center justify-center rounded-lg text-white shadow-inner shadow-brand-500/25"
-                                        style={{ backgroundImage: win.appAccent || APP_ACCENTS.default }}
-                                    >
-                                        {Icon ? (
-                                            <Icon className="h-4 w-4" />
-                                        ) : (
-                                            <HiOutlineSparkles className="h-4 w-4" />
-                                        )}
-                                    </span>
-                                    <span className="font-semibold uppercase tracking-[0.32em] text-slate-500 dark:text-slate-300">
-                                        {routeLabel}
-                                    </span>
-                                </span>
-                                <span className="truncate text-[0.55rem] uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
-                                    {statusLabel}
-                                </span>
-                            </div>
-                        </div>
+                        <WorkspaceWindowFrame>
+                            <WindowRouteRenderer
+                                key={locationKey}
+                                location={win.routeLocation}
+                            />
+                        </WorkspaceWindowFrame>
                     );
                 }
                 return (
@@ -3878,7 +3906,11 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
 
             switch (win.type) {
                 case WINDOW_TYPES.MAIN:
-                    return renderMainContentMemo();
+                    return (
+                        <div className="workspace-window-surface">
+                            {renderMainContentMemo()}
+                        </div>
+                    );
                 case WINDOW_TYPES.SCRATCHPAD:
                     return (
                         <div className="flex h-full flex-col gap-4">
@@ -4274,6 +4306,383 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
 
     const quickLookAvailable = useMemo(() => stagedWindows.length > 0, [stagedWindows]);
 
+    const nowPlayingWindow = useMemo(
+        () =>
+            windowsForUI
+                .slice()
+                .sort((a, b) => b.z - a.z)
+                .find((win) => win.type === WINDOW_TYPES.NOW_PLAYING && !win.minimized) || null,
+        [windowsForUI]
+    );
+
+    const nowPlayingProgress = useMemo(() => {
+        const elapsed = Math.max(0, Number(currentTrackTime?.elapsed ?? 0));
+        const total = Math.max(1, Number(currentTrackTime?.total ?? 1));
+        return {
+            elapsed,
+            total,
+            ratio: Math.min(Math.max(elapsed / total, 0), 1),
+        };
+    }, [currentTrackTime]);
+
+    const islandPlaybackWindow = useMemo(() => {
+        if (quickLookTarget?.type === WINDOW_TYPES.NOW_PLAYING) {
+            return quickLookTarget;
+        }
+        if (focusedWindow?.type === WINDOW_TYPES.NOW_PLAYING && !focusedWindow.minimized) {
+            return focusedWindow;
+        }
+        return nowPlayingWindow;
+    }, [focusedWindow, nowPlayingWindow, quickLookTarget]);
+
+    const windowSwitcherHighlight = useMemo(() => {
+        if (!windowSwitcher.open || windowSwitcher.items.length === 0) {
+            return null;
+        }
+        const boundedIndex = Math.min(
+            Math.max(windowSwitcher.highlightIndex, 0),
+            windowSwitcher.items.length - 1
+        );
+        return windowSwitcher.items[boundedIndex] || null;
+    }, [windowSwitcher]);
+
+    const dynamicIslandShortcuts = useMemo(() => {
+        const usingGlyphs = metaKeyLabel === '⌘';
+        return {
+            commandPalette: usingGlyphs ? `${metaKeyLabel}K` : `${metaKeyLabel}+K`,
+            mission: usingGlyphs ? `${metaKeyLabel}↑` : `${metaKeyLabel}+ArrowUp`,
+            switcher: usingGlyphs ? `${metaKeyLabel}Tab` : `${metaKeyLabel}+Tab`,
+            preview: 'Space',
+            controls: usingGlyphs ? `${metaKeyLabel},` : `${metaKeyLabel}+,`,
+        };
+    }, [metaKeyLabel]);
+
+    const dynamicIslandSummary = useMemo(() => {
+        const baseAccent =
+            activeStageAccent ||
+            accentGradient ||
+            'linear-gradient(135deg, rgba(56,189,248,0.4), rgba(14,165,233,0.14), rgba(15,23,42,0.1))';
+
+        if (missionControlOpen) {
+            return {
+                eyebrow: 'Mission Control',
+                title: 'Window command deck',
+                detail: `${stagedWindows.length} visible · ${windowsForUI.length} total windows`,
+                badge: 'Live',
+                badgeTone: 'accent',
+                accent: baseAccent,
+                IconComponent: HiOutlineArrowsPointingOut,
+            };
+        }
+
+        if (controlCenterOpen) {
+            return {
+                eyebrow: 'Control Center',
+                title: 'Workspace and desktop tuning',
+                detail: `${focusMode ? 'Focus on' : 'Focus off'} · ${surfacePresetLabel} · ${wallpaperLabel} wallpaper`,
+                badge: 'Tuning',
+                badgeTone: 'accent',
+                accent: accentGradient || baseAccent,
+                IconComponent: HiOutlineAdjustmentsHorizontal,
+            };
+        }
+
+        if (windowSwitcherHighlight) {
+            return {
+                eyebrow: 'Window Switcher',
+                title: windowSwitcherHighlight.title || 'Cycle windows',
+                detail: `${windowSwitcher.highlightIndex + 1} of ${windowSwitcher.items.length}`,
+                badge: `${windowSwitcher.highlightIndex + 1}/${windowSwitcher.items.length}`,
+                badgeTone: 'accent',
+                accent: windowSwitcherHighlight.accent || baseAccent,
+                IconComponent: windowSwitcherHighlight.iconComponent || HiOutlineRectangleStack,
+            };
+        }
+
+        if (quickLookTarget) {
+            const appKey = quickLookTarget.appRouteKey || quickLookTarget.appIconKey || 'default';
+            return {
+                eyebrow: 'Quick Look',
+                title: quickLookTarget.title || typeToTitle(quickLookTarget.type),
+                detail: `${Math.round(quickLookTarget.width)} x ${Math.round(quickLookTarget.height)} preview`,
+                badge: 'Preview',
+                badgeTone: 'accent',
+                accent: quickLookTarget.isAppWindow
+                    ? quickLookTarget.appAccent || appAccentForKey(appKey)
+                    : stagePreviewAccent(quickLookTarget.type, true),
+                progress:
+                    quickLookTarget.type === WINDOW_TYPES.NOW_PLAYING
+                        ? nowPlayingProgress.ratio
+                        : null,
+                progressLabel:
+                    quickLookTarget.type === WINDOW_TYPES.NOW_PLAYING
+                        ? `${formatDuration(nowPlayingProgress.elapsed)} / ${formatDuration(nowPlayingProgress.total)}`
+                        : '',
+                IconComponent: quickLookTarget.isAppWindow
+                    ? iconForAppKey(appKey)
+                    : iconComponentForType(quickLookTarget.type) || HiOutlineSparkles,
+            };
+        }
+
+        if (focusHighlight) {
+            return {
+                eyebrow: 'Now Active',
+                title: focusHighlight.label,
+                detail: focusHighlight.context,
+                badge: 'Switched',
+                badgeTone: 'accent',
+                accent: focusHighlight.accent || baseAccent,
+                IconComponent: FocusHighlightIcon || HiOutlineSparkles,
+            };
+        }
+
+        if (focusedWindow) {
+            const appKey = focusedWindow.appRouteKey || focusedWindow.appIconKey || 'default';
+            const contextLabel = focusedWindow.isAppWindow
+                ? appLabelForKey(appKey)
+                : typeToTitle(focusedWindow.type);
+            return {
+                eyebrow: contextLabel,
+                title: focusedWindow.title || contextLabel,
+                detail: focusedWindow.isZoomed
+                    ? 'Expanded on stage'
+                    : `${stagedWindows.length} live · ${windowsForUI.length} total windows`,
+                badge: focusedWindow.isZoomed ? 'Expanded' : 'Active',
+                badgeTone: focusedWindow.isZoomed ? 'accent' : 'neutral',
+                accent: focusedWindow.isAppWindow
+                    ? focusedWindow.appAccent || appAccentForKey(appKey)
+                    : stagePreviewAccent(focusedWindow.type, true),
+                progress:
+                    focusedWindow.type === WINDOW_TYPES.NOW_PLAYING
+                        ? nowPlayingProgress.ratio
+                        : null,
+                progressLabel:
+                    focusedWindow.type === WINDOW_TYPES.NOW_PLAYING
+                        ? `${formatDuration(nowPlayingProgress.elapsed)} / ${formatDuration(nowPlayingProgress.total)}`
+                        : '',
+                IconComponent: focusedWindow.isAppWindow
+                    ? iconForAppKey(appKey)
+                    : iconComponentForType(focusedWindow.type) || HiOutlineSquares2X2,
+            };
+        }
+
+        return {
+            eyebrow: 'Desktop',
+            title: activeAppWindow?.title || windowTitle,
+            detail: `${stagedWindows.length} live · ${windowsForUI.length} total windows`,
+            badge: islandPlaybackWindow ? 'Audio live' : 'Ready',
+            badgeTone: islandPlaybackWindow ? 'accent' : 'neutral',
+            accent: baseAccent,
+            progress: islandPlaybackWindow ? nowPlayingProgress.ratio : null,
+            progressLabel: islandPlaybackWindow
+                ? `${formatDuration(nowPlayingProgress.elapsed)} / ${formatDuration(nowPlayingProgress.total)}`
+                : '',
+            IconComponent: HiOutlineSquares2X2,
+        };
+    }, [
+        FocusHighlightIcon,
+        accentGradient,
+        activeAppWindow?.title,
+        activeStageAccent,
+        controlCenterOpen,
+        focusHighlight,
+        focusMode,
+        focusedWindow,
+        islandPlaybackWindow,
+        missionControlOpen,
+        nowPlayingProgress.elapsed,
+        nowPlayingProgress.ratio,
+        nowPlayingProgress.total,
+        quickLookTarget,
+        surfacePresetLabel,
+        stagedWindows.length,
+        stagePreviewAccent,
+        wallpaperLabel,
+        windowSwitcher.highlightIndex,
+        windowSwitcher.items.length,
+        windowSwitcherHighlight,
+        windowsForUI.length,
+        windowTitle,
+    ]);
+
+    const dynamicIslandStats = useMemo(() => {
+        const stateLabel = missionControlOpen
+            ? 'Mission Control open'
+            : controlCenterOpen
+                ? 'Controls open'
+                : windowSwitcher.open
+                    ? 'Switcher active'
+                    : quickLookTarget
+                        ? 'Preview open'
+                        : fullscreenWindowActive
+                            ? 'Expanded stage'
+                            : 'Freeform stage';
+
+        const modeValue = missionControlOpen
+            ? 'Mission'
+            : controlCenterOpen
+                ? 'Controls'
+                : windowSwitcher.open
+                    ? 'Switcher'
+                    : quickLookTarget
+                        ? 'Preview'
+                        : fullscreenWindowActive
+                            ? 'Expanded'
+                            : 'Ready';
+
+        return [
+            {
+                key: 'live',
+                label: 'Stage',
+                value: focusMode ? 'Focus' : `${stagedWindows.length}`,
+                sub: focusMode ? 'Single-window workflow' : 'Visible windows',
+                tone: focusMode ? 'accent' : 'neutral',
+                IconComponent: HiOutlineSquares2X2,
+            },
+            {
+                key: 'mode',
+                label: 'Mode',
+                value: modeValue,
+                sub: stateLabel,
+                tone:
+                    missionControlOpen || controlCenterOpen || windowSwitcher.open || Boolean(quickLookTarget)
+                        ? 'accent'
+                        : 'neutral',
+                IconComponent: dynamicIslandSummary.IconComponent || HiOutlineSparkles,
+            },
+            {
+                key: islandPlaybackWindow ? 'audio' : 'desktop',
+                label: islandPlaybackWindow ? 'Audio' : 'Surface',
+                value: islandPlaybackWindow
+                    ? formatDuration(nowPlayingProgress.elapsed)
+                    : surfacePresetLabel,
+                sub: islandPlaybackWindow
+                    ? `-${formatDuration(nowPlayingProgress.total - nowPlayingProgress.elapsed)}`
+                    : `${wallpaperLabel} wallpaper`,
+                tone: islandPlaybackWindow ? 'accent' : 'neutral',
+                IconComponent: islandPlaybackWindow ? HiOutlinePlay : HiOutlineAdjustmentsHorizontal,
+            },
+        ];
+    }, [
+        controlCenterOpen,
+        dynamicIslandSummary.IconComponent,
+        focusMode,
+        fullscreenWindowActive,
+        islandPlaybackWindow,
+        missionControlOpen,
+        nowPlayingProgress.elapsed,
+        nowPlayingProgress.total,
+        quickLookTarget,
+        surfacePresetLabel,
+        stagedWindows.length,
+        wallpaperLabel,
+        windowSwitcher.open,
+    ]);
+
+    const dynamicIslandActions = useMemo(
+        () => [
+            {
+                key: 'mission',
+                label: missionControlOpen ? 'Hide Mission Control' : 'Open Mission Control',
+                shortLabel: missionControlOpen ? 'Close Mission' : 'Mission Control',
+                description: missionControlOpen
+                    ? 'Return to the standard stage layout.'
+                    : 'See every staged and minimized window at once.',
+                hint: dynamicIslandShortcuts.mission,
+                icon: <HiOutlineArrowsPointingOut className="h-4 w-4" />,
+                active: missionControlOpen,
+                disabled: false,
+                onClick: () => {
+                    closeControlCenter();
+                    if (missionControlOpen) {
+                        setMissionControlOpen(false);
+                    } else {
+                        openMissionControl();
+                    }
+                },
+            },
+            {
+                key: 'switcher',
+                label: windowSwitcher.open ? 'Hide Window Switcher' : 'Open Window Switcher',
+                shortLabel: 'Window Switcher',
+                description: windowSwitcher.open
+                    ? 'Close the current window cycle overlay.'
+                    : 'Cycle the active stack without reaching for the keyboard.',
+                hint: dynamicIslandShortcuts.switcher,
+                icon: <HiOutlineRectangleStack className="h-4 w-4" />,
+                active: windowSwitcher.open,
+                disabled: false,
+                onClick: () => {
+                    closeControlCenter();
+                    if (windowSwitcher.open) {
+                        closeWindowSwitcher(false);
+                    } else {
+                        openWindowSwitcher(1);
+                    }
+                },
+            },
+            {
+                key: 'preview',
+                label: quickLookTarget ? 'Close Quick Look' : 'Open Quick Look',
+                shortLabel: 'Quick Look',
+                description: quickLookTarget
+                    ? 'Dismiss the current live preview.'
+                    : 'Peek the top window instantly from the island.',
+                hint: dynamicIslandShortcuts.preview,
+                icon: <HiOutlineSparkles className="h-4 w-4" />,
+                active: Boolean(quickLookTarget),
+                disabled: !quickLookAvailable && !quickLookTarget,
+                onClick: () => {
+                    closeControlCenter();
+                    toggleQuickLook();
+                },
+            },
+            {
+                key: 'controls',
+                label: controlCenterOpen ? 'Hide Controls' : 'Show Controls',
+                shortLabel: 'Controls',
+                description: controlCenterOpen
+                    ? 'Collapse workspace tuning and return to the stage.'
+                    : 'Adjust appearance, focus, motion, and layout tools.',
+                hint: dynamicIslandShortcuts.controls,
+                icon: <HiOutlineAdjustmentsHorizontal className="h-4 w-4" />,
+                active: controlCenterOpen,
+                disabled: false,
+                onClick: () => toggleControlCenter(),
+            },
+        ],
+        [
+            closeControlCenter,
+            closeWindowSwitcher,
+            controlCenterOpen,
+            dynamicIslandShortcuts.controls,
+            dynamicIslandShortcuts.mission,
+            dynamicIslandShortcuts.preview,
+            dynamicIslandShortcuts.switcher,
+            missionControlOpen,
+            openMissionControl,
+            openWindowSwitcher,
+            quickLookAvailable,
+            quickLookTarget,
+            toggleControlCenter,
+            toggleQuickLook,
+            windowSwitcher.open,
+        ]
+    );
+
+    const openCommandPaletteFromIsland = useCallback(() => {
+        closeControlCenter();
+        openCommandPalette();
+    }, [closeControlCenter, openCommandPalette]);
+
+    const dynamicIslandForceExpanded = Boolean(
+        controlCenterOpen ||
+            missionControlOpen ||
+            quickLookTarget ||
+            windowSwitcher.open ||
+            focusHighlight
+    );
+
     const commandPaletteItems = useMemo(() => {
         const defaultAccent =
             activeStageAccent ||
@@ -4331,6 +4740,16 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             shortcut: usingGlyphs ? `${metaKeyLabel}↑` : `${metaKeyLabel}+ArrowUp`,
             icon: <HiOutlineArrowsPointingOut className="h-5 w-5" />,
             onSelect: () => openMissionControl(),
+        });
+
+        pushAction({
+            id: 'action:control-center',
+            label: controlCenterOpen ? 'Hide Control Center' : 'Show Control Center',
+            description: 'Adjust appearance, motion, and workspace controls',
+            shortcut: joinKeys(metaKeyLabel, ','),
+            badge: controlCenterOpen ? 'Open' : undefined,
+            icon: <HiOutlineAdjustmentsHorizontal className="h-5 w-5" />,
+            onSelect: () => toggleControlCenter(),
         });
 
         pushAction({
@@ -4432,17 +4851,19 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         applyLayoutPresetToTopWindow,
         shiftKeyLabel,
         stagePreviewAccent,
+        toggleControlCenter,
         toggleFocusMode,
         toggleQuickLook,
         windows,
         duplicateActiveAppWindow,
         activeAppWindow,
+        controlCenterOpen,
     ]);
 
     if (isCompact) {
         return (
-            <div className="macos-typography container max-w-5xl">
-                <div className="macos-window">
+            <div className="desktop-window-manager-compact macos-typography">
+                <div className="macos-window macos-window--compact-shell">
                     <div className="macos-window__titlebar">
                         <div className="macos-traffic-lights" aria-hidden="true">
                             <span className="macos-traffic-light macos-traffic-light--close opacity-40" />
@@ -4458,7 +4879,9 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                     </div>
                     <div className="macos-window__content">
                         <div className="macos-window__body">
-                            {renderMainContentMemo()}
+                            <WorkspaceWindowFrame>
+                                {renderMainContentMemo()}
+                            </WorkspaceWindowFrame>
                         </div>
                     </div>
                 </div>
@@ -4472,7 +4895,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 className="pointer-events-none fixed inset-0 -z-20"
                 accentGradient={accentGradient}
                 focusMode={focusMode}
-                theme={theme}
+                theme={resolvedTheme}
                 wallpaperMode={wallpaperMode}
             >
                 <div
@@ -4483,67 +4906,69 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                     className="absolute inset-0 opacity-35"
                     style={{ background: 'radial-gradient(circle at 14% 82%, rgba(255,255,255,0.18), transparent 58%)' }}
                 />
-                <div className="absolute inset-0 bg-slate-900/55 mix-blend-multiply" />
+                <div
+                    className={`absolute inset-0 ${resolvedTheme === 'dark' ? 'bg-slate-950/58 mix-blend-multiply' : 'bg-white/18 mix-blend-screen'}`}
+                />
             </DesktopWallpaper>
 
-            <DesktopMenuBar
-                activeAppTitle={activeAppWindow?.title || windowTitle || ''}
-                activePath={formattedPath}
-                clock={formattedClock}
-                focusMode={focusMode}
-                theme={theme}
-                windowTelemetry={windowTelemetry}
-                onNavigateHome={() => navigate('/')}
-                onNavigateSearch={() => navigate('/search')}
-                onOpenCommandPalette={openCommandPalette}
-                onOpenMissionControl={openMissionControl}
-                onOpenQuickLook={toggleQuickLook}
-                onOpenWindowSwitcher={openWindowSwitcher}
-                onDuplicateWindow={duplicateActiveAppWindow}
-                onApplyWindowLayout={applyLayoutPresetToTopWindow}
-                onToggleFocusMode={toggleFocusMode}
-                onToggleTheme={handleThemeToggle}
-                onToggleControlCenter={toggleControlCenter}
-                controlCenterOpen={controlCenterOpen}
-                profile={profileDetails}
-                onProfileMenuAction={handleProfileMenuAction}
-                autoHide={menuBarAutoHide}
-            />
-
-            <div ref={controlCenterRef} className="pointer-events-auto">
-                <ControlCenter
-                    open={controlCenterOpen}
-                    effects={effects}
-                    focusMode={focusMode}
-                    theme={theme}
-                    surfacePreset={surfacePresetKey}
-                    accentPreset={accentPresetKey}
-                    wallpaperMode={wallpaperMode}
-                    surfacePresets={SURFACE_PRESETS}
-                    accentPresets={ACCENT_PRESETS}
-                    wallpaperOptions={WALLPAPER_OPTIONS}
-                    onSelectSurfacePreset={(presetKey) => persistEffects({ ...effects, surfacePreset: presetKey })}
-                    onSelectAccentPreset={(presetKey) => persistEffects({ ...effects, accentPreset: presetKey })}
-                    onSelectWallpaperMode={(mode) => persistEffects({ ...effects, wallpaperMode: mode })}
-                    onClose={closeControlCenter}
-                    onChangeEffects={persistEffects}
-                    onToggleFocusMode={toggleFocusMode}
-                    onToggleTheme={handleThemeToggle}
-                    onOpenMissionControl={() => {
-                        closeControlCenter();
-                        openMissionControl();
-                    }}
-                    onOpenQuickLook={() => {
-                        closeControlCenter();
-                        toggleQuickLook();
-                    }}
-                    onOpenWindowSwitcher={(direction) => {
-                        closeControlCenter();
-                        openWindowSwitcher(direction);
-                    }}
-                    onDuplicateWindow={() => duplicateActiveAppWindow()}
-                    onApplyWindowLayout={(presetId) => applyLayoutPresetToTopWindow(presetId)}
-                />
+            <div ref={controlCenterRef} className="pointer-events-none fixed inset-x-0 top-3 z-[90]">
+                <div className="flex justify-center px-4">
+                    <DesktopDynamicIsland
+                        className="pointer-events-auto"
+                        summary={dynamicIslandSummary}
+                        actions={dynamicIslandActions}
+                        stats={dynamicIslandStats}
+                        onPrimaryAction={openCommandPaletteFromIsland}
+                        primaryActionLabel="Open Command Palette"
+                        primaryHint={dynamicIslandShortcuts.commandPalette}
+                        forceExpanded={dynamicIslandForceExpanded}
+                        reduceMotion={reduceMotion}
+                        surfacePreset="liquid-glass"
+                        pinPersistKey="desktop-dynamic-island:pinned"
+                    />
+                </div>
+                <div className="pointer-events-auto">
+                    <ControlCenter
+                        open={controlCenterOpen}
+                        effects={effects}
+                        focusMode={focusMode}
+                        surfacePreset={surfacePresetKey}
+                        accentPreset={accentPresetKey}
+                        customAccent={customAccent}
+                        wallpaperMode={wallpaperMode}
+                        surfacePresets={SURFACE_PRESETS}
+                        accentPresets={ACCENT_PRESETS}
+                        wallpaperOptions={WALLPAPER_OPTIONS}
+                        onSelectSurfacePreset={(presetKey) => persistEffects({ ...effects, surfacePreset: presetKey })}
+                        onSelectAccentPreset={(presetKey) => persistEffects({ ...effects, accentPreset: presetKey })}
+                        onApplyCustomAccent={(accentColor) => {
+                            persistEffects({ accentPreset: 'custom', customAccent: accentColor });
+                            announce(`Custom accent updated to ${accentColor.toUpperCase()}`);
+                        }}
+                        onResetCustomAccent={() => {
+                            persistEffects({ accentPreset: 'system', customAccent: DEFAULT_CUSTOM_ACCENT });
+                            announce('Accent reset to app accent');
+                        }}
+                        onSelectWallpaperMode={(mode) => persistEffects({ ...effects, wallpaperMode: mode })}
+                        onClose={closeControlCenter}
+                        onChangeEffects={persistEffects}
+                        onToggleFocusMode={toggleFocusMode}
+                        onOpenMissionControl={() => {
+                            closeControlCenter();
+                            openMissionControl();
+                        }}
+                        onOpenQuickLook={() => {
+                            closeControlCenter();
+                            toggleQuickLook();
+                        }}
+                        onOpenWindowSwitcher={(direction) => {
+                            closeControlCenter();
+                            openWindowSwitcher(direction);
+                        }}
+                        onDuplicateWindow={() => duplicateActiveAppWindow()}
+                        onApplyWindowLayout={(presetId) => applyLayoutPresetToTopWindow(presetId)}
+                    />
+                </div>
             </div>
 
             {/* MacDock overlay removed per request */}
@@ -4895,7 +5320,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 {snapPreview ? (
                     <motion.div
                         key="snap-preview"
-                        className="pointer-events-none fixed inset-0 z-[44] hidden lg:block"
+                        className="pointer-events-none fixed inset-0 z-[44]"
                         initial={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -4931,7 +5356,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 {focusHighlight ? (
                     <motion.div
                         key={`${focusHighlight.id}-${focusHighlight.timestamp}`}
-                        className="pointer-events-none fixed right-6 top-6 z-[64] hidden lg:block"
+                        className="pointer-events-none fixed right-6 top-6 z-[64]"
                         initial={reduceMotion ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: -12, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: reduceMotion ? 0 : -10, scale: reduceMotion ? 1 : 0.94 }}
@@ -5043,7 +5468,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 {draggingWindow && dragFlyoutPosition ? (
                     <motion.div
                         key="window-drag-flyout"
-                        className="pointer-events-none fixed z-[62] hidden lg:block"
+                        className="pointer-events-none fixed z-[62]"
                         initial={motionFlyoutInitial}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={motionFlyoutExit}
@@ -5064,7 +5489,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             </AnimatePresence>
 
             <div
-                className={`pointer-events-none fixed inset-0 hidden lg:block ${fullscreenWindowActive ? 'z-[56]' : 'z-[45]'}`}
+                className={`pointer-events-none fixed inset-0 ${fullscreenWindowActive ? 'z-[56]' : 'z-[45]'}`}
             >
             <AnimatePresence initial={!reduceMotion}>
                 {stagedWindows.map((win) => (
@@ -5232,10 +5657,11 @@ function formatHotCornerName(key) {
 }
 
 function resizeWindowByEdge(initial, edge, deltaX, deltaY, viewportWidth, viewportHeight) {
-    const minWidth = 320;
-    const minHeight = 260;
-    const maxWidth = Math.max(viewportWidth - 48, 360);
-    const maxHeight = Math.max(viewportHeight - 120, 260);
+    const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
+    const minWidth = metrics.minWidth;
+    const minHeight = metrics.minHeight;
+    const maxWidth = metrics.maxWidth;
+    const maxHeight = metrics.maxHeight;
 
     let left = initial.x;
     let right = initial.x + initial.width;
@@ -5244,22 +5670,22 @@ function resizeWindowByEdge(initial, edge, deltaX, deltaY, viewportWidth, viewpo
 
     if (edge.includes('e')) {
         const desiredRight = right + deltaX;
-        const maxRight = viewportWidth - 12;
+        const maxRight = viewportWidth - metrics.edgePadding;
         right = clampNumber(desiredRight, left + minWidth, maxRight);
     }
     if (edge.includes('s')) {
         const desiredBottom = bottom + deltaY;
-        const maxBottom = viewportHeight - 12;
+        const maxBottom = viewportHeight - metrics.stageBottomMargin;
         bottom = clampNumber(desiredBottom, top + minHeight, maxBottom);
     }
     if (edge.includes('w')) {
         const desiredLeft = left + deltaX;
-        const minLeft = 12;
+        const minLeft = metrics.edgePadding;
         left = clampNumber(desiredLeft, minLeft, right - minWidth);
     }
     if (edge.includes('n')) {
         const desiredTop = top + deltaY;
-        const minTop = MAC_STAGE_MARGIN;
+        const minTop = metrics.topMargin;
         top = clampNumber(desiredTop, minTop, bottom - minHeight);
     }
 
@@ -5294,8 +5720,10 @@ function resizeWindowByEdge(initial, edge, deltaX, deltaY, viewportWidth, viewpo
 
 function sanitizeWindowEntry(entry, viewportWidth, viewportHeight, options = {}) {
     if (!entry || typeof entry !== 'object') return null;
-    const width = clampNumber(entry.width ?? 420, 320, Math.max(viewportWidth - 48, 360));
-    const height = clampNumber(entry.height ?? 320, 260, Math.max(viewportHeight - 120, 260));
+    const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
+    const shouldForceFullscreen = Boolean(entry.isMain || entry.isAppWindow);
+    const width = clampNumber(entry.width ?? 420, metrics.minWidth, metrics.maxWidth);
+    const height = clampNumber(entry.height ?? 320, metrics.minHeight, metrics.maxHeight);
     const coords = clampWindowCoords(
         entry.x ?? 48,
         entry.y ?? MAC_STAGE_MARGIN,
@@ -5309,13 +5737,13 @@ function sanitizeWindowEntry(entry, viewportWidth, viewportHeight, options = {})
     if (entry.snapshot && typeof entry.snapshot === 'object') {
         const snapshotWidth = clampNumber(
             entry.snapshot.width ?? width,
-            320,
-            viewportWidth
+            metrics.minWidth,
+            metrics.maxWidth
         );
         const snapshotHeight = clampNumber(
             entry.snapshot.height ?? height,
-            260,
-            viewportHeight
+            metrics.minHeight,
+            metrics.maxHeight
         );
         const snapshotCoords = clampWindowCoords(
             entry.snapshot.x ?? coords.x,
@@ -5330,6 +5758,14 @@ function sanitizeWindowEntry(entry, viewportWidth, viewportHeight, options = {})
             y: snapshotCoords.y,
             width: snapshotWidth,
             height: snapshotHeight,
+        };
+    }
+    if (!snapshot && shouldForceFullscreen) {
+        snapshot = {
+            x: coords.x,
+            y: coords.y,
+            width,
+            height,
         };
     }
 
@@ -5352,7 +5788,7 @@ function sanitizeWindowEntry(entry, viewportWidth, viewportHeight, options = {})
         z: typeof entry.z === 'number' ? entry.z : 21,
         minimized: Boolean(entry.minimized),
         minimizedByUser: Boolean(entry.minimizedByUser),
-        isZoomed: Boolean(entry.isZoomed),
+        isZoomed: Boolean(entry.isZoomed || shouldForceFullscreen),
         snapshot,
         allowClose: entry.allowClose !== false,
         allowMinimize: entry.allowMinimize !== false,
@@ -5560,19 +5996,67 @@ const SNAP_LABELS = {
     center: 'Centered',
 };
 
+function getViewportDimensions() {
+    if (typeof window === 'undefined') {
+        return {
+            viewportWidth: 0,
+            viewportHeight: 0,
+        };
+    }
+
+    const visualViewport = window.visualViewport;
+
+    return {
+        viewportWidth: Math.round(visualViewport?.width ?? window.innerWidth),
+        viewportHeight: Math.round(visualViewport?.height ?? window.innerHeight),
+    };
+}
+
+function isCompactViewport(viewportWidth) {
+    return viewportWidth < COMPACT_BREAKPOINT_PX;
+}
+
+function getWindowViewportMetrics(viewportWidth, viewportHeight) {
+    const compact = isCompactViewport(viewportWidth);
+    const tablet = viewportWidth < TABLET_STAGE_BREAKPOINT_PX;
+    const shortViewport = viewportHeight < SHORT_VIEWPORT_HEIGHT_PX;
+    const minWidth = compact ? 280 : tablet ? 300 : 320;
+    const minHeight = compact ? 220 : shortViewport ? 240 : 260;
+    const edgePadding = compact ? 10 : tablet ? 16 : 24;
+    const stageHorizontalMargin = compact ? 10 : tablet ? 16 : 24;
+    const stageBottomMargin = compact ? 10 : shortViewport ? 16 : 24;
+    const topMargin = MAC_STAGE_MARGIN;
+    const snapGap = tablet ? 18 : SNAP_GAP;
+    const maxWidth = Math.max(viewportWidth - edgePadding * 2, minWidth);
+    const maxHeight = Math.max(viewportHeight - topMargin - stageBottomMargin - 8, minHeight);
+
+    return {
+        compact,
+        tablet,
+        shortViewport,
+        minWidth,
+        minHeight,
+        edgePadding,
+        stageHorizontalMargin,
+        stageBottomMargin,
+        topMargin,
+        snapGap,
+        maxWidth,
+        maxHeight,
+    };
+}
+
 function labelForSnapTarget(target) {
     return SNAP_LABELS[target] ?? 'Snap Layout';
 }
 
 function computeStageArea(viewportWidth, viewportHeight) {
-    const horizontalMargin = 24;
-    const topMargin = MAC_STAGE_MARGIN;
-    const bottomMargin = 24;
-    const width = Math.max(360, viewportWidth - horizontalMargin * 2);
-    const height = Math.max(320, viewportHeight - topMargin - bottomMargin);
+    const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
+    const width = Math.max(metrics.minWidth, viewportWidth - metrics.stageHorizontalMargin * 2);
+    const height = Math.max(metrics.minHeight, viewportHeight - metrics.topMargin - metrics.stageBottomMargin);
     return {
-        x: horizontalMargin,
-        y: topMargin,
+        x: metrics.stageHorizontalMargin,
+        y: metrics.topMargin,
         width,
         height,
     };
@@ -5580,8 +6064,9 @@ function computeStageArea(viewportWidth, viewportHeight) {
 
 function getSnapRect(target, viewportWidth, viewportHeight) {
     const stage = computeStageArea(viewportWidth, viewportHeight);
-    const halfWidth = Math.max(stage.width / 2 - SNAP_GAP / 2, 320);
-    const halfHeight = Math.max(stage.height / 2 - SNAP_GAP / 2, 260);
+    const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
+    const halfWidth = Math.min(stage.width, Math.max(stage.width / 2 - metrics.snapGap / 2, metrics.minWidth));
+    const halfHeight = Math.min(stage.height, Math.max(stage.height / 2 - metrics.snapGap / 2, metrics.minHeight));
 
     switch (target) {
         case 'full':
@@ -5648,8 +6133,16 @@ function getSnapRect(target, viewportWidth, viewportHeight) {
                 height: halfHeight,
             };
         case 'center': {
-            const width = Math.max(Math.min(stage.width * 0.7, 980), 420);
-            const height = Math.max(Math.min(stage.height * 0.72, 680), 320);
+            const width = clampNumber(
+                stage.width * (metrics.tablet ? 0.82 : 0.7),
+                metrics.minWidth,
+                Math.min(stage.width, 980)
+            );
+            const height = clampNumber(
+                stage.height * (metrics.tablet ? 0.78 : 0.72),
+                metrics.minHeight,
+                Math.min(stage.height, 680)
+            );
             return {
                 x: stage.x + (stage.width - width) / 2,
                 y: stage.y + (stage.height - height) / 2,
@@ -5741,6 +6234,7 @@ function reconcileSnapPreview(previous, candidate, id) {
 function applySnapLayout(win, target, viewportWidth, viewportHeight, options = {}) {
     const rect = getSnapRect(target, viewportWidth, viewportHeight);
     if (!rect) return win;
+    const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
     if (target === 'full') {
         const snapshot = {
             x: win.x,
@@ -5759,8 +6253,8 @@ function applySnapLayout(win, target, viewportWidth, viewportHeight, options = {
         );
     }
 
-    const width = clampNumber(rect.width, 320, Math.max(viewportWidth - 48, 360));
-    const height = clampNumber(rect.height, 260, Math.max(viewportHeight - 120, 260));
+    const width = clampNumber(rect.width, metrics.minWidth, metrics.maxWidth);
+    const height = clampNumber(rect.height, metrics.minHeight, metrics.maxHeight);
     const coords = clampWindowCoords(rect.x, rect.y, width, height, viewportWidth, viewportHeight);
 
     return {
@@ -5775,10 +6269,11 @@ function applySnapLayout(win, target, viewportWidth, viewportHeight, options = {
 }
 
 function createMainWindow(windowTitle, viewportWidth, viewportHeight, z = 21) {
-    const width = clampNumber(940, 360, viewportWidth - 96);
-    const height = clampNumber(640, 320, viewportHeight - 180);
-    const x = Math.max((viewportWidth - width) / 2, 24);
-    const y = Math.max((viewportHeight - height) / 2 + 12, MAC_HEADER_HEIGHT);
+    const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
+    const width = clampNumber(940, metrics.minWidth, metrics.maxWidth);
+    const height = clampNumber(640, metrics.minHeight, metrics.maxHeight);
+    const x = Math.max((viewportWidth - width) / 2, metrics.edgePadding);
+    const y = Math.max((viewportHeight - height) / 2 + (metrics.tablet ? 6 : 12), MAC_HEADER_HEIGHT);
     const snapshot = { x, y, width, height };
     return {
         id: MAIN_WINDOW_ID,
@@ -5800,23 +6295,17 @@ function createMainWindow(windowTitle, viewportWidth, viewportHeight, z = 21) {
     };
 }
 
-function expandWindowToViewport(win, viewportWidth, viewportHeight, options = {}) {
-    // Fill the available viewport like macOS fullscreen while keeping the menu bar visible
-    // when it is pinned. If the menu bar is set to auto-hide, allow the window to rise
-    // closer to the top for a truer immersive feel.
+function expandWindowToViewport(win, viewportWidth, viewportHeight) {
+    // Zoomed windows should occupy the full visible viewport instead of the staged inset layout.
     const visualViewport = typeof window !== 'undefined' ? window.visualViewport : null;
     const insetTop = Math.max(visualViewport?.offsetTop ?? 0, 0);
     const insetLeft = Math.max(visualViewport?.offsetLeft ?? 0, 0);
     const insetRight = Math.max(visualViewport ? viewportWidth - visualViewport.width - visualViewport.offsetLeft : 0, 0);
     const insetBottom = Math.max(visualViewport ? viewportHeight - visualViewport.height - visualViewport.offsetTop : 0, 0);
-    const padding = 6; // tiny breathing room to avoid clipping shadows
-    const autoHideMenuBar = Boolean(options.autoHideMenuBar);
-    const reservedTop = autoHideMenuBar ? Math.max(insetTop + padding, padding) : Math.max(MAC_HEADER_HEIGHT, insetTop + 12);
-    const reservedBottom = Math.max(18, insetBottom + 8);
-    const x = insetLeft + padding;
-    const y = reservedTop;
-    const width = Math.max(viewportWidth - insetLeft - insetRight - padding * 2, 360);
-    const height = Math.max(viewportHeight - reservedTop - reservedBottom - padding, 260);
+    const x = insetLeft;
+    const y = insetTop;
+    const width = Math.max(viewportWidth - insetLeft - insetRight, 1);
+    const height = Math.max(viewportHeight - insetTop - insetBottom, 1);
 
     return {
         ...win,
@@ -5832,8 +6321,9 @@ function clampWindowToViewport(win, viewportWidth, viewportHeight, options = {})
     if (win.isZoomed) {
         return expandWindowToViewport(win, viewportWidth, viewportHeight, options);
     }
-    const width = clampNumber(win.width ?? 420, 320, Math.max(viewportWidth - 48, 360));
-    const height = clampNumber(win.height ?? 320, 260, Math.max(viewportHeight - 120, 260));
+    const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
+    const width = clampNumber(win.width ?? 420, metrics.minWidth, metrics.maxWidth);
+    const height = clampNumber(win.height ?? 320, metrics.minHeight, metrics.maxHeight);
     const coords = clampWindowCoords(
         win.x ?? 48,
         win.y ?? MAC_STAGE_MARGIN,
@@ -5901,10 +6391,11 @@ function clampNumber(value, min, max) {
 }
 
 function clampWindowCoords(x, y, width, height, viewportWidth, viewportHeight) {
-    const maxX = Math.max(viewportWidth - width - 24, 12);
-    const maxY = Math.max(viewportHeight - height - 24, MAC_STAGE_MARGIN);
-    const clampedX = clampNumber(x, 12, maxX);
-    const clampedY = clampNumber(y, MAC_STAGE_MARGIN, maxY);
+    const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
+    const maxX = Math.max(viewportWidth - width - metrics.edgePadding, metrics.edgePadding);
+    const maxY = Math.max(viewportHeight - height - metrics.stageBottomMargin, metrics.topMargin);
+    const clampedX = clampNumber(x, metrics.edgePadding, maxX);
+    const clampedY = clampNumber(y, metrics.topMargin, maxY);
     return { x: clampedX, y: clampedY };
 }
 

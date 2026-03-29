@@ -4,38 +4,75 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Scientist Shield – tutorials, problems, quizzes, and tools to learn and practice computer science and programming." />
-    <!-- Big Sur white theme foreground colors for browser UI -->
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#eef6ff" data-dynamic-theme-color="true" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" data-dynamic-status-bar="true" />
     <meta name="application-name" content="Scientist Shield" />
     <meta name="apple-mobile-web-app-title" content="SciShield" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="mask-icon" href="/favicon.svg" color="#174878" />
+    <link rel="mask-icon" href="/favicon.svg" color="#1677ff" />
     <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
     <script>
       (() => {
         const root = document.documentElement;
-        const read = (key) => {
-          try { return window.localStorage.getItem(key); } catch { return null; }
+        const UI_EFFECTS_STORAGE_KEY = 'ui.effects.v1';
+        const SURFACE_CLASS_MAP = {
+          liquid: 'macos-liquid',
+          sequoia: 'macos-sequoia',
+          graphite: 'macos-graphite',
         };
-        const write = (key, value) => {
-          try { window.localStorage.setItem(key, value); } catch { /* ignore quota/private mode */ }
-        };
-        const storedMode = read('themeMode');
-        const mode = ['light', 'dark', 'auto'].includes(storedMode) ? storedMode : 'auto';
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const theme = mode === 'light' ? 'light' : mode === 'dark' ? 'dark' : (prefersDark ? 'dark' : 'light');
-        root.classList.remove('light', 'dark');
-        root.classList.add(theme);
+        const readMediaQuery = (query) => window.matchMedia && window.matchMedia(query).matches;
+        const prefersContrast = readMediaQuery('(prefers-contrast: more)');
+        const forcedColors = readMediaQuery('(forced-colors: active)');
+        const reducedMotion = readMediaQuery('(prefers-reduced-motion: reduce)');
+        const systemTheme = readMediaQuery('(prefers-color-scheme: dark)') ? 'dark' : 'light';
+        let effects = {};
+
+        try {
+          effects = JSON.parse(window.localStorage.getItem(UI_EFFECTS_STORAGE_KEY) || 'null') || {};
+        } catch {
+          effects = {};
+        }
+
+        const themeMode = ['system', 'light', 'dark'].includes(effects.themeMode) ? effects.themeMode : 'system';
+        const resolvedTheme = themeMode === 'system' ? systemTheme : themeMode;
+        const surfacePreset = Object.prototype.hasOwnProperty.call(SURFACE_CLASS_MAP, effects.surfacePreset)
+          ? effects.surfacePreset
+          : 'liquid';
+        const surfaceClass = SURFACE_CLASS_MAP[surfacePreset];
+
+        root.classList.remove('light', 'dark', 'macos-sequoia', 'macos-liquid', 'macos-graphite', 'liquid-glass');
+        root.classList.add(resolvedTheme);
+        root.classList.add('bigsur');
+        root.classList.add(surfaceClass);
+        root.classList.add('liquid-glass');
         root.setAttribute('data-theme', 'liquid-glass');
-        root.setAttribute('data-theme-mode', mode);
-        root.style.setProperty('color-scheme', theme);
-        write('themeMode', mode);
-        write('theme', theme);
+        root.setAttribute('data-theme-mode', themeMode);
+        root.setAttribute('data-resolved-theme', resolvedTheme);
+        root.setAttribute('data-surface-preset', surfacePreset);
+        root.setAttribute('data-contrast-preference', prefersContrast ? 'more' : 'no-preference');
+        root.setAttribute('data-forced-colors', forcedColors ? 'active' : 'none');
+        root.setAttribute('data-reduced-motion', reducedMotion ? 'reduce' : 'no-preference');
+        root.style.setProperty('color-scheme', resolvedTheme);
+        let meta = document.querySelector('meta[name="theme-color"][data-dynamic-theme-color="true"]');
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('name', 'theme-color');
+          meta.setAttribute('data-dynamic-theme-color', 'true');
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', resolvedTheme === 'dark' ? '#0b1120' : '#eef6ff');
+        let statusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"][data-dynamic-status-bar="true"]');
+        if (!statusMeta) {
+          statusMeta = document.createElement('meta');
+          statusMeta.setAttribute('name', 'apple-mobile-web-app-status-bar-style');
+          statusMeta.setAttribute('data-dynamic-status-bar', 'true');
+          document.head.appendChild(statusMeta);
+        }
+        statusMeta.setAttribute('content', resolvedTheme === 'dark' ? 'black-translucent' : 'default');
       })();
     </script>
     <title>Scientist Shield</title>

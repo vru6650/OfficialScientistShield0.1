@@ -74,7 +74,8 @@ export const deletePost = async ({ postId, userId }) => {
 
 // This function is correct.
 export const getPost = async (postId) => {
-    const res = await apiFetch(`/api/v1/post/getposts?postId=${postId}`);
+    const params = new URLSearchParams({ postId });
+    const res = await apiFetch(`/api/v1/post/getposts?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch post data.');
     const data = await res.json();
     // The getposts route returns an array, so we take the first element.

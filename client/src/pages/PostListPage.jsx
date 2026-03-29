@@ -19,6 +19,7 @@ import useDebounce from '../hooks/useDebounce';
 import { getPosts } from '../services/postService';
 import { formatRelativeTimeFromNow } from '../utils/date';
 import { getPostPreviewImage, getPrimaryPostAsset } from '../utils/postMedia.js';
+import { getPostPath } from '../utils/postPath.js';
 
 const categoryChips = [
     { value: 'all', label: 'All' },
@@ -63,8 +64,8 @@ const parseFiltersFromSearch = (search) => {
 
 const stripHtml = (value = '') => value.replace(/<[^>]*>/g, ' ');
 
-const buildPreview = (content = '', title = '') => {
-    const base = stripHtml(content).trim() || title || '';
+const buildPreview = (content = '', title = '', summary = '') => {
+    const base = stripHtml(summary).trim() || stripHtml(content).trim() || title || '';
     if (!base) return 'No summary available yet.';
     if (base.length <= 180) return base;
     return `${base.slice(0, 180).replace(/[.,;:\s]+$/, '')}…`;
@@ -142,6 +143,7 @@ export default function PostListPage() {
     const totalPosts = data?.totalPosts ?? 0;
     const freshPosts = data?.lastMonthPosts ?? 0;
     const featured = posts[0];
+    const featuredPath = getPostPath(featured);
     const remaining = posts.slice(1);
     const nothingFound = !isLoading && posts.length === 0;
 
@@ -158,7 +160,7 @@ export default function PostListPage() {
     const featuredPrimaryAsset = useMemo(() => getPrimaryPostAsset(featured), [featured]);
 
     return (
-        <div className='relative min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950'>
+        <div className='workspace-page relative min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950'>
             <div className='pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.12),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.12),transparent_28%)] dark:bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.14),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.14),transparent_28%)]' aria-hidden />
 
             <div className='relative mx-auto max-w-6xl px-4 py-10 lg:px-6'>
@@ -400,13 +402,19 @@ export default function PostListPage() {
                                                         )}
                                                     </div>
                                                     <h2 className='text-2xl font-semibold leading-tight sm:text-3xl'>{featured.title}</h2>
-                                                    <p className='max-w-2xl text-sm text-slate-100/90 sm:text-base'>{buildPreview(featured.content, featured.title)}</p>
+                                                    <p className='max-w-2xl text-sm text-slate-100/90 sm:text-base'>{buildPreview(featured.content, featured.title, featured.summary)}</p>
                                                     <div className='flex flex-wrap items-center gap-3'>
-                                                        <Link to={`/post/${featured.slug}`}>
-                                                            <Button className='bg-white text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus:ring-2 focus:ring-sky-300'>
+                                                        {featuredPath ? (
+                                                            <Link to={featuredPath}>
+                                                                <Button className='bg-white text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus:ring-2 focus:ring-sky-300'>
+                                                                    Read featured
+                                                                </Button>
+                                                            </Link>
+                                                        ) : (
+                                                            <Button disabled className='bg-white text-slate-900 shadow-sm'>
                                                                 Read featured
                                                             </Button>
-                                                        </Link>
+                                                        )}
                                                         <Button color='light' onClick={() => refetch()} className='border border-white/40 bg-white/10 text-white hover:bg-white/20 focus:ring-2 focus:ring-white/40'>
                                                             Refresh picks
                                                         </Button>

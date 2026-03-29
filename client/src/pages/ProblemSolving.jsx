@@ -104,7 +104,7 @@ export default function ProblemSolving() {
     );
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 pb-20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div className="workspace-page min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 pb-20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
             <section className="bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 py-16 text-white">
                 <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-8">
                     <div className="max-w-3xl space-y-6">

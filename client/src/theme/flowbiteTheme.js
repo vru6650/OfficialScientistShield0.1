@@ -3,29 +3,29 @@
 // match our Liquid Glass + Glassmorphism design language.
 
 const glassColorScales = {
-    info: 'border-sky-300/65 bg-white/85 text-sky-900 dark:border-sky-400/45 dark:bg-slate-950/68 dark:text-sky-100',
-    gray: 'border-slate-300/70 bg-white/85 text-slate-800 dark:border-slate-600/55 dark:bg-slate-950/68 dark:text-slate-100',
-    failure: 'border-rose-300/70 bg-white/85 text-rose-900 dark:border-rose-400/50 dark:bg-slate-950/68 dark:text-rose-100',
-    success: 'border-emerald-300/70 bg-white/85 text-emerald-900 dark:border-emerald-400/50 dark:bg-slate-950/68 dark:text-emerald-100',
-    warning: 'border-amber-300/70 bg-white/85 text-amber-900 dark:border-amber-400/50 dark:bg-slate-950/68 dark:text-amber-100',
-    red: 'border-rose-300/70 bg-white/85 text-rose-900 dark:border-rose-400/50 dark:bg-slate-950/68 dark:text-rose-100',
-    green: 'border-emerald-300/70 bg-white/85 text-emerald-900 dark:border-emerald-400/50 dark:bg-slate-950/68 dark:text-emerald-100',
-    yellow: 'border-amber-300/70 bg-white/85 text-amber-900 dark:border-amber-400/50 dark:bg-slate-950/68 dark:text-amber-100',
-    blue: 'border-sky-300/65 bg-white/85 text-sky-900 dark:border-sky-400/45 dark:bg-slate-950/68 dark:text-sky-100',
-    cyan: 'border-sky-300/65 bg-white/85 text-sky-900 dark:border-sky-400/45 dark:bg-slate-950/68 dark:text-sky-100',
-    pink: 'border-pink-300/70 bg-white/85 text-pink-900 dark:border-pink-400/50 dark:bg-slate-950/68 dark:text-pink-100',
-    lime: 'border-lime-300/70 bg-white/85 text-lime-900 dark:border-lime-400/50 dark:bg-slate-950/68 dark:text-lime-100',
+    info: 'border-sky-200/80 bg-white/84 text-sky-950 dark:border-sky-400/45 dark:bg-slate-950/68 dark:text-sky-100',
+    gray: 'border-slate-200/82 bg-white/84 text-slate-800 dark:border-slate-600/55 dark:bg-slate-950/68 dark:text-slate-100',
+    failure: 'border-rose-200/82 bg-white/84 text-rose-900 dark:border-rose-400/50 dark:bg-slate-950/68 dark:text-rose-100',
+    success: 'border-emerald-200/82 bg-white/84 text-emerald-900 dark:border-emerald-400/50 dark:bg-slate-950/68 dark:text-emerald-100',
+    warning: 'border-amber-200/82 bg-white/84 text-amber-900 dark:border-amber-400/50 dark:bg-slate-950/68 dark:text-amber-100',
+    red: 'border-rose-200/82 bg-white/84 text-rose-900 dark:border-rose-400/50 dark:bg-slate-950/68 dark:text-rose-100',
+    green: 'border-emerald-200/82 bg-white/84 text-emerald-900 dark:border-emerald-400/50 dark:bg-slate-950/68 dark:text-emerald-100',
+    yellow: 'border-amber-200/82 bg-white/84 text-amber-900 dark:border-amber-400/50 dark:bg-slate-950/68 dark:text-amber-100',
+    blue: 'border-sky-200/80 bg-white/84 text-sky-950 dark:border-sky-400/45 dark:bg-slate-950/68 dark:text-sky-100',
+    cyan: 'border-sky-200/80 bg-white/84 text-sky-950 dark:border-sky-400/45 dark:bg-slate-950/68 dark:text-sky-100',
+    pink: 'border-pink-200/82 bg-white/84 text-pink-900 dark:border-pink-400/50 dark:bg-slate-950/68 dark:text-pink-100',
+    lime: 'border-lime-200/82 bg-white/84 text-lime-900 dark:border-lime-400/50 dark:bg-slate-950/68 dark:text-lime-100',
     dark: 'border-slate-500/65 bg-slate-900/82 text-slate-100 dark:border-slate-500/65 dark:bg-slate-950/82 dark:text-slate-100',
-    indigo: 'border-indigo-300/70 bg-white/85 text-indigo-900 dark:border-indigo-400/50 dark:bg-slate-950/68 dark:text-indigo-100',
-    purple: 'border-violet-300/70 bg-white/85 text-violet-900 dark:border-violet-400/50 dark:bg-slate-950/68 dark:text-violet-100',
-    teal: 'border-teal-300/70 bg-white/85 text-teal-900 dark:border-teal-400/50 dark:bg-slate-950/68 dark:text-teal-100',
-    light: 'border-slate-300/70 bg-white/85 text-slate-800 dark:border-slate-600/55 dark:bg-slate-900/68 dark:text-slate-100',
+    indigo: 'border-indigo-200/80 bg-white/84 text-indigo-900 dark:border-indigo-400/50 dark:bg-slate-950/68 dark:text-indigo-100',
+    purple: 'border-violet-200/80 bg-white/84 text-violet-900 dark:border-violet-400/50 dark:bg-slate-950/68 dark:text-violet-100',
+    teal: 'border-teal-200/80 bg-white/84 text-teal-900 dark:border-teal-400/50 dark:bg-slate-950/68 dark:text-teal-100',
+    light: 'border-slate-200/80 bg-white/84 text-slate-800 dark:border-slate-600/55 dark:bg-slate-900/68 dark:text-slate-100',
 };
 
 export const customFlowbiteTheme = {
     button: {
         base:
-            'group inline-flex items-center justify-center font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-radius-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed',
+            'group inline-flex items-center justify-center font-medium tracking-[-0.015em] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-radius-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed',
         color: {
             primary:
                 'glass-button glass-button--primary focus-visible:outline-none',
@@ -66,9 +66,9 @@ export const customFlowbiteTheme = {
     navbar: {
         link: {
             base:
-                'flex items-center gap-2 py-2 px-3 rounded-radius-md text-ink-700 dark:text-ink-100 hover:bg-white/75 hover:text-ink-900 dark:hover:bg-ink-800/60 focus-visible:ring-2 focus-visible:ring-[var(--theme-focus-ring)]',
+                'flex items-center gap-2 py-2 px-3 rounded-radius-md text-ink-700 dark:text-ink-100 hover:bg-white/80 hover:text-ink-900 dark:hover:bg-ink-800/70 focus-visible:ring-2 focus-visible:ring-[var(--theme-focus-ring)] transition-all duration-200',
             active: {
-                on: 'bg-white/85 shadow-sm shadow-slate-900/5 dark:bg-ink-800/60 text-ink-900 dark:text-white',
+                on: 'bg-white/90 shadow-[0_22px_48px_-28px_rgba(15,23,42,0.26)] backdrop-blur-xl dark:bg-ink-800/70 text-ink-900 dark:text-white',
                 off: '',
             },
         },
@@ -86,7 +86,7 @@ export const customFlowbiteTheme = {
         },
         content: {
             base:
-                'glass-modal__surface relative w-full p-0 m-4 sm:m-6 max-w-lg sm:max-w-xl rounded-radius-lg border border-slate-200/75 shadow-[0_30px_80px_-48px_rgba(15,23,42,0.42)] backdrop-blur-2xl bg-white/82 dark:bg-ink-900/60 dark:border-white/10',
+                'glass-modal__surface relative w-full overflow-hidden p-0 m-4 sm:m-6 max-w-lg sm:max-w-xl rounded-radius-lg border border-white/72 shadow-[0_52px_132px_-64px_rgba(15,23,42,0.28)] backdrop-blur-2xl bg-white/84 dark:bg-ink-900/68 dark:border-white/10',
         },
         header: {
             base: 'flex items-start justify-between py-3 px-4 border-b border-slate-200/70 dark:border-ink-700/60',
@@ -140,7 +140,7 @@ export const customFlowbiteTheme = {
     card: {
         root: {
             base:
-                'liquid-hybrid-tile flex rounded-[1.35rem] border border-white/65 bg-white/72 shadow-[0_26px_80px_-58px_rgba(15,23,42,0.6)] backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-950/58',
+                'liquid-hybrid-tile flex rounded-[1.35rem] border border-white/72 bg-white/84 shadow-[0_46px_124px_-66px_rgba(15,23,42,0.28)] backdrop-blur-2xl dark:border-slate-700/60 dark:bg-slate-950/62',
             children: 'flex h-full flex-col justify-center gap-4 p-6',
             horizontal: {
                 off: 'flex-col',
@@ -162,7 +162,7 @@ export const customFlowbiteTheme = {
             base: 'relative w-full',
             input: {
                 base:
-                    'glass-input theme-control-input liquid-hybrid-input block w-full rounded-radius-md border border-slate-300/90 bg-white/92 text-ink-900 placeholder-ink-400 shadow-[0_1px_1px_rgba(15,23,42,0.06)] focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700 dark:placeholder-ink-500',
+                    'glass-input theme-control-input liquid-hybrid-input block w-full rounded-radius-md border border-slate-200/90 bg-white/88 text-ink-900 placeholder-ink-400 shadow-[0_14px_32px_-26px_rgba(15,23,42,0.18)] focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700 dark:placeholder-ink-500',
                 colors: {
                     gray: '',
                 },
@@ -178,7 +178,7 @@ export const customFlowbiteTheme = {
     },
     textarea: {
         base:
-            'glass-input theme-control-input liquid-hybrid-input block w-full rounded-radius-md border border-slate-300/90 bg-white/92 text-sm text-ink-900 placeholder-ink-400 shadow-[0_1px_1px_rgba(15,23,42,0.06)] focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700 dark:placeholder-ink-500',
+            'glass-input theme-control-input liquid-hybrid-input block w-full rounded-radius-md border border-slate-200/90 bg-white/88 text-sm text-ink-900 placeholder-ink-400 shadow-[0_14px_32px_-26px_rgba(15,23,42,0.18)] focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700 dark:placeholder-ink-500',
         colors: {
             gray: '',
         },
@@ -192,7 +192,7 @@ export const customFlowbiteTheme = {
             base: 'relative w-full',
             select: {
                 base:
-                    'glass-input theme-control-input liquid-hybrid-input block w-full rounded-radius-md border border-slate-300/90 bg-white/92 text-ink-900 shadow-[0_1px_1px_rgba(15,23,42,0.06)] focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700',
+                    'glass-input theme-control-input liquid-hybrid-input block w-full rounded-radius-md border border-slate-200/90 bg-white/88 text-ink-900 shadow-[0_14px_32px_-26px_rgba(15,23,42,0.18)] focus:border-[var(--theme-control-focus)] focus:ring-[var(--theme-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-ink-800 dark:text-ink-100 dark:border-ink-700',
                 sizes: {
                     sm: 'p-2 text-sm',
                     md: 'p-2.5 text-sm',
@@ -204,12 +204,12 @@ export const customFlowbiteTheme = {
     tooltip: {
         target: 'focus:outline-none',
         base:
-            'absolute z-10 inline-block rounded-radius-md px-3 py-1.5 text-xs font-medium shadow-soft backdrop-blur bg-white/92 text-ink-900 ring-1 ring-slate-200/80 dark:bg-ink-900/70 dark:text-ink-100 dark:ring-white/10',
+            'absolute z-10 inline-block rounded-radius-md px-3 py-1.5 text-xs font-medium shadow-[0_24px_48px_-24px_rgba(15,23,42,0.26)] backdrop-blur-xl bg-white/96 text-ink-900 ring-1 ring-white/80 dark:bg-ink-900/76 dark:text-ink-100 dark:ring-white/10',
         arrow: {
-            base: 'absolute h-2 w-2 rotate-45 bg-white/92 dark:bg-ink-900/70',
+            base: 'absolute h-2 w-2 rotate-45 bg-white/96 dark:bg-ink-900/70',
             style: {
                 dark: 'bg-ink-900/70',
-                light: 'bg-white/92',
+                light: 'bg-white/96',
             },
             placement: '-4px',
         },

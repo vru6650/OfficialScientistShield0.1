@@ -24,8 +24,10 @@ const PageView = ({ slug, fallback }) => {
 
     if (isLoading) {
         return (
-            <div className='flex min-h-[60vh] items-center justify-center'>
-                <Spinner size='xl' />
+            <div className='workspace-page'>
+                <div className='workspace-page__content workspace-page__content--story flex min-h-[60vh] items-center justify-center px-4 py-12'>
+                    <Spinner size='xl' />
+                </div>
             </div>
         );
     }
@@ -37,20 +39,26 @@ const PageView = ({ slug, fallback }) => {
             }
 
             return (
-                <div className='mx-auto max-w-4xl px-4 py-16 text-center'>
-                    <h1 className='text-3xl font-semibold text-gray-900 dark:text-white'>Page coming soon</h1>
-                    <p className='mt-2 text-sm text-gray-500 dark:text-gray-400'>
-                        We&apos;re still crafting this experience. Please check back later.
-                    </p>
+                <div className='workspace-page'>
+                    <div className='workspace-page__content workspace-page__content--tight px-4 py-16'>
+                        <div className='workspace-surface px-8 py-12 text-center'>
+                            <h1 className='text-3xl font-semibold text-gray-900 dark:text-white'>Page coming soon</h1>
+                            <p className='mt-2 text-sm text-gray-500 dark:text-gray-400'>
+                                We&apos;re still crafting this experience. Please check back later.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             );
         }
 
         return (
-            <div className='mx-auto max-w-4xl px-4 py-16'>
-                <Alert color='failure'>
-                    {error?.response?.data?.message || error?.message || 'Failed to load the requested page.'}
-                </Alert>
+            <div className='workspace-page'>
+                <div className='workspace-page__content workspace-page__content--tight px-4 py-16'>
+                    <Alert color='failure'>
+                        {error?.response?.data?.message || error?.message || 'Failed to load the requested page.'}
+                    </Alert>
+                </div>
             </div>
         );
     }

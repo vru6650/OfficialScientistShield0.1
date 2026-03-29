@@ -8,15 +8,15 @@ const WALLPAPER_PRESETS = {
     liquid: {
         light: {
             wallpaper:
-                'radial-gradient(1460px 880px at 10% -14%, rgba(110, 205, 255, 0.34), transparent 56%), radial-gradient(1280px 780px at 88% -10%, rgba(255, 197, 128, 0.2), transparent 62%), radial-gradient(1120px 700px at 20% 112%, rgba(145, 228, 255, 0.2), transparent 72%), radial-gradient(980px 640px at 78% 120%, rgba(255, 255, 255, 0.3), transparent 74%), linear-gradient(180deg, rgba(246, 250, 255, 0.98), rgba(232, 242, 255, 0.94))',
-            auroraPrimary: 'radial-gradient(860px 560px at 16% 6%, rgba(66, 186, 255, 0.24), transparent 74%)',
-            auroraSecondary: 'radial-gradient(920px 580px at 88% 18%, rgba(255, 194, 120, 0.18), transparent 76%)',
-            orbTop: 'rgba(255, 255, 255, 0.66)',
-            orbBottom: 'rgba(66, 186, 255, 0.32)',
-            grid: 'rgba(120, 178, 236, 0.14)',
+                'radial-gradient(1520px 900px at 8% -18%, rgba(102, 214, 255, 0.38), transparent 56%), radial-gradient(1300px 780px at 92% -14%, rgba(255, 196, 138, 0.24), transparent 60%), radial-gradient(1100px 720px at 24% 112%, rgba(116, 236, 214, 0.22), transparent 72%), radial-gradient(980px 640px at 78% 118%, rgba(255, 255, 255, 0.34), transparent 74%), linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(236, 244, 255, 0.94))',
+            auroraPrimary: 'radial-gradient(900px 580px at 14% 6%, rgba(84, 198, 255, 0.28), transparent 74%)',
+            auroraSecondary: 'radial-gradient(960px 600px at 88% 18%, rgba(255, 192, 122, 0.2), transparent 76%)',
+            orbTop: 'rgba(255, 255, 255, 0.72)',
+            orbBottom: 'rgba(88, 196, 255, 0.34)',
+            grid: 'rgba(126, 178, 236, 0.12)',
             horizon:
-                'radial-gradient(150% 200% at 48% 92%, rgba(110, 205, 255, 0.2), transparent 64%), radial-gradient(140% 180% at 14% 94%, rgba(255, 255, 255, 0.24), transparent 72%)',
-            noise: 0.06,
+                'radial-gradient(150% 200% at 48% 92%, rgba(84, 198, 255, 0.22), transparent 64%), radial-gradient(140% 180% at 14% 94%, rgba(255, 255, 255, 0.24), transparent 72%)',
+            noise: 0.05,
         },
         dark: {
             wallpaper:
@@ -34,14 +34,14 @@ const WALLPAPER_PRESETS = {
     sunrise: {
         light: {
             wallpaper:
-                'radial-gradient(1400px 820px at 10% -16%, rgba(255, 206, 164, 0.78), transparent 54%), radial-gradient(1200px 740px at 86% -10%, rgba(255, 154, 204, 0.46), transparent 64%), radial-gradient(1020px 600px at 26% 110%, rgba(126, 198, 255, 0.36), transparent 72%), radial-gradient(940px 580px at 76% 118%, rgba(255, 196, 128, 0.32), transparent 72%), linear-gradient(180deg, rgba(255, 245, 234, 0.98), rgba(255, 226, 206, 0.92))',
-            auroraPrimary: 'radial-gradient(760px 520px at 16% 6%, rgba(255, 190, 146, 0.34), transparent 72%)',
-            auroraSecondary: 'radial-gradient(820px 520px at 88% 20%, rgba(255, 148, 202, 0.3), transparent 74%)',
-            orbTop: 'rgba(255, 243, 226, 0.62)',
-            orbBottom: 'rgba(255, 178, 128, 0.44)',
-            grid: 'rgba(255, 190, 160, 0.16)',
+                'radial-gradient(1440px 840px at 10% -16%, rgba(255, 210, 168, 0.76), transparent 54%), radial-gradient(1240px 760px at 86% -10%, rgba(255, 178, 146, 0.34), transparent 64%), radial-gradient(1040px 620px at 26% 110%, rgba(132, 204, 255, 0.34), transparent 72%), radial-gradient(940px 580px at 76% 118%, rgba(255, 210, 150, 0.32), transparent 72%), linear-gradient(180deg, rgba(255, 247, 238, 0.98), rgba(255, 232, 214, 0.92))',
+            auroraPrimary: 'radial-gradient(780px 520px at 16% 6%, rgba(255, 192, 148, 0.32), transparent 72%)',
+            auroraSecondary: 'radial-gradient(840px 520px at 88% 20%, rgba(255, 170, 136, 0.24), transparent 74%)',
+            orbTop: 'rgba(255, 244, 230, 0.64)',
+            orbBottom: 'rgba(255, 184, 132, 0.42)',
+            grid: 'rgba(255, 194, 160, 0.14)',
             horizon:
-                'radial-gradient(140% 180% at 48% 92%, rgba(255, 196, 140, 0.42), transparent 62%), radial-gradient(120% 140% at 18% 94%, rgba(255, 240, 220, 0.28), transparent 74%)',
+                'radial-gradient(140% 180% at 48% 92%, rgba(255, 200, 144, 0.38), transparent 62%), radial-gradient(120% 140% at 18% 94%, rgba(255, 242, 222, 0.3), transparent 74%)',
             noise: 0.08,
         },
         dark: {
@@ -60,15 +60,15 @@ const WALLPAPER_PRESETS = {
     day: {
         light: {
             wallpaper:
-                'radial-gradient(1420px 840px at 12% -16%, rgba(128, 206, 255, 0.42), transparent 54%), radial-gradient(1240px 760px at 90% -12%, rgba(144, 200, 255, 0.36), transparent 60%), radial-gradient(1080px 640px at 20% 108%, rgba(120, 236, 212, 0.36), transparent 70%), radial-gradient(940px 580px at 76% 116%, rgba(255, 214, 142, 0.26), transparent 72%), linear-gradient(180deg, rgba(246, 250, 255, 0.98), rgba(228, 238, 252, 0.92))',
-            auroraPrimary: 'radial-gradient(760px 520px at 16% 4%, rgba(82, 196, 255, 0.3), transparent 72%)',
-            auroraSecondary: 'radial-gradient(820px 520px at 90% 18%, rgba(76, 222, 204, 0.26), transparent 74%)',
-            orbTop: 'rgba(255, 255, 255, 0.64)',
-            orbBottom: 'rgba(72, 186, 255, 0.44)',
-            grid: 'rgba(148, 191, 225, 0.16)',
+                'radial-gradient(1460px 860px at 12% -16%, rgba(132, 212, 255, 0.42), transparent 54%), radial-gradient(1260px 760px at 90% -12%, rgba(140, 208, 255, 0.32), transparent 60%), radial-gradient(1100px 660px at 22% 108%, rgba(118, 236, 214, 0.32), transparent 70%), radial-gradient(980px 600px at 76% 116%, rgba(255, 216, 150, 0.24), transparent 72%), linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(232, 241, 252, 0.92))',
+            auroraPrimary: 'radial-gradient(800px 540px at 16% 4%, rgba(86, 200, 255, 0.32), transparent 72%)',
+            auroraSecondary: 'radial-gradient(860px 540px at 90% 18%, rgba(88, 224, 206, 0.24), transparent 74%)',
+            orbTop: 'rgba(255, 255, 255, 0.68)',
+            orbBottom: 'rgba(78, 192, 255, 0.42)',
+            grid: 'rgba(148, 191, 225, 0.14)',
             horizon:
-                'radial-gradient(150% 200% at 48% 92%, rgba(122, 210, 255, 0.26), transparent 62%), radial-gradient(120% 140% at 12% 92%, rgba(255, 255, 255, 0.22), transparent 74%)',
-            noise: 0.08,
+                'radial-gradient(150% 200% at 48% 92%, rgba(126, 214, 255, 0.28), transparent 62%), radial-gradient(120% 140% at 12% 92%, rgba(255, 255, 255, 0.24), transparent 74%)',
+            noise: 0.07,
         },
         dark: {
             wallpaper:
@@ -86,14 +86,14 @@ const WALLPAPER_PRESETS = {
     sunset: {
         light: {
             wallpaper:
-                'radial-gradient(1420px 840px at 14% -16%, rgba(255, 190, 170, 0.74), transparent 54%), radial-gradient(1200px 760px at 86% -10%, rgba(255, 150, 210, 0.46), transparent 64%), radial-gradient(1040px 640px at 26% 112%, rgba(148, 196, 255, 0.32), transparent 72%), radial-gradient(960px 600px at 74% 118%, rgba(255, 194, 140, 0.32), transparent 72%), linear-gradient(180deg, rgba(255, 237, 232, 0.96), rgba(255, 214, 204, 0.9))',
-            auroraPrimary: 'radial-gradient(760px 520px at 12% 2%, rgba(255, 172, 142, 0.34), transparent 74%)',
-            auroraSecondary: 'radial-gradient(840px 520px at 90% 18%, rgba(244, 142, 214, 0.32), transparent 74%)',
-            orbTop: 'rgba(255, 234, 220, 0.54)',
-            orbBottom: 'rgba(255, 162, 122, 0.36)',
-            grid: 'rgba(255, 170, 160, 0.16)',
+                'radial-gradient(1460px 860px at 14% -16%, rgba(255, 196, 170, 0.72), transparent 54%), radial-gradient(1220px 760px at 86% -10%, rgba(255, 170, 146, 0.34), transparent 64%), radial-gradient(1060px 660px at 26% 112%, rgba(154, 202, 255, 0.3), transparent 72%), radial-gradient(980px 620px at 74% 118%, rgba(255, 198, 144, 0.3), transparent 72%), linear-gradient(180deg, rgba(255, 240, 236, 0.96), rgba(255, 220, 208, 0.9))',
+            auroraPrimary: 'radial-gradient(780px 520px at 12% 2%, rgba(255, 176, 142, 0.32), transparent 74%)',
+            auroraSecondary: 'radial-gradient(860px 520px at 90% 18%, rgba(255, 168, 140, 0.24), transparent 74%)',
+            orbTop: 'rgba(255, 236, 224, 0.56)',
+            orbBottom: 'rgba(255, 166, 126, 0.36)',
+            grid: 'rgba(255, 174, 160, 0.14)',
             horizon:
-                'radial-gradient(150% 200% at 50% 92%, rgba(255, 164, 122, 0.42), transparent 60%), radial-gradient(120% 140% at 14% 92%, rgba(255, 220, 210, 0.28), transparent 74%)',
+                'radial-gradient(150% 200% at 50% 92%, rgba(255, 168, 126, 0.38), transparent 60%), radial-gradient(120% 140% at 14% 92%, rgba(255, 222, 212, 0.3), transparent 74%)',
             noise: 0.08,
         },
         dark: {
@@ -112,15 +112,15 @@ const WALLPAPER_PRESETS = {
     night: {
         light: {
             wallpaper:
-                'radial-gradient(1420px 840px at 12% -16%, rgba(176, 198, 255, 0.34), transparent 58%), radial-gradient(1240px 760px at 90% -12%, rgba(140, 176, 255, 0.32), transparent 66%), radial-gradient(1040px 640px at 24% 114%, rgba(158, 210, 255, 0.32), transparent 72%), radial-gradient(960px 620px at 74% 118%, rgba(110, 172, 255, 0.28), transparent 72%), linear-gradient(180deg, rgba(236, 240, 255, 0.96), rgba(208, 218, 246, 0.9))',
-            auroraPrimary: 'radial-gradient(760px 520px at 10% 0%, rgba(180, 210, 255, 0.34), transparent 74%)',
-            auroraSecondary: 'radial-gradient(820px 520px at 90% 18%, rgba(162, 184, 255, 0.28), transparent 76%)',
-            orbTop: 'rgba(214, 222, 255, 0.42)',
-            orbBottom: 'rgba(132, 170, 255, 0.34)',
-            grid: 'rgba(180, 196, 255, 0.16)',
+                'radial-gradient(1460px 860px at 12% -16%, rgba(178, 202, 255, 0.34), transparent 58%), radial-gradient(1260px 780px at 90% -12%, rgba(146, 182, 255, 0.28), transparent 66%), radial-gradient(1060px 660px at 24% 114%, rgba(164, 214, 255, 0.3), transparent 72%), radial-gradient(980px 640px at 74% 118%, rgba(116, 176, 255, 0.24), transparent 72%), linear-gradient(180deg, rgba(240, 244, 255, 0.96), rgba(216, 226, 248, 0.9))',
+            auroraPrimary: 'radial-gradient(780px 520px at 10% 0%, rgba(182, 212, 255, 0.32), transparent 74%)',
+            auroraSecondary: 'radial-gradient(840px 520px at 90% 18%, rgba(166, 188, 255, 0.24), transparent 76%)',
+            orbTop: 'rgba(218, 226, 255, 0.44)',
+            orbBottom: 'rgba(138, 174, 255, 0.32)',
+            grid: 'rgba(182, 198, 255, 0.14)',
             horizon:
-                'radial-gradient(150% 200% at 50% 94%, rgba(170, 196, 255, 0.32), transparent 60%), radial-gradient(120% 140% at 14% 94%, rgba(220, 230, 255, 0.28), transparent 74%)',
-            noise: 0.1,
+                'radial-gradient(150% 200% at 50% 94%, rgba(174, 200, 255, 0.28), transparent 60%), radial-gradient(120% 140% at 14% 94%, rgba(222, 232, 255, 0.3), transparent 74%)',
+            noise: 0.09,
         },
         dark: {
             wallpaper:
@@ -304,6 +304,7 @@ export default function DesktopWallpaper({
                 <div className="macos-wallpaper__orb macos-wallpaper__orb--bottom" />
                 <div className="macos-wallpaper__horizon" />
                 <div className="macos-wallpaper__caustics" />
+                <div className="macos-wallpaper__prism" />
                 <div className="macos-wallpaper__sheen" />
                 <div className="macos-wallpaper__grid macos-wallpaper__grid--light" />
                 <div className="macos-wallpaper__grid macos-wallpaper__grid--dark" />

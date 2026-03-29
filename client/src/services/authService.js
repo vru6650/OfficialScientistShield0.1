@@ -51,7 +51,8 @@ export const signUpUser = async (formData) => {
 
 
 export const getPost = async (postId) => {
-    const res = await apiFetch(`/api/v1/post/getposts?postId=${postId}`);
+    const params = new URLSearchParams({ postId });
+    const res = await apiFetch(`/api/v1/post/getposts?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch post data.');
     const data = await res.json();
     return data.posts[0];

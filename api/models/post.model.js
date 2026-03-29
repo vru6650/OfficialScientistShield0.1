@@ -15,6 +15,12 @@ const postSchema = new mongoose.Schema(
             required: true,
             unique: true,
         },
+        summary: {
+            type: String,
+            trim: true,
+            maxlength: 280,
+            default: '',
+        },
         image: {
             type: String,
             default:

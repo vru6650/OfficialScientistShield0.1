@@ -2,9 +2,10 @@
   "name": "Scientist Shield",
   "short_name": "SciShield",
   "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0A84FF",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "background_color": "#eef6ff",
+  "theme_color": "#1677ff",
   "description": "Tutorials, problems, quizzes, and tools for developers.",
   "icons": [
     {

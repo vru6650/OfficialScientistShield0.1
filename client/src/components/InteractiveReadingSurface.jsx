@@ -17,6 +17,7 @@ import {
     HiOutlineVolumeUp,
     HiOutlineSelector,
     HiOutlineCollection,
+    HiOutlineSearch,
 } from 'react-icons/hi';
 import { FaHighlighter } from 'react-icons/fa';
 
@@ -29,7 +30,22 @@ const highlightPalette = [
     { id: 'violet', label: 'Iris', className: 'reader-highlight-violet', swatch: '#a855f7' },
 ];
 
+const displayFontOptions = [
+    { id: 'serif', label: 'Serif' },
+    { id: 'sans', label: 'Sans' },
+    { id: 'mono', label: 'Mono' },
+];
+
 const createStorageKey = (chapterId) => `${HIGHLIGHT_STORAGE_PREFIX}${chapterId}`;
+
+const getContainerRelativeTop = (container, element) => {
+    if (!container || !element) return 0;
+
+    const containerRect = container.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+
+    return elementRect.top - containerRect.top + container.scrollTop;
+};
 
 const unwrapMarks = (container, attribute) => {
     if (!container) return;
@@ -325,21 +341,30 @@ const getSelectionOffsets = (container, range) => {
 };
 
 const InteractiveReadingSurface = ({
-                                       content,
-                                       parserOptions,
-                                       contentStyles,
-                                       contentMaxWidth,
-                                       surfaceClass,
-                                       className,
-                                       chapterId,
-                                       readingMinutes,
-                                       hideUtilityBar,
-                                       hideHighlightsPanel,
-                                   }) => {
+    content,
+    parserOptions,
+    contentStyles,
+    contentMaxWidth,
+    surfaceClass,
+    className,
+    chapterId,
+    readingMinutes,
+    hideUtilityBar,
+    hideToolbar,
+    hideHighlightsPanel,
+    variant = 'default',
+    scrollRootId,
+    readerSettings,
+    isDisplayWindowOpen,
+    onDisplaySettingsButtonClick,
+    onProgressChange,
+}) => {
     const containerRef = useRef(null);
     const selectionMenuRef = useRef(null);
     const speechUtteranceRef = useRef(null);
     const fullTextRef = useRef('');
+    const initialStoredProgressRef = useRef(null);
+    const protectedInitialProgressRef = useRef(false);
     const [highlights, setHighlights] = useState([]);
     const [selectionMenu, setSelectionMenu] = useState(null);
     const [dictionaryState, setDictionaryState] = useState({
@@ -360,6 +385,55 @@ const InteractiveReadingSurface = ({
     const [showHighlights, setShowHighlights] = useState(true);
     const [progress, setProgress] = useState(0);
     const searchInputRef = useRef(null);
+    const isPostArticleVariant = variant === 'post-article';
+    const displaySettingsAvailable = Boolean(
+        isPostArticleVariant &&
+        readerSettings &&
+        typeof onDisplaySettingsButtonClick === 'function'
+    );
+    const activeFontLabel = useMemo(
+        () => displayFontOptions.find((option) => option.id === readerSettings?.fontFamily)?.label || 'Serif',
+        [readerSettings?.fontFamily]
+    );
+    const remainingMinutes = useMemo(() => {
+        if (!readingMinutes || readingMinutes <= 0) {
+            return 0;
+        }
+
+        return Math.max(0, Math.ceil(readingMinutes * (1 - progress / 100)));
+    }, [progress, readingMinutes]);
+    const wrapperClassName = [
+        'interactive-reading-surface',
+        isPostArticleVariant ? 'interactive-reading-surface--post-article' : '',
+        'space-y-6',
+    ].filter(Boolean).join(' ');
+    const utilityBarClassName = [
+        'reader-utility-bar',
+        isPostArticleVariant ? 'reader-utility-bar--post-article' : '',
+    ].filter(Boolean).join(' ');
+    const highlightsPanelClassName = [
+        'reader-highlights-panel',
+        isPostArticleVariant ? 'reader-highlights-panel--post-article' : '',
+    ].filter(Boolean).join(' ');
+    const dictionaryPanelClassName = [
+        'reader-dictionary-panel',
+        isPostArticleVariant ? 'reader-dictionary-panel--post-article' : '',
+    ].filter(Boolean).join(' ');
+    const selectionMenuClassName = [
+        'reader-selection-menu',
+        isPostArticleVariant ? 'reader-selection-menu--post-article' : '',
+    ].filter(Boolean).join(' ');
+    const selectionCardClassName = [
+        'reader-selection-card',
+        isPostArticleVariant ? 'reader-selection-card--post-article' : '',
+    ].filter(Boolean).join(' ');
+    const hideReaderToolbar = Boolean(hideUtilityBar || hideToolbar);
+    const scrollRootAttributes = isPostArticleVariant
+        ? {
+            id: scrollRootId,
+            'data-reading-scroll-root': 'true',
+        }
+        : {};
 
     const parsedContent = useMemo(() => parse(content || '', parserOptions), [content, parserOptions]);
 
@@ -387,6 +461,26 @@ const InteractiveReadingSurface = ({
             console.error('Failed to load highlights for chapter', error);
         }
         setHighlights([]);
+    }, [chapterId, content]);
+
+    useEffect(() => {
+        if (!chapterId || typeof window === 'undefined') {
+            initialStoredProgressRef.current = null;
+            protectedInitialProgressRef.current = false;
+            return;
+        }
+
+        try {
+            const raw = localStorage.getItem(`reading-progress:${chapterId}`);
+            const parsed = raw ? Number.parseFloat(raw) : NaN;
+            initialStoredProgressRef.current = Number.isFinite(parsed)
+                ? Math.min(Math.max(parsed, 0), 1)
+                : null;
+        } catch (_) {
+            initialStoredProgressRef.current = null;
+        }
+
+        protectedInitialProgressRef.current = false;
     }, [chapterId, content]);
 
     useEffect(() => {
@@ -520,18 +614,102 @@ const InteractiveReadingSurface = ({
         setCurrentHit(-1);
     }, [removeSearchMarks]);
 
+    const jumpToHeading = useCallback((direction) => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const headings = Array.from(container.querySelectorAll('h2, h3'));
+        if (!headings.length) return;
+
+        if (isPostArticleVariant) {
+            const currentTop = container.scrollTop + 16;
+            const target =
+                direction === 'prev'
+                    ? headings
+                        .filter((heading) => getContainerRelativeTop(container, heading) < currentTop - 4)
+                        .pop()
+                    : headings.find((heading) => getContainerRelativeTop(container, heading) > currentTop + 16);
+
+            if (target) {
+                const targetTop = Math.max(0, getContainerRelativeTop(container, target) - 24);
+                container.scrollTo({ top: targetTop, behavior: 'smooth' });
+            }
+            return;
+        }
+
+        const y = window.scrollY + 8;
+        const target =
+            direction === 'prev'
+                ? headings.filter((heading) => heading.getBoundingClientRect().top + window.scrollY < y).pop()
+                : headings.find((heading) => heading.getBoundingClientRect().top + window.scrollY > y);
+
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [isPostArticleVariant]);
+
     // Progress: compute relative scroll progress through the reading surface
     useEffect(() => {
         const onScroll = () => {
             const c = containerRef.current;
             if (!c) return;
-            const rect = c.getBoundingClientRect();
-            const start = window.scrollY + rect.top;
-            const end = start + c.scrollHeight - window.innerHeight;
-            const denom = Math.max(1, end - start);
-            const raw = (window.scrollY - start) / denom;
-            const pct = Math.min(1, Math.max(0, raw)) * 100;
+            const pct = (() => {
+                if (isPostArticleVariant) {
+                    const scrollableDistance = c.scrollHeight - c.clientHeight;
+                    if (scrollableDistance <= 1) {
+                        return 100;
+                    }
+
+                    return Math.min(1, Math.max(0, c.scrollTop / scrollableDistance)) * 100;
+                }
+
+                const rect = c.getBoundingClientRect();
+                const start = window.scrollY + rect.top;
+                const end = start + c.scrollHeight - window.innerHeight;
+                const denom = Math.max(1, end - start);
+                const raw = (window.scrollY - start) / denom;
+                return Math.min(1, Math.max(0, raw)) * 100;
+            })();
+            const fraction = Math.min(1, Math.max(0, pct / 100));
+            const savedFraction = initialStoredProgressRef.current;
+
+            if (
+                !protectedInitialProgressRef.current
+                && Number.isFinite(savedFraction)
+                && savedFraction > fraction + 0.02
+            ) {
+                protectedInitialProgressRef.current = true;
+                const savedPercent = savedFraction * 100;
+                const savedRemainingMinutes = readingMinutes && readingMinutes > 0
+                    ? Math.max(0, Math.ceil(readingMinutes * (1 - savedFraction)))
+                    : 0;
+
+                setProgress(savedPercent);
+                if (typeof onProgressChange === 'function') {
+                    onProgressChange({
+                        percent: savedPercent,
+                        fraction: savedFraction,
+                        remainingMinutes: savedRemainingMinutes,
+                        mode: 'article',
+                    });
+                }
+                return;
+            }
+
+            protectedInitialProgressRef.current = true;
             setProgress(pct);
+            if (typeof onProgressChange === 'function') {
+                const nextRemainingMinutes = readingMinutes && readingMinutes > 0
+                    ? Math.max(0, Math.ceil(readingMinutes * (1 - fraction)))
+                    : 0;
+
+                onProgressChange({
+                    percent: pct,
+                    fraction,
+                    remainingMinutes: nextRemainingMinutes,
+                    mode: 'article',
+                });
+            }
             // Persist reading progress per chapter for resume feature
             try {
                 if (chapterId) {
@@ -544,13 +722,14 @@ const InteractiveReadingSurface = ({
             }
         };
         onScroll();
-        window.addEventListener('scroll', onScroll, { passive: true });
+        const scrollTarget = isPostArticleVariant ? containerRef.current : window;
+        scrollTarget?.addEventListener?.('scroll', onScroll, { passive: true });
         window.addEventListener('resize', onScroll);
         return () => {
-            window.removeEventListener('scroll', onScroll);
+            scrollTarget?.removeEventListener?.('scroll', onScroll);
             window.removeEventListener('resize', onScroll);
         };
-    }, [chapterId]);
+    }, [chapterId, isPostArticleVariant, onProgressChange, readingMinutes]);
 
     // Add anchor buttons to headings for easy permalinks
     useEffect(() => {
@@ -597,19 +776,9 @@ const InteractiveReadingSurface = ({
             } else if (e.key === 'n') {
                 jumpToHit(e.shiftKey ? 'prev' : 'next');
             } else if (e.key === 'h') {
-                // previous heading
-                const c = containerRef.current; if (!c) return;
-                const hs = Array.from(c.querySelectorAll('h2, h3'));
-                const y = window.scrollY + 8;
-                const prev = hs.filter(h => h.getBoundingClientRect().top + window.scrollY < y).pop();
-                if (prev) prev.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                jumpToHeading('prev');
             } else if (e.key === 'H') {
-                // next heading
-                const c = containerRef.current; if (!c) return;
-                const hs = Array.from(c.querySelectorAll('h2, h3'));
-                const y = window.scrollY + 8;
-                const next = hs.find(h => h.getBoundingClientRect().top + window.scrollY > y);
-                if (next) next.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                jumpToHeading('next');
             } else if (e.key === 'e') {
                 // export highlights
                 navigator.clipboard.writeText(JSON.stringify(highlights, null, 2)).then(() => setSelectionFeedback('Exported highlights.')).catch(() => setSelectionFeedback('Export failed.'));
@@ -621,7 +790,7 @@ const InteractiveReadingSurface = ({
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [jumpToHit, highlights, closeSelectionMenu]);
+    }, [jumpToHit, highlights, closeSelectionMenu, jumpToHeading]);
 
 
     const captureSelection = useCallback(() => {
@@ -980,154 +1149,198 @@ const InteractiveReadingSurface = ({
     };
 
     return (
-        <div className="space-y-6">
-            {!hideUtilityBar && (
-                <div className="reader-utility-bar" role="toolbar" aria-label="Reading tools">
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search in page…"
-                                ref={searchInputRef}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') { e.preventDefault(); if (e.shiftKey) jumpToHit('prev'); else jumpToHit('next'); }
-                                }}
-                                className="w-56 rounded-lg border border-slate-200 bg-white py-1.5 px-2 text-sm text-slate-700 outline-none ring-brand-400 focus:border-brand-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                            />
-                            {searchQuery && (
-                                <button
-                                    type="button"
-                                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                                    onClick={clearSearch}
-                                    aria-label="Clear search"
-                                >
-                                    <HiOutlineX />
-                                </button>
-                            )}
+        <div className={wrapperClassName} data-reader-variant={variant}>
+            {!hideReaderToolbar && (
+                isPostArticleVariant ? (
+                    displaySettingsAvailable ? (
+                        <div className={`${utilityBarClassName} reader-utility-bar--compact`} role="toolbar" aria-label="Display settings">
+                            <div className="reader-toolbar-row reader-toolbar-row--display-only">
+                                <div className="reader-toolbar-group reader-toolbar-group--display">
+                                    <button
+                                        type="button"
+                                        className={`reader-display-trigger ${isDisplayWindowOpen ? 'active' : ''}`}
+                                        onClick={onDisplaySettingsButtonClick}
+                                        aria-haspopup="dialog"
+                                        aria-expanded={Boolean(isDisplayWindowOpen)}
+                                    >
+                                        <span className="reader-display-trigger__glyph" aria-hidden="true">Aa</span>
+                                        <span className="reader-display-trigger__body">
+                                            <span className="reader-display-trigger__label">Font &amp; Display</span>
+                                            <span className="reader-display-trigger__meta">{activeFontLabel} · {readerSettings.fontSize}px</span>
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                            <span>{searchHits.length > 0 ? `${currentHit + 1}/${searchHits.length}` : '0/0'}</span>
-                            <button type="button" className="reader-nav-btn" onClick={() => jumpToHit('prev')} aria-label="Previous match">
-                                <HiOutlineChevronLeft />
-                            </button>
-                            <button type="button" className="reader-nav-btn" onClick={() => jumpToHit('next')} aria-label="Next match">
-                                <HiOutlineChevronRight />
-                            </button>
-                            <button
-                                type="button"
-                                className={`reader-toggle ${searchCaseSensitive ? 'active' : ''}`}
-                                onClick={() => setSearchCaseSensitive((v) => !v)}
-                                aria-pressed={searchCaseSensitive}
-                                title="Case sensitive"
-                            >
-                                Aa
-                            </button>
-                            <button
-                                type="button"
-                                className={`reader-toggle ${searchWholeWord ? 'active' : ''}`}
-                                onClick={() => setSearchWholeWord((v) => !v)}
-                                aria-pressed={searchWholeWord}
-                                title="Whole word"
-                            >
-                                W
-                            </button>
-                        </div>
+                    ) : null
+                ) : (
+                    <div className={utilityBarClassName} role="toolbar" aria-label="Reading tools">
+                        <div className="reader-toolbar-row">
+                            <div className="reader-toolbar-group reader-toolbar-group--search">
+                                <div className="reader-search-field">
+                                    {isPostArticleVariant && (
+                                        <span className="reader-search-field__icon" aria-hidden="true">
+                                            <HiOutlineSearch />
+                                        </span>
+                                    )}
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Search in page…"
+                                        ref={searchInputRef}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') { e.preventDefault(); if (e.shiftKey) jumpToHit('prev'); else jumpToHit('next'); }
+                                        }}
+                                        className="reader-search-field__input w-full rounded-lg border border-slate-200 bg-white py-1.5 px-2 text-sm text-slate-700 outline-none ring-brand-400 focus:border-brand-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            type="button"
+                                            className="reader-search-field__clear absolute right-1.5 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                                            onClick={clearSearch}
+                                            aria-label="Clear search"
+                                        >
+                                            <HiOutlineX />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="reader-toolbar-pill" aria-live="polite">
+                                    {searchHits.length > 0
+                                        ? `${currentHit + 1}/${searchHits.length}`
+                                        : searchQuery.trim()
+                                            ? '0 matches'
+                                            : 'Search'}
+                                </div>
+                                <div className="reader-toolbar-group reader-toolbar-group--filters">
+                                    <button type="button" className="reader-nav-btn" onClick={() => jumpToHit('prev')} aria-label="Previous match">
+                                        <HiOutlineChevronLeft />
+                                    </button>
+                                    <button type="button" className="reader-nav-btn" onClick={() => jumpToHit('next')} aria-label="Next match">
+                                        <HiOutlineChevronRight />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`reader-toggle ${searchCaseSensitive ? 'active' : ''}`}
+                                        onClick={() => setSearchCaseSensitive((v) => !v)}
+                                        aria-pressed={searchCaseSensitive}
+                                        title="Case sensitive"
+                                    >
+                                        {isPostArticleVariant ? 'Case' : 'Aa'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`reader-toggle ${searchWholeWord ? 'active' : ''}`}
+                                        onClick={() => setSearchWholeWord((v) => !v)}
+                                        aria-pressed={searchWholeWord}
+                                        title="Whole word"
+                                    >
+                                        {isPostArticleVariant ? 'Word' : 'W'}
+                                    </button>
+                                </div>
+                            </div>
 
-                        <div className="ml-2 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                            <button
-                                type="button"
-                                className="reader-nav-btn"
-                                onClick={() => {
-                                    const c = containerRef.current; if (!c) return;
-                                    const hs = Array.from(c.querySelectorAll('h2, h3'));
-                                    const y = window.scrollY + 8;
-                                    const prev = hs.filter(h => h.getBoundingClientRect().top + window.scrollY < y).pop();
-                                    if (prev) prev.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                }}
-                                aria-label="Previous heading"
-                            >
-                                <HiOutlineChevronDoubleLeft />
-                            </button>
-                            <button
-                                type="button"
-                                className="reader-nav-btn"
-                                onClick={() => {
-                                    const c = containerRef.current; if (!c) return;
-                                    const hs = Array.from(c.querySelectorAll('h2, h3'));
-                                    const y = window.scrollY + 8;
-                                    const next = hs.find(h => h.getBoundingClientRect().top + window.scrollY > y);
-                                    if (next) next.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                }}
-                                aria-label="Next heading"
-                            >
-                                <HiOutlineChevronDoubleRight />
-                            </button>
-                        </div>
-
-                        {highlights.length > 0 && (
-                            <div className="ml-3 flex items-center gap-1">
+                            <div className="reader-toolbar-group reader-toolbar-group--navigation">
                                 <button
                                     type="button"
                                     className="reader-nav-btn"
-                                    onClick={async () => {
-                                        try {
-                                            await navigator.clipboard.writeText(JSON.stringify(highlights, null, 2));
-                                            setSelectionFeedback('Exported highlights to clipboard.');
-                                        } catch (_) {
-                                            setSelectionFeedback('Unable to copy highlights.');
-                                        }
-                                    }}
-                                    aria-label="Export highlights"
-                                    title="Export highlights"
+                                    onClick={() => jumpToHeading('prev')}
+                                    aria-label="Previous heading"
                                 >
-                                    Export
+                                    <HiOutlineChevronDoubleLeft />
                                 </button>
                                 <button
                                     type="button"
                                     className="reader-nav-btn"
-                                    onClick={async () => {
-                                        try {
-                                            const text = await navigator.clipboard.readText();
-                                            const data = JSON.parse(text);
-                                            if (Array.isArray(data)) {
-                                                setHighlights(data);
-                                                setSelectionFeedback('Imported highlights from clipboard.');
-                                            } else {
-                                                setSelectionFeedback('Clipboard does not contain a highlight list.');
-                                            }
-                                        } catch (_) {
-                                            setSelectionFeedback('Unable to import highlights. Copy JSON first.');
-                                        }
-                                    }}
-                                    aria-label="Import highlights"
-                                    title="Import highlights"
+                                    onClick={() => jumpToHeading('next')}
+                                    aria-label="Next heading"
                                 >
-                                    Import
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`reader-toggle ${showHighlights ? 'active' : ''}`}
-                                    onClick={() => setShowHighlights((v) => !v)}
-                                    aria-pressed={showHighlights}
-                                    title={showHighlights ? 'Hide highlights' : 'Show highlights'}
-                                >
-                                    HL
+                                    <HiOutlineChevronDoubleRight />
                                 </button>
                             </div>
-                        )}
+
+                            {highlights.length > 0 && (
+                                <div className="reader-toolbar-group reader-toolbar-group--highlights">
+                                    <button
+                                        type="button"
+                                        className="reader-nav-btn"
+                                        onClick={async () => {
+                                            try {
+                                                await navigator.clipboard.writeText(JSON.stringify(highlights, null, 2));
+                                                setSelectionFeedback('Exported highlights to clipboard.');
+                                            } catch (_) {
+                                                setSelectionFeedback('Unable to copy highlights.');
+                                            }
+                                        }}
+                                        aria-label="Export highlights"
+                                        title="Export highlights"
+                                    >
+                                        Export
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="reader-nav-btn"
+                                        onClick={async () => {
+                                            try {
+                                                const text = await navigator.clipboard.readText();
+                                                const data = JSON.parse(text);
+                                                if (Array.isArray(data)) {
+                                                    setHighlights(data);
+                                                    setSelectionFeedback('Imported highlights from clipboard.');
+                                                } else {
+                                                    setSelectionFeedback('Clipboard does not contain a highlight list.');
+                                                }
+                                            } catch (_) {
+                                                setSelectionFeedback('Unable to import highlights. Copy JSON first.');
+                                            }
+                                        }}
+                                        aria-label="Import highlights"
+                                        title="Import highlights"
+                                    >
+                                        Import
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`reader-toggle ${showHighlights ? 'active' : ''}`}
+                                        onClick={() => setShowHighlights((v) => !v)}
+                                        aria-pressed={showHighlights}
+                                        title={showHighlights ? 'Hide highlights' : 'Show highlights'}
+                                    >
+                                        HL
+                                    </button>
+                                </div>
+                            )}
+
+                            {displaySettingsAvailable && (
+                                <div className="reader-toolbar-group reader-toolbar-group--display">
+                                    <button
+                                        type="button"
+                                        className={`reader-display-trigger ${isDisplayWindowOpen ? 'active' : ''}`}
+                                        onClick={onDisplaySettingsButtonClick}
+                                        aria-haspopup="dialog"
+                                        aria-expanded={Boolean(isDisplayWindowOpen)}
+                                    >
+                                        <span className="reader-display-trigger__glyph" aria-hidden="true">Aa</span>
+                                        <span className="reader-display-trigger__body">
+                                            <span className="reader-display-trigger__label">Font &amp; Display</span>
+                                            <span className="reader-display-trigger__meta">{activeFontLabel} · {readerSettings.fontSize}px</span>
+                                        </span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        <div className="reader-progress" aria-hidden="true">
+                            <div className="reader-progress-bar" style={{ width: `${progress}%` }} />
+                        </div>
                     </div>
-                    <div className="reader-progress" aria-hidden="true">
-                        <div className="reader-progress-bar" style={{ width: `${progress}%` }} />
-                    </div>
-                </div>
+                )
             )}
 
             <motion.div
                 ref={containerRef}
                 className={[className, surfaceClass].filter(Boolean).join(' ')}
                 data-reading-surface="true"
+                {...scrollRootAttributes}
                 style={{ ...contentStyles, maxWidth: contentMaxWidth }}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1141,16 +1354,16 @@ const InteractiveReadingSurface = ({
             {typeof document !== 'undefined' && !hideUtilityBar && (readingMinutes || 0) > 0 &&
                 createPortal(
                     <div
-                        className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full border border-slate-200/70 bg-white/90 px-3 py-1.5 text-xs text-slate-700 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 lg:hidden"
+                        className={`fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full border border-slate-200/70 bg-white/90 px-3 py-1.5 text-xs text-slate-700 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 lg:hidden ${isPostArticleVariant ? 'reader-time-pill--post-article' : ''}`}
                         aria-live="polite"
                     >
-                        {Math.round(progress)}% · {Math.max(0, Math.ceil((readingMinutes || 0) * (1 - progress / 100)))} min left
+                        {Math.round(progress)}% · {remainingMinutes} min left
                     </div>,
                     document.body
                 )}
 
             {!hideHighlightsPanel && highlights.length > 0 && (
-                <div className="reader-highlights-panel">
+                <div className={highlightsPanelClassName}>
                     <div className="reader-highlights-header">
                         <div className="flex items-center gap-2">
                             <FaHighlighter aria-hidden="true" />
@@ -1169,12 +1382,15 @@ const InteractiveReadingSurface = ({
                             .slice()
                             .sort((a, b) => a.start - b.start)
                             .map((highlight) => (
-                                <li key={highlight.id} className="reader-highlight-item">
+                                <li
+                                    key={highlight.id}
+                                    className={`reader-highlight-item ${isPostArticleVariant ? 'reader-highlight-item--post-article' : ''}`}
+                                >
                                     <span className={`reader-highlight-chip ${highlightPalette.find((c) => c.id === highlight.color)?.className || ''}`}>
                                         {highlight.text.trim().slice(0, 120)}
                                         {highlight.text.length > 120 ? '…' : ''}
                                     </span>
-                                    <div className="flex items-center gap-2">
+                                    <div className="reader-highlight-actions">
                                         <Tooltip content="Reveal highlight">
                                             <button
                                                 type="button"
@@ -1216,7 +1432,7 @@ const InteractiveReadingSurface = ({
                                         </button>
                                     </div>
                                     {highlight.note && (
-                                        <div className="mt-2 text-xs text-slate-600 dark:text-slate-300">
+                                        <div className="reader-highlight-note mt-2 text-xs text-slate-600 dark:text-slate-300">
                                             {highlight.note}
                                         </div>
                                     )}
@@ -1230,7 +1446,7 @@ const InteractiveReadingSurface = ({
                 {dictionaryState.open && (
                     <motion.div
                         key="dictionary"
-                        className="reader-dictionary-panel"
+                        className={dictionaryPanelClassName}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
@@ -1281,13 +1497,13 @@ const InteractiveReadingSurface = ({
                         <motion.div
                             ref={selectionMenuRef}
                             key="selection-menu"
-                            className="reader-selection-menu"
+                            className={selectionMenuClassName}
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             style={{ top: selectionMenu.position.y, left: selectionMenu.position.x }}
                         >
-                            <div className="reader-selection-card">
+                            <div className={selectionCardClassName}>
                                 <p className="reader-selection-text">{selectionMenu.text.slice(0, 80)}{selectionMenu.text.length > 80 ? '…' : ''}</p>
                                 <div className="reader-selection-section">
                                     <span className="reader-selection-section-title">Adjust range</span>
@@ -1418,7 +1634,14 @@ InteractiveReadingSurface.propTypes = {
     chapterId: PropTypes.string,
     readingMinutes: PropTypes.number,
     hideUtilityBar: PropTypes.bool,
+    hideToolbar: PropTypes.bool,
     hideHighlightsPanel: PropTypes.bool,
+    variant: PropTypes.string,
+    scrollRootId: PropTypes.string,
+    readerSettings: PropTypes.object,
+    isDisplayWindowOpen: PropTypes.bool,
+    onDisplaySettingsButtonClick: PropTypes.func,
+    onProgressChange: PropTypes.func,
 };
 
 export default InteractiveReadingSurface;

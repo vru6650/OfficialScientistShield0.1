@@ -3,50 +3,50 @@ import { alpha, createTheme } from '@mui/material/styles';
 const SURFACE_PRESET_STYLES = Object.freeze({
     liquid: {
         light: {
-            paper: alpha('#ffffff', 0.58),
-            border: alpha('#ffffff', 0.46),
-            glow: alpha('#5ad0ff', 0.28),
-            shadow: '0 24px 80px -48px rgba(15, 23, 42, 0.5)',
-            blur: 22,
+            paper: alpha('#ffffff', 0.86),
+            border: alpha('#d6e8ff', 0.92),
+            glow: alpha('#7ad0ff', 0.28),
+            shadow: '0 46px 128px -68px rgba(15, 23, 42, 0.22)',
+            blur: 32,
         },
         dark: {
-            paper: alpha('#0b1220', 0.72),
-            border: alpha('#94a3b8', 0.3),
-            glow: alpha('#7fd4ff', 0.22),
-            shadow: '0 28px 90px -48px rgba(0, 0, 0, 0.72)',
-            blur: 24,
+            paper: alpha('#0b1220', 0.78),
+            border: alpha('#94a3b8', 0.34),
+            glow: alpha('#7fd4ff', 0.24),
+            shadow: '0 36px 108px -54px rgba(0, 0, 0, 0.78)',
+            blur: 28,
         },
     },
     sequoia: {
         light: {
-            paper: alpha('#ffffff', 0.66),
-            border: alpha('#e2e8f0', 0.6),
-            glow: alpha('#7ac7ff', 0.26),
-            shadow: '0 26px 88px -52px rgba(15, 23, 42, 0.46)',
-            blur: 24,
+            paper: alpha('#ffffff', 0.88),
+            border: alpha('#d9e7ff', 0.84),
+            glow: alpha('#8bd2ff', 0.28),
+            shadow: '0 48px 134px -72px rgba(15, 23, 42, 0.24)',
+            blur: 32,
         },
         dark: {
-            paper: alpha('#0a1020', 0.78),
-            border: alpha('#7dd3fc', 0.24),
-            glow: alpha('#7dd3fc', 0.2),
-            shadow: '0 30px 96px -52px rgba(0, 0, 0, 0.78)',
-            blur: 24,
+            paper: alpha('#0a1020', 0.82),
+            border: alpha('#7dd3fc', 0.28),
+            glow: alpha('#7dd3fc', 0.22),
+            shadow: '0 38px 112px -58px rgba(0, 0, 0, 0.82)',
+            blur: 28,
         },
     },
     graphite: {
         light: {
-            paper: alpha('#f8fafc', 0.76),
-            border: alpha('#cbd5e1', 0.64),
-            glow: alpha('#60a5fa', 0.18),
-            shadow: '0 24px 72px -46px rgba(15, 23, 42, 0.42)',
-            blur: 18,
+            paper: alpha('#fbfdff', 0.88),
+            border: alpha('#d6dee9', 0.82),
+            glow: alpha('#7bb0ff', 0.22),
+            shadow: '0 40px 108px -60px rgba(15, 23, 42, 0.24)',
+            blur: 26,
         },
         dark: {
-            paper: alpha('#0b1322', 0.82),
-            border: alpha('#64748b', 0.4),
-            glow: alpha('#60a5fa', 0.16),
-            shadow: '0 30px 90px -52px rgba(0, 0, 0, 0.8)',
-            blur: 20,
+            paper: alpha('#0b1322', 0.86),
+            border: alpha('#64748b', 0.44),
+            glow: alpha('#60a5fa', 0.2),
+            shadow: '0 36px 102px -54px rgba(0, 0, 0, 0.84)',
+            blur: 24,
         },
     },
 });
@@ -74,9 +74,9 @@ export function createMuiHybridTheme({
         SURFACE_PRESET_STYLES.liquid[normalizedMode];
     const isDark = normalizedMode === 'dark';
     const textPrimary = isDark ? '#e2e8f0' : '#0f172a';
-    const textSecondary = isDark ? '#94a3b8' : '#475569';
-    const focusRing = alpha(accentColor, isDark ? 0.5 : 0.36);
-    const controlBackground = isDark ? alpha('#0f172a', 0.62) : alpha('#ffffff', 0.7);
+    const textSecondary = isDark ? '#94a3b8' : '#425972';
+    const focusRing = alpha(accentColor, isDark ? 0.5 : 0.42);
+    const controlBackground = isDark ? alpha('#020617', 0.68) : alpha('#ffffff', 0.9);
 
     return createTheme({
         palette: {
@@ -102,13 +102,34 @@ export function createMuiHybridTheme({
             divider: surfacePresetStyle.border,
         },
         shape: {
-            borderRadius: 18,
+            borderRadius: 22,
         },
         typography: {
-            fontFamily: "'Space Grotesk', 'Sora', 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            fontFamily: "'Sora', 'Space Grotesk', 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            h1: {
+                fontFamily: "'Space Grotesk', 'Sora', 'Inter', sans-serif",
+                fontWeight: 700,
+                letterSpacing: '-0.04em',
+            },
+            h2: {
+                fontFamily: "'Space Grotesk', 'Sora', 'Inter', sans-serif",
+                fontWeight: 700,
+                letterSpacing: '-0.035em',
+            },
+            h3: {
+                fontFamily: "'Space Grotesk', 'Sora', 'Inter', sans-serif",
+                fontWeight: 700,
+                letterSpacing: '-0.03em',
+            },
+            body1: {
+                lineHeight: 1.6,
+            },
+            body2: {
+                lineHeight: 1.55,
+            },
             button: {
                 fontWeight: 600,
-                letterSpacing: '-0.01em',
+                letterSpacing: '-0.015em',
                 textTransform: 'none',
             },
         },
@@ -131,11 +152,11 @@ export function createMuiHybridTheme({
             MuiPaper: {
                 styleOverrides: {
                     root: {
-                        background: `linear-gradient(155deg, ${surfacePresetStyle.paper}, ${alpha(surfacePresetStyle.paper, isDark ? 0.9 : 0.8)})`,
+                        background: `linear-gradient(155deg, ${surfacePresetStyle.paper}, ${alpha(surfacePresetStyle.paper, isDark ? 0.92 : 0.86)})`,
                         border: `1px solid ${surfacePresetStyle.border}`,
                         backdropFilter: `blur(${surfacePresetStyle.blur}px) saturate(165%)`,
                         WebkitBackdropFilter: `blur(${surfacePresetStyle.blur}px) saturate(165%)`,
-                        boxShadow: `${surfacePresetStyle.shadow}, 0 0 0 1px ${alpha(surfacePresetStyle.glow, 0.65)} inset`,
+                        boxShadow: `${surfacePresetStyle.shadow}, 0 0 0 1px ${alpha(surfacePresetStyle.glow, 0.68)} inset, inset 0 1px 0 ${alpha('#ffffff', isDark ? 0.08 : 0.42)}`,
                     },
                 },
             },
@@ -159,7 +180,7 @@ export function createMuiHybridTheme({
                     paper: {
                         borderRadius: 24,
                         border: `1px solid ${surfacePresetStyle.border}`,
-                        boxShadow: `${surfacePresetStyle.shadow}, 0 18px 44px -24px ${alpha(accentColor, 0.36)}`,
+                        boxShadow: `${surfacePresetStyle.shadow}, 0 22px 52px -24px ${alpha(accentColor, 0.28)}, inset 0 1px 0 ${alpha('#ffffff', isDark ? 0.08 : 0.34)}`,
                     },
                 },
             },
@@ -187,16 +208,18 @@ export function createMuiHybridTheme({
                     root: {
                         borderRadius: 999,
                         paddingInline: 18,
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
                     },
                     containedPrimary: {
                         color: '#ffffff',
                         border: `1px solid ${alpha(accentColor, 0.48)}`,
                         backgroundImage:
-                            'linear-gradient(180deg, var(--theme-primary-top, #0A84FF), var(--theme-primary-bottom, #0064D1))',
-                        boxShadow: `0 14px 32px -18px ${alpha(accentColor, 0.62)}`,
+                            'linear-gradient(180deg, var(--theme-primary-top, #66b9ff), var(--theme-primary-mid, #1677ff) 52%, var(--theme-primary-bottom, #0d59d8))',
+                        boxShadow: `var(--theme-primary-shadow, 0 18px 40px -18px ${alpha(accentColor, 0.56)})`,
                         '&:hover': {
                             backgroundImage:
-                                'linear-gradient(180deg, color-mix(in srgb, var(--theme-primary-top, #0A84FF) 90%, #ffffff 10%), color-mix(in srgb, var(--theme-primary-bottom, #0064D1) 92%, #0b1220 8%))',
+                                'linear-gradient(180deg, color-mix(in srgb, var(--theme-primary-top, #66b9ff) 92%, #ffffff 8%), color-mix(in srgb, var(--theme-primary-mid, #1677ff) 94%, #ffffff 6%) 52%, color-mix(in srgb, var(--theme-primary-bottom, #0d59d8) 92%, #082346 8%))',
                         },
                     },
                     outlinedPrimary: {
@@ -226,8 +249,10 @@ export function createMuiHybridTheme({
                 styleOverrides: {
                     root: {
                         borderRadius: 14,
-                        backgroundColor: controlBackground,
-                        backdropFilter: 'blur(10px)',
+                        backgroundImage: `linear-gradient(145deg, ${alpha('#ffffff', isDark ? 0.06 : 0.84)}, ${controlBackground})`,
+                        backdropFilter: 'blur(14px)',
+                        WebkitBackdropFilter: 'blur(14px)',
+                        boxShadow: `inset 0 1px 0 ${alpha('#ffffff', isDark ? 0.08 : 0.4)}, 0 16px 36px -28px ${alpha('#0f172a', isDark ? 0.64 : 0.18)}`,
                         '& .MuiOutlinedInput-notchedOutline': {
                             borderColor: alpha(accentColor, isDark ? 0.3 : 0.22),
                         },
@@ -318,4 +343,3 @@ export function createMuiHybridTheme({
         },
     });
 }
-

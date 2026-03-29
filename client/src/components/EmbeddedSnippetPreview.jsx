@@ -3,6 +3,7 @@ import { Button, Spinner } from 'flowbite-react';
 import { useSelector } from 'react-redux';
 import { HiOutlineCodeBracket, HiOutlineSparkles } from 'react-icons/hi2';
 import useCodeSnippet from '../hooks/useCodeSnippet';
+import { useTheme } from './ThemeContext.jsx';
 
 const CodeEditor = lazy(() => import('./CodeEditor'));
 
@@ -12,11 +13,13 @@ const MAX_FRAME_HEIGHT = 760;
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-const buildPreviewDocument = ({ html = '', css = '', js = '', instanceId }) => {
+const buildPreviewDocument = ({ html = '', css = '', js = '', instanceId, theme = 'light' }) => {
     const safeInstanceId = JSON.stringify(instanceId);
     const safeHtml = html || '';
     const safeCss = (css || '').replace(/<\/style/gi, '<\\/style');
     const safeJs = (js || '').replace(/<\/script/gi, '<\\/script');
+    const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+    const baseTextColor = resolvedTheme === 'dark' ? '#e2e8f0' : '#0f172a';
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -25,7 +28,7 @@ const buildPreviewDocument = ({ html = '', css = '', js = '', instanceId }) => {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       :root {
-        color-scheme: light;
+        color-scheme: ${resolvedTheme};
       }
 
       html, body {
@@ -34,6 +37,7 @@ const buildPreviewDocument = ({ html = '', css = '', js = '', instanceId }) => {
         min-height: 100%;
         overflow-x: hidden;
         background: transparent;
+        color: ${baseTextColor};
         font-family: 'Inter', 'Segoe UI', sans-serif;
       }
 
@@ -120,6 +124,7 @@ const buildPreviewDocument = ({ html = '', css = '', js = '', instanceId }) => {
 };
 
 export default function EmbeddedSnippetPreview({ snippetId, className = '' }) {
+    const { resolvedTheme } = useTheme();
     const iframeRef = useRef(null);
     const heightResetRef = useRef(null);
     const instanceId = useId().replace(/:/g, '');
@@ -149,8 +154,9 @@ export default function EmbeddedSnippetPreview({ snippetId, className = '' }) {
             css: snippet.css,
             js: snippet.js,
             instanceId,
+            theme: resolvedTheme,
         });
-    }, [hasWebPreview, instanceId, snippet]);
+    }, [hasWebPreview, instanceId, resolvedTheme, snippet]);
 
     useEffect(() => {
         if (!hasWebPreview) {

@@ -540,19 +540,10 @@ const READER_THEMES = {
         quoteBackground: 'rgba(75, 85, 99, 0.09)',
         chapterDivider: 'rgba(107, 114, 128, 0.45)',
     },
-    night: {
-        name: 'Night',
-        background: '#121722',
-        text: '#e5e7eb',
-        accent: '#7dd3fc',
-        quoteBackground: 'rgba(125, 211, 252, 0.16)',
-        chapterDivider: 'rgba(71, 85, 105, 0.65)',
-    },
 };
 const KINDLE_THEME_SHORTCUTS = [
-    { id: 'light', label: 'Light', description: 'Bright paper for daylight reading' },
+    { id: 'light', label: 'Paper', description: 'Bright paper for daylight reading' },
     { id: 'sepia', label: 'Sepia', description: 'Warm, low-glare amber tone' },
-    { id: 'night', label: 'Dark', description: 'High-contrast dark mode for low light' },
 ];
 const READER_HIGHLIGHT_PALETTE = [
     { id: 'gold', label: 'Sunbeam', className: 'reader-highlight-gold', swatch: '#facc15' },
@@ -622,23 +613,6 @@ const READER_THEME_SCENES = [
         },
     },
     {
-        id: 'kindle-dark',
-        label: 'Kindle Dark',
-        description: 'Low-glare dark palette tuned for night reading.',
-        settings: {
-            theme: 'night',
-            brightness: 0.96,
-            contrast: 1.08,
-            saturation: 0.92,
-            warmth: -0.06,
-            texture: 0.08,
-            vignette: 0.16,
-            customBackground: '#111722',
-            customText: '#dde3ec',
-            customAccent: '#7dd3fc',
-        },
-    },
-    {
         id: 'moon-sepia-pro',
         label: 'Moon Sepia Pro',
         description: 'Classic Moon+ style sepia with stronger depth and warmth.',
@@ -653,23 +627,6 @@ const READER_THEME_SCENES = [
             customBackground: '#efe4cc',
             customText: '#3d2b18',
             customAccent: '#9a5e2e',
-        },
-    },
-    {
-        id: 'moon-amoled',
-        label: 'Moon AMOLED',
-        description: 'Deep black page with bright text and subdued chroma.',
-        settings: {
-            theme: 'night',
-            brightness: 0.93,
-            contrast: 1.15,
-            saturation: 0.82,
-            warmth: -0.12,
-            texture: 0.04,
-            vignette: 0.2,
-            customBackground: '#090b10',
-            customText: '#edf2f7',
-            customAccent: '#6ee7f9',
         },
     },
 ];
@@ -726,26 +683,6 @@ const READER_EXPERIENCE_PRESETS = [
             hyphenation: true,
         },
     },
-    {
-        id: 'night-owl',
-        label: 'Night Owl',
-        description: 'Low-glare dark reading with high contrast text.',
-        settings: {
-            theme: 'night',
-            fontSize: 19,
-            lineHeight: 1.75,
-            margin: 11,
-            readingWidth: 860,
-            wpm: 200,
-            fontProfile: 'moon-sans',
-            textAlign: 'left',
-            paragraphIndent: 0.8,
-            paragraphSpacing: 0.5,
-            letterSpacing: 0.011,
-            wordSpacing: 0.03,
-            hyphenation: false,
-        },
-    },
 ];
 const READER_WORKSPACE_FEATURES = [
     { id: 'reading', label: 'Reading', icon: FaBookReader },
@@ -786,16 +723,15 @@ const READER_DEMO_STORAGE_KEY = 'reader-highlights:workspace-demo';
 const READER_DEMO_STATE_KEY = 'ebook-reader-state:workspace-demo';
 
 function getReaderThemeIcon(themeKey) {
-    if (themeKey === 'light') return FaSun;
+    if (themeKey === 'light') return FaBookReader;
     if (themeKey === 'sepia') return FaTint;
     if (themeKey === 'eink') return FaBookReader;
-    return FaMoon;
+    return FaBookReader;
 }
 
 function getReaderPresetAppIcon(presetId) {
     if (presetId === 'kindle-classic') return FaAmazon;
     if (presetId === 'kobo-focused') return FaTabletAlt;
-    if (presetId === 'night-owl') return FaMoon;
     return null;
 }
 
@@ -3854,7 +3790,7 @@ function EbookReaderTool() {
         setThemeCustomBackground(sanitizeHexColor(settings.customBackground));
         setThemeCustomText(sanitizeHexColor(settings.customText));
         setThemeCustomAccent(sanitizeHexColor(settings.customAccent));
-        setStatus({ type: 'info', message: `Applied ${scene.label} theme scene.` });
+        setStatus({ type: 'info', message: `Applied ${scene.label} surface scene.` });
     }, []);
     const resetThemeTuning = useCallback(() => {
         setThemeBrightness(DEFAULT_THEME_BRIGHTNESS);
@@ -4096,8 +4032,8 @@ function EbookReaderTool() {
         const warmOverlay = warmthValue >= 0
             ? `rgba(255, 173, 82, ${warmthValue.toFixed(3)})`
             : `rgba(112, 166, 255, ${Math.abs(warmthValue).toFixed(3)})`;
-        const articleSurfaceBlend = theme === 'night' ? '#020617' : '#ffffff';
-        const vignetteColor = theme === 'night' ? '0, 0, 0' : '15, 23, 42';
+        const articleSurfaceBlend = '#ffffff';
+        const vignetteColor = '15, 23, 42';
         const textureTintPercent = Math.round(4 + textureValue * 32);
         const textureLinePercent = Math.max(1, Number((textureValue * 10).toFixed(2)));
         const readerBackground = MINIMAL_READER_UI
@@ -5764,7 +5700,7 @@ function EbookReaderTool() {
                             </div>
                         </div>
                         <div className="reader-setting">
-                            <p className="reader-setting-label">Theme</p>
+                            <p className="reader-setting-label">Surface</p>
                             <div className="reader-pill-row">
                                 {KINDLE_THEME_SHORTCUTS.map((preset) => (
                                     <button
@@ -5931,7 +5867,7 @@ function EbookReaderTool() {
                                 <p className="ebook-reader-subtitle">
                                     {hasBookContent
                                         ? `${chapterCountLabel} • ${wordCountLabel}. Reader workspace keeps your session in flow.`
-                                        : 'Drop a book to start. Theme, notes, and reading position are saved automatically.'}
+                                        : 'Drop a book to start. Surface, notes, and reading position are saved automatically.'}
                                 </p>
                                 {!MINIMAL_READER_UI ? (
                                     <div className="reader-feature-strip" role="list" aria-label="Reader workspace features">
@@ -7260,8 +7196,8 @@ function EbookReaderTool() {
 
                             <section className="reader-glass-toolbar reader-control-card reader-control-card-wide">
                                 <div className="reader-control-card-header">
-                                    <h3>Appearance profile</h3>
-                                    <p>Switch complete reading presets or customize theme manually.</p>
+                                    <h3>Surface profile</h3>
+                                    <p>Switch complete reading presets or customize the reading surface manually.</p>
                                 </div>
                                 <div className="reader-preset-toolbar flex flex-wrap gap-space-sm items-center">
                                     <span className="reader-toolbar-label">Reading profile</span>
@@ -7304,7 +7240,7 @@ function EbookReaderTool() {
                                 </div>
                                 <div className="reader-control-inline">
                                     <div className="flex items-center gap-space-xs rounded-radius-full bg-gray-100 dark:bg-slate-800 px-space-sm py-[6px] text-sm">
-                                        <span className="text-gray-500 text-xs">Theme scene</span>
+                                        <span className="text-gray-500 text-xs">Surface scene</span>
                                         <Select
                                             value={activeThemeSceneId}
                                             onChange={(event) => {
@@ -10193,7 +10129,7 @@ export default function Tools() {
     if (toolId) {
         if (!selectedTool || !ActiveComponent) {
             return (
-                <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100 pb-space-5xl">
+                <div className="workspace-page min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100 pb-space-5xl">
                     <div className="mx-auto flex w-full max-w-4xl flex-col gap-space-xl px-space-md lg:px-space-2xl py-space-5xl">
                         <div className="rounded-radius-lg border border-dashed border-gray-300 bg-white/80 p-space-xl text-center shadow-sm dark:border-gray-700 dark:bg-slate-900/80">
                             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Tool not found</h1>
@@ -10210,7 +10146,7 @@ export default function Tools() {
         }
 
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100 pb-space-5xl">
+            <div className="workspace-page min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100 pb-space-5xl">
                 <div className="mx-auto flex w-full max-w-6xl flex-col gap-space-3xl px-space-md lg:px-space-2xl py-space-5xl">
                     <div className="flex flex-wrap items-center justify-between gap-space-sm">
                         <Button as={Link} to="/tools" color="light" className="text-gray-900">
@@ -10295,7 +10231,7 @@ export default function Tools() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100 pb-space-5xl">
+        <div className="workspace-page min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100 pb-space-5xl">
             <div className="mx-auto flex w-full max-w-7xl flex-col gap-space-4xl px-space-md lg:px-space-2xl py-space-5xl">
                 <section className="relative overflow-hidden rounded-radius-lg border border-white/20 bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 p-space-5xl text-white shadow-2xl">
                     <div className="absolute -top-24 right-10 h-56 w-56 rounded-full bg-white/10 blur-3xl" />

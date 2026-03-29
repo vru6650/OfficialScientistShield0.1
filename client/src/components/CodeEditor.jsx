@@ -6,7 +6,7 @@ import { useSelector } from 'react-redux';
 import {
     FaPlay, FaRedo, FaTerminal, FaCopy, FaExpand, FaPlus, FaMinus, FaCheck, FaCompress, FaGlobe, FaExternalLinkAlt,
     FaColumns, FaDownload, FaUpload, FaSearch, FaCodeBranch, FaSave, FaBug, FaPause, FaStepForward, FaStepBackward,
-    FaSignInAlt, FaSignOutAlt, FaStop, FaKeyboard, FaHtml5, FaCss3Alt, FaJsSquare, FaPython, FaJava, FaCode, FaBolt, FaSun, FaMoon
+    FaSignInAlt, FaSignOutAlt, FaStop, FaKeyboard, FaHtml5, FaCss3Alt, FaJsSquare, FaPython, FaJava, FaCode, FaBolt
 } from 'react-icons/fa';
 import { SiCplusplus, SiCsharp } from 'react-icons/si';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -185,7 +185,6 @@ const languageMeta = {
 };
 
 export default function CodeEditor({ initialCode = {}, language = 'javascript', snippetId, workspaceId }) {
-    const { theme } = useSelector((state) => state.theme);
     const { currentUser } = useSelector((state) => state.user || {});
     const queryClient = useQueryClient();
     const editorRef = useRef(null);
@@ -247,7 +246,7 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
     const [isRunning, setIsRunning] = useState(false);
     const [runError, setRunError] = useState(null);
     const [showOutputPanel, setShowOutputPanel] = useState(true);
-    const [editorTheme, setEditorTheme] = useState(theme === 'dark' ? 'vs-dark' : 'vs-light');
+    const editorTheme = 'vs-light';
     const [fontSize, setFontSize] = useState(14);
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
@@ -480,10 +479,6 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
             setIsPersistingSnippet(false);
         }
     }, [canSaveSnippet, codes.cpp, codes.css, codes.csharp, codes.html, codes.java, codes.javascript, codes.python, queryClient, snippetId]);
-
-    useEffect(() => {
-        setEditorTheme(theme === 'dark' ? 'vs-dark' : 'vs-light');
-    }, [theme]);
 
     // Auto-run preview when code changes in web mode
     useEffect(() => {
@@ -960,7 +955,6 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
         entries.push({ id: 'diff', label: `${showDiff ? 'Hide' : 'Show'} Diff`, action: () => setShowDiff(v => !v) });
         entries.push({ id: 'baseline', label: 'Set Baseline (current file)', action: setBaselineForActive });
         entries.push({ id: 'output', label: `${showOutputPanel ? 'Hide' : 'Show'} Output Panel`, action: () => setShowOutputPanel(v => !v) });
-        entries.push({ id: 'theme', label: `Editor Theme: ${editorTheme === 'vs-dark' ? 'Light' : 'Dark'}`, action: () => setEditorTheme(t => (t === 'vs-dark' ? 'vs-light' : 'vs-dark')) });
         if (!isWebMode && debugSupported.has(selectedLanguage)) {
             entries.push({ id: 'debug', label: debugActive ? 'Stop Debugger' : 'Start Debugger', action: () => (debugActive ? stopDebug() : startDebug()) });
         }
@@ -973,7 +967,7 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
             }});
         }
         return entries;
-    }, [canSaveSnippet, copyCode, debugActive, downloadCode, editorTheme, formatCode, isWebMode, openFind, resetCode, runCode, saveSnippet, selectedLanguage, setBaselineForActive, showDiff, showLineNumbers, showMinimap, showOutputPanel, splitVertical, wordWrap]);
+    }, [canSaveSnippet, copyCode, debugActive, downloadCode, formatCode, isWebMode, openFind, resetCode, runCode, saveSnippet, selectedLanguage, setBaselineForActive, showDiff, showLineNumbers, showMinimap, showOutputPanel, splitVertical, wordWrap]);
 
     const filteredCommands = useMemo(() => {
         const q = cmdQuery.trim().toLowerCase();
@@ -1250,14 +1244,6 @@ export default function CodeEditor({ initialCode = {}, language = 'javascript', 
                                 />
                             </div>
                         )}
-                        <button
-                            type="button"
-                            className={ghostButtonClass}
-                            onClick={() => setEditorTheme((t) => (t === 'vs-dark' ? 'vs-light' : 'vs-dark'))}
-                        >
-                            {editorTheme === 'vs-dark' ? <FaSun className="text-xs" /> : <FaMoon className="text-xs" />}
-                            {editorTheme === 'vs-dark' ? 'Light Theme' : 'Dark Theme'}
-                        </button>
                         <button type="button" className={ghostButtonClass} onClick={toggleFullScreen}>
                             {isFullScreen ? <FaCompress className="text-xs" /> : <FaExpand className="text-xs" />}
                             {isFullScreen ? 'Exit Fullscreen' : 'Fullscreen'}

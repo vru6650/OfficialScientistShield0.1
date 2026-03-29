@@ -239,7 +239,7 @@ export default function Home() {
     };
 
     return (
-        <main className="liquid-app-shell relative min-h-screen">
+        <main className="workspace-page liquid-app-shell relative min-h-screen">
             <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 -top-32 -z-10 blur-3xl opacity-40 dark:opacity-25"

@@ -7,6 +7,7 @@ import useUser from '../hooks/useUser'; // Import our new hook
 import DeleteConfirmationModal from './DeleteConfirmationModal'; // Import our new modal
 import { formatRelativeTimeFromNow } from '../utils/date.js';
 import { apiFetch } from '../utils/apiFetch';
+import { idsMatch, includesId } from '../utils/id.js';
 
 export default function Comment({ comment, onLike, onEdit, onDelete }) {
   const { currentUser } = useSelector((state) => state.user);
@@ -124,7 +125,7 @@ export default function Comment({ comment, onLike, onEdit, onDelete }) {
                         onClick={() => onLike(comment._id)}
                         className={`text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 flex items-center gap-1 ${
                             currentUser &&
-                            comment.likes.includes(currentUser._id) &&
+                            includesId(comment.likes, currentUser._id) &&
                             'text-blue-500 dark:text-blue-400'
                         }`}
                     >
@@ -136,7 +137,7 @@ export default function Comment({ comment, onLike, onEdit, onDelete }) {
                     </button>
 
                     {currentUser &&
-                        (currentUser._id === comment.userId || currentUser.isAdmin) && (
+                        (idsMatch(currentUser._id, comment.userId) || currentUser.isAdmin) && (
                             <div className='flex gap-4'>
                               <button
                                   type='button'

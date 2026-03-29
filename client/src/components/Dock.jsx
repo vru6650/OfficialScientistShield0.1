@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 import {
     baseDockItems,
     dashboardDockItem,
     resolveDockIcons,
     settingsDockItem,
-    themeDockItem,
 } from '../data/dockItems';
-import { toggleTheme } from '../redux/theme/themeSlice';
 
 const ICON_SIZE = 64;
 const MIN_ICON = 48;
@@ -30,7 +28,6 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 export default function Dock() {
     const location = useLocation();
-    const dispatch = useDispatch();
     const { currentUser } = useSelector((state) => state.user);
 
     const [hoverX, setHoverX] = useState(null);
@@ -71,7 +68,7 @@ export default function Dock() {
     const items = useMemo(() => {
         const list = [...baseDockItems];
         if (currentUser) list.push(dashboardDockItem);
-        list.push(settingsDockItem, themeDockItem);
+        list.push(settingsDockItem);
         return resolveDockIcons(list);
     }, [currentUser]);
 
@@ -79,7 +76,7 @@ export default function Dock() {
         const list = [];
         let dividerPlaced = false;
         items.forEach((item) => {
-            const isUtility = item.type === 'settings' || item.type === 'theme';
+            const isUtility = item.type === 'settings';
             if (isUtility && !dividerPlaced && list.length > 0) {
                 list.push({ key: 'divider', type: 'divider' });
                 dividerPlaced = true;
@@ -293,7 +290,6 @@ export default function Dock() {
                         return <li key={`divider-${idx}`} className="macos-dock__divider" aria-hidden />;
                     }
                     const isSettings = item.type === 'settings';
-                    const isTheme = item.type === 'theme';
                     const isActive = isSettings
                         ? customizerOpen
                         : item.match
@@ -335,7 +331,7 @@ export default function Dock() {
                         />
                     );
 
-                    const isAction = isSettings || isTheme;
+                    const isAction = isSettings;
                     const commonProps = {
                         className: 'group relative flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 focus-visible:ring-offset-2',
                         tabIndex: isDockVisible ? 0 : -1,
@@ -348,13 +344,10 @@ export default function Dock() {
                         <button
                             type="button"
                             aria-label={item.label}
+                            title={item.label}
                             onClick={() => {
                                 handleLaunch(item.key);
-                                if (isTheme) {
-                                    dispatch(toggleTheme());
-                                } else {
-                                    setCustomizerOpen((open) => !open);
-                                }
+                                setCustomizerOpen((open) => !open);
                             }}
                             {...commonProps}
                         >

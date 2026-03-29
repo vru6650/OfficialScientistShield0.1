@@ -6,6 +6,33 @@ import InteractiveReadingSurface from './InteractiveReadingSurface.jsx';
 
 // Lightweight paged reader with improved UX: keyboard/touch nav, progress, and time-left.
 
+const generateHeadingSlug = (text = '') =>
+  String(text)
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-');
+
+const createUniqueHeadingId = (preferredId, fallbackText, slugCounts) => {
+  const baseId = generateHeadingSlug(preferredId || fallbackText);
+  if (!baseId) {
+    return '';
+  }
+
+  const count = slugCounts[baseId] || 0;
+  slugCounts[baseId] = count + 1;
+  return count === 0 ? baseId : `${baseId}-${count + 1}`;
+};
+
+const escapeHeadingSelector = (id) => {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(id);
+  }
+
+  return String(id).replace(/([ !"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, '\\$1');
+};
+
 export default function PagedReader({
   content,
   parserOptions,
@@ -21,6 +48,7 @@ export default function PagedReader({
   contentStyles: extContentStyles,
   contentMaxWidth: extContentMaxWidth,
   surfaceClass: extSurfaceClass,
+  onProgressChange,
 }) {
   const containerRef = useRef(null);
   const [page, setPage] = useState(0);
@@ -241,8 +269,23 @@ export default function PagedReader({
       const temp = document.createElement('div');
       temp.innerHTML = content;
       const nodes = temp.querySelectorAll('h2, h3');
-      const list = Array.from(nodes).map((n) => ({ id: n.getAttribute('id') || '', text: n.textContent || '', level: n.tagName.toLowerCase() }));
-      setHeadings(list.filter((h) => Boolean(h.id) && Boolean(h.text)));
+      const slugCounts = {};
+      const list = Array.from(nodes)
+        .map((node) => {
+          const text = (node.textContent || '').trim();
+          const id = createUniqueHeadingId(node.getAttribute('id'), text, slugCounts);
+          if (!id || !text) {
+            return null;
+          }
+
+          return {
+            id,
+            text,
+            level: node.tagName.toLowerCase(),
+          };
+        })
+        .filter(Boolean);
+      setHeadings(list);
     } catch (_) {
       setHeadings([]);
     }
@@ -250,7 +293,7 @@ export default function PagedReader({
 
   const jumpToHeading = (id) => {
     const c = containerRef.current; if (!c) return;
-    const el = c.querySelector(`#${CSS.escape(id)}`);
+    const el = c.querySelector(`#${escapeHeadingSelector(id)}`);
     if (!el) return;
     try { el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' }); } catch (_) { el.scrollIntoView(true); }
     setShowToc(false);
@@ -364,6 +407,21 @@ export default function PagedReader({
   }, [go]);
 
   const percent = pages > 1 ? Math.round((page / (pages - 1)) * 100) : 0;
+
+  useEffect(() => {
+    if (typeof onProgressChange !== 'function') {
+      return;
+    }
+
+    onProgressChange({
+      percent,
+      fraction: pages > 1 ? Math.min(1, Math.max(0, page / (pages - 1))) : 0,
+      remainingMinutes: minutesLeft ?? 0,
+      mode: 'epub',
+      currentPage: page + 1,
+      totalPages: pages,
+    });
+  }, [minutesLeft, onProgressChange, page, pages, percent]);
 
   return (
     <div className={`paged-reader ${isTurning ? `tilt-${isTurning}` : ''} ${className}`} style={style}>

@@ -22,6 +22,7 @@ import ReadingControlCenter from '../components/ReadingControlCenter';
 import useReadingSettings from '../hooks/useReadingSettings';
 import EmbeddedSnippetPreview from '../components/EmbeddedSnippetPreview.jsx';
 import { apiFetch } from '../utils/apiFetch';
+import { includesId } from '../utils/id.js';
 
 import '../Tiptap.css';
 import '../pages/Scrollbar.css';
@@ -158,7 +159,7 @@ const ChapterContent = ({ activeChapter, sanitizedContent, parserOptions, conten
 };
 
 const ChapterLink = ({ chapter, tutorial, activeChapterId, currentUser }) => {
-    const isCompleted = currentUser && chapter.completedBy?.includes(currentUser._id);
+    const isCompleted = Boolean(currentUser && includesId(chapter.completedBy, currentUser._id));
     const isActive = activeChapterId === chapter._id;
 
     const Icon =
@@ -350,7 +351,7 @@ export default function SingleTutorialPage() {
     const countCompletedChapters = (chapters) => {
         if (!chapters) return 0;
         return chapters.reduce((count, chapter) => {
-            const isCompleted = chapter.completedBy?.includes(currentUser._id);
+            const isCompleted = includesId(chapter.completedBy, currentUser?._id);
             const subChapterCount = chapter.subChapters ? countCompletedChapters(chapter.subChapters) : 0;
             return count + (isCompleted ? 1 : 0) + subChapterCount;
         }, 0);
@@ -366,7 +367,7 @@ export default function SingleTutorialPage() {
 
     useEffect(() => {
         if (activeChapter && currentUser) {
-            const completed = activeChapter.completedBy && activeChapter.completedBy.includes(currentUser._id);
+            const completed = includesId(activeChapter.completedBy, currentUser._id);
             setIsCompleted(completed);
         } else { setIsCompleted(false); }
     }, [activeChapter, currentUser]);

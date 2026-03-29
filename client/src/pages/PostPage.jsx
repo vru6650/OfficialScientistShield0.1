@@ -1,5 +1,5 @@
 // client/src/pages/PostPage.jsx
-import { Button, Alert, Tooltip, Modal } from 'flowbite-react';
+import { Alert, Tooltip, Modal } from 'flowbite-react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import DOMPurify from 'dompurify';
@@ -8,7 +8,6 @@ import hljs from 'highlight.js';
 import ImageViewer from 'react-simple-image-viewer';
 import { Helmet } from 'react-helmet-async';
 import { FaClock, FaBookOpen, FaCalendarAlt, FaArrowRight, FaCommentDots, FaChevronUp, FaChevronLeft, FaChevronRight, FaLink, FaPrint, FaQuestionCircle, FaTimes } from 'react-icons/fa';
-import { HiOutlineSparkles } from 'react-icons/hi';
 import { apiFetch } from '../utils/apiFetch';
 
 // --- Component Imports ---
@@ -23,7 +22,6 @@ import LottieAnimationPlayer from '../components/LottieAnimationPlayer.jsx';
 import ReadingControlCenter from '../components/ReadingControlCenter';
 import useReadingSettings from '../hooks/useReadingSettings';
 import InteractiveReadingSurface from '../components/InteractiveReadingSurface.jsx';
-import PagedReader from '../components/PagedReader.jsx';
 import GalleryCarousel from '../components/media/GalleryCarousel.jsx';
 import EmbeddedSnippetPreview from '../components/EmbeddedSnippetPreview.jsx';
 import {
@@ -31,21 +29,43 @@ import {
     getPrimaryPostAsset,
     getSortedPostMediaAssets,
 } from '../utils/postMedia.js';
+import { getPostPath } from '../utils/postPath.js';
 import '../Tiptap.css';
 
 // --- API fetching functions ---
-const fetchPostBySlug = async (postSlug) => {
-    const res = await apiFetch(`/api/v1/post/getposts?slug=${postSlug}`);
+const OBJECT_ID_PATTERN = /^[a-f0-9]{24}$/i;
+
+const fetchPosts = async (params) => {
+    const res = await apiFetch(`/api/v1/post/getposts?${new URLSearchParams(params).toString()}`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Failed to fetch post.');
-    if (data.posts.length === 0) throw new Error('Post not found.');
-    return data.posts[0];
+    return data;
+};
+
+const fetchPostBySlug = async (postSlug) => {
+    const data = await fetchPosts({ slug: postSlug });
+    if (data.posts.length > 0) {
+        return data.posts[0];
+    }
+
+    if (OBJECT_ID_PATTERN.test(String(postSlug || '').trim())) {
+        const fallbackData = await fetchPosts({ postId: postSlug });
+        if (fallbackData.posts.length > 0) {
+            return fallbackData.posts[0];
+        }
+    }
+
+    throw new Error('Post not found.');
 };
 
 const fetchRelatedPosts = async (category) => {
     if (!category) return [];
     try {
-        const res = await apiFetch(`/api/v1/post/getposts?category=${category}&limit=3`);
+        const params = new URLSearchParams({
+            category,
+            limit: '3',
+        });
+        const res = await apiFetch(`/api/v1/post/getposts?${params.toString()}`);
         if (!res.ok) return [];
         const data = await res.json();
         return data.posts;
@@ -89,6 +109,7 @@ const generateSlug = (text) => {
     if (!text) return '';
     return text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '').replace(/--+/g, '-');
 };
+const stripHtml = (value = '') => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 const getTextFromNode = (node) => {
     if (node.type === 'text') return node.data;
     if (node.type !== 'tag' || !node.children) return '';
@@ -103,12 +124,13 @@ const formatCategory = (category) => {
         .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
         .join(' ');
 };
+const POST_ARTICLE_SCROLL_ROOT_ID = 'post-article-scroll-root';
 
 export default function PostPage() {
     const { postSlug } = useParams();
 
     const { data: post, isLoading: isLoadingPost, error: postError } = useQuery({
-        queryKey: ['post', postSlug],
+        queryKey: ['post', 'slug', postSlug],
         queryFn: () => fetchPostBySlug(postSlug),
         staleTime: 5 * 60 * 1000,
     });
@@ -179,7 +201,7 @@ export default function PostPage() {
     }, [post?.content, sanitizeWithEmbeds]);
 
     const headings = useMemo(() => {
-        if (!sanitizedContent) return [];
+        if (!sanitizedContent || typeof document === 'undefined') return [];
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = sanitizedContent;
         const headingNodes = tempDiv.querySelectorAll('h2, h3');
@@ -200,7 +222,7 @@ export default function PostPage() {
     }, [sanitizedContent]);
 
     const imagesInPost = useMemo(() => {
-        if (!sanitizedContent) return [];
+        if (!sanitizedContent || typeof document === 'undefined') return [];
         const imageSources = [];
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = sanitizedContent;
@@ -216,41 +238,38 @@ export default function PostPage() {
         contentStyles,
         contentMaxWidth,
         surfaceClass,
-        contentPadding,
     } = useReadingSettings();
+    const postArticleContentStyles = useMemo(() => {
+        const resolvedFontWeight = Number.parseInt(readingSettings?.fontWeight, 10);
+        const postArticleFontWeight = Number.isFinite(resolvedFontWeight)
+            ? Math.max(resolvedFontWeight, 500)
+            : 500;
 
-    const sharedContentStyle = useMemo(
-        () => ({
-            maxWidth: contentMaxWidth,
-            paddingInline: contentPadding,
-        }),
-        [contentMaxWidth, contentPadding]
-    );
+        return {
+            ...contentStyles,
+            fontWeight: postArticleFontWeight,
+            fontFamily: readingSettings?.fontFamily === 'serif'
+                ? `'Source Serif 4', 'Merriweather', 'Georgia', 'Cambria', "Times New Roman", Times, serif`
+                : contentStyles.fontFamily,
+        };
+    }, [contentStyles, readingSettings?.fontFamily, readingSettings?.fontWeight]);
+    const postArticleContentMaxWidth = useMemo(() => {
+        const resolvedContentMaxWidth = Number.parseInt(contentMaxWidth, 10);
+        if (!Number.isFinite(resolvedContentMaxWidth)) {
+            return '680px';
+        }
 
-    const openImageViewer = (index) => {
+        return `${Math.min(resolvedContentMaxWidth, 680)}px`;
+    }, [contentMaxWidth]);
+
+    const openImageViewer = useCallback((index) => {
         setCurrentImage(index);
         setIsViewerOpen(true);
-    };
-    const closeImageViewer = () => {
+    }, []);
+    const closeImageViewer = useCallback(() => {
         setCurrentImage(0);
         setIsViewerOpen(false);
-    };
-
-    useEffect(() => {
-        if (!headings.length) return;
-        const contentRoot = document.querySelector('.post-content');
-        if (!contentRoot) return;
-
-        const renderedHeadings = contentRoot.querySelectorAll('h2, h3');
-        if (!renderedHeadings.length) return;
-
-        headings.forEach((heading, index) => {
-            const node = renderedHeadings[index];
-            if (node && node.id !== heading.id) {
-                node.id = heading.id;
-            }
-        });
-    }, [headings]);
+    }, []);
 
     useEffect(() => {
         if (!post?.content) return;
@@ -305,6 +324,7 @@ export default function PostPage() {
         if (!sanitizedContent) return;
         const headings = Array.from(document.querySelectorAll('.post-content h2, .post-content h3'));
         if (!headings.length) return;
+        const scrollRoot = document.getElementById(POST_ARTICLE_SCROLL_ROOT_ID);
 
         const observer = new IntersectionObserver(
             (entries) => {
@@ -317,13 +337,20 @@ export default function PostPage() {
                     if (id) setActiveHeadingId(id);
                 } else {
                     // Fallback: find the last heading above the viewport
+                    const cutoff = scrollRoot
+                        ? scrollRoot.getBoundingClientRect().top + scrollRoot.clientHeight * 0.25
+                        : window.innerHeight * 0.25;
                     const fromTop = headings
-                        .filter((el) => el.getBoundingClientRect().top < window.innerHeight * 0.25)
+                        .filter((el) => el.getBoundingClientRect().top < cutoff)
                         .pop();
                     if (fromTop && fromTop.id) setActiveHeadingId(fromTop.id);
                 }
             },
-            { rootMargin: '0px 0px -70% 0px', threshold: [0, 1] }
+            {
+                root: scrollRoot || null,
+                rootMargin: scrollRoot ? '0px 0px -72% 0px' : '0px 0px -70% 0px',
+                threshold: [0, 1],
+            }
         );
 
         headings.forEach((el) => observer.observe(el));
@@ -365,20 +392,28 @@ export default function PostPage() {
         };
     }, [readingSettings.focusMode, readingSettings.readingGuide, readingSettings.highContrast, readingSettings.hideImages]);
 
-    const createMetaDescription = (htmlContent) => {
-        if (!htmlContent) return '';
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlContent;
-        return `${tempDiv.textContent.trim().slice(0, 155)}...`;
+    const createMetaDescription = (summary, htmlContent) => {
+        const base = stripHtml(summary) || stripHtml(htmlContent);
+        if (!base) return '';
+        if (base.length <= 155) {
+            return base;
+        }
+
+        return `${base.slice(0, 155).replace(/[.,;:\s]+$/, '')}…`;
     };
 
-    const metaDescription = useMemo(() => createMetaDescription(post?.content), [post?.content]);
+    const metaDescription = useMemo(
+        () => createMetaDescription(post?.summary, post?.content),
+        [post?.content, post?.summary]
+    );
 
     const sortedMedia = useMemo(() => getSortedPostMediaAssets(post), [post]);
     const primaryAsset = useMemo(() => getPrimaryPostAsset(post), [post]);
 
     const readingStats = useMemo(() => {
-        if (!sanitizedContent) return { wordCount: 0, readingMinutes: 0 };
+        if (!sanitizedContent || typeof document === 'undefined') {
+            return { wordCount: 0, readingMinutes: 0 };
+        }
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = sanitizedContent;
         const text = tempDiv.textContent || '';
@@ -438,7 +473,8 @@ export default function PostPage() {
         return encodeURIComponent(post.category);
     }, [post?.category]);
 
-    const heroDescriptionText = metaDescription;
+    const heroDescriptionText = post?.summary?.trim() || metaDescription;
+    const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
 
     const scrollToElement = useCallback((elementId) => {
         const element = document.getElementById(elementId);
@@ -446,9 +482,36 @@ export default function PostPage() {
             element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }, []);
+    const scrollToHeading = useCallback((headingId) => {
+        const element = document.getElementById(headingId);
+        const articleScrollRoot = document.getElementById(POST_ARTICLE_SCROLL_ROOT_ID);
+
+        if (!element) {
+            return;
+        }
+
+        if (articleScrollRoot) {
+            const containerRect = articleScrollRoot.getBoundingClientRect();
+            const targetRect = element.getBoundingClientRect();
+            const targetTop = targetRect.top - containerRect.top + articleScrollRoot.scrollTop - 24;
+
+            articleScrollRoot.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            articleScrollRoot.scrollTo({
+                top: Math.max(0, targetTop),
+                behavior: 'smooth',
+            });
+            return;
+        }
+
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, []);
 
     const handleStartReading = useCallback(() => {
         scrollToElement('article-start');
+        window.requestAnimationFrame(() => {
+            const articleScrollRoot = document.getElementById(POST_ARTICLE_SCROLL_ROOT_ID);
+            articleScrollRoot?.scrollTo({ top: 0, behavior: 'smooth' });
+        });
     }, [scrollToElement]);
 
     const handleDiscuss = useCallback(() => {
@@ -456,35 +519,128 @@ export default function PostPage() {
     }, [scrollToElement]);
 
     const handleScrollTop = useCallback(() => {
+        const articleScrollRoot = document.getElementById(POST_ARTICLE_SCROLL_ROOT_ID);
+        articleScrollRoot?.scrollTo({ top: 0, behavior: 'smooth' });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, []);
+    const copyToClipboard = useCallback(async (text) => {
+        if (!text) {
+            return false;
+        }
 
-    const handleCopyLink = useCallback(async () => {
         try {
-            await navigator.clipboard.writeText(window.location.href);
-            // noop feedback: rely on subtle title change via tooltip
-        } catch (_) {
-            // ignore
+            if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        } catch (error) {
+            console.warn('Async clipboard copy failed, falling back to execCommand.', error);
+        }
+
+        if (typeof document === 'undefined') {
+            return false;
+        }
+
+        try {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.setAttribute('readonly', '');
+            textArea.style.position = 'absolute';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            const copied = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            return copied;
+        } catch (error) {
+            console.error('Clipboard fallback failed:', error);
+            return false;
         }
     }, []);
 
+    const [showShortcuts, setShowShortcuts] = useState(false);
+    const [articleScrollProgress, setArticleScrollProgress] = useState(0);
+    const [resumeProgress, setResumeProgress] = useState(null);
+    const [showCompactHeader, setShowCompactHeader] = useState(false);
+    const [showMobileToc, setShowMobileToc] = useState(false);
+
+    const handleArticleProgressChange = useCallback((nextProgress) => {
+        if (!nextProgress || typeof nextProgress !== 'object') {
+            return;
+        }
+
+        if (Number.isFinite(nextProgress.percent)) {
+            setArticleScrollProgress(Math.min(100, Math.max(0, nextProgress.percent)));
+        }
+
+        if (Number.isFinite(nextProgress.fraction)) {
+            setResumeProgress(Math.min(1, Math.max(0, nextProgress.fraction)));
+        }
+    }, []);
+
+    const handleResumeReading = useCallback(() => {
+        const articleScrollRoot = document.getElementById(POST_ARTICLE_SCROLL_ROOT_ID);
+        if (articleScrollRoot && Number.isFinite(resumeProgress)) {
+            scrollToElement('article-start');
+            const scrollableDistance = Math.max(1, articleScrollRoot.scrollHeight - articleScrollRoot.clientHeight);
+            const target = scrollableDistance * resumeProgress;
+            articleScrollRoot.scrollTo({ top: target, behavior: 'smooth' });
+            return;
+        }
+
+        const c = document.querySelector('[data-reading-surface="true"]');
+        if (!c || !Number.isFinite(resumeProgress)) return;
+        const rect = c.getBoundingClientRect();
+        const start = window.scrollY + rect.top;
+        const denom = Math.max(1, c.scrollHeight - window.innerHeight);
+        const target = start + denom * resumeProgress;
+        window.scrollTo({ top: target, behavior: 'smooth' });
+    }, [resumeProgress, scrollToElement]);
+    const jumpToHeading = useCallback((direction) => {
+        if (!headings.length) {
+            return;
+        }
+
+        const activeIndex = headings.findIndex((heading) => heading.id === activeHeadingId);
+        let nextIndex;
+
+        if (direction > 0) {
+            nextIndex = activeIndex >= 0 ? Math.min(activeIndex + 1, headings.length - 1) : 0;
+        } else {
+            nextIndex = activeIndex >= 0 ? Math.max(activeIndex - 1, 0) : headings.length - 1;
+        }
+
+        const nextHeading = headings[nextIndex];
+        if (nextHeading?.id) {
+            scrollToHeading(nextHeading.id);
+        }
+    }, [activeHeadingId, headings, scrollToHeading]);
+
+    const handleCopyLink = useCallback(async () => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        await copyToClipboard(window.location.href);
+    }, [copyToClipboard]);
+
     const handleShare = useCallback(async () => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const shareUrl = window.location.href;
+
         try {
-            if (navigator.share) {
-                await navigator.share({ title: document.title, url: window.location.href, text: post?.title });
+            if (typeof navigator !== 'undefined' && navigator.share) {
+                await navigator.share({ title: document.title, url: shareUrl, text: post?.title });
             } else {
-                await navigator.clipboard.writeText(window.location.href);
+                await copyToClipboard(shareUrl);
             }
         } catch (_) {
             // ignore cancellation/errors
         }
-    }, [post?.title]);
-
-    const [pagedMode, setPagedMode] = useState(false);
-    const [showShortcuts, setShowShortcuts] = useState(false);
-    const [resumeProgress, setResumeProgress] = useState(null);
-    const [showCompactHeader, setShowCompactHeader] = useState(false);
-    const [showMobileToc, setShowMobileToc] = useState(false);
+    }, [copyToClipboard, post?.title]);
 
     // Load any saved reading progress for this post
     useEffect(() => {
@@ -492,9 +648,16 @@ export default function PostPage() {
         try {
             const raw = localStorage.getItem(`reading-progress:${post._id}`);
             const v = raw ? parseFloat(raw) : 0;
-            if (Number.isFinite(v)) setResumeProgress(v);
+            if (Number.isFinite(v)) {
+                setResumeProgress(v);
+                setArticleScrollProgress(Math.min(100, Math.max(0, v * 100)));
+            } else {
+                setResumeProgress(0);
+                setArticleScrollProgress(0);
+            }
         } catch (_) {
-            // ignore
+            setResumeProgress(0);
+            setArticleScrollProgress(0);
         }
     }, [post?._id]);
 
@@ -505,6 +668,10 @@ export default function PostPage() {
             if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
             if (e.key === '?') {
                 setShowShortcuts((s) => !s);
+            } else if (e.key === 'h') {
+                jumpToHeading(-1);
+            } else if (e.key === 'H') {
+                jumpToHeading(1);
             } else if (e.key === 't') {
                 handleScrollTop();
             } else if (e.key === 'c') {
@@ -515,7 +682,7 @@ export default function PostPage() {
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [handleDiscuss, handleScrollTop]);
+    }, [handleDiscuss, handleScrollTop, jumpToHeading]);
 
     // Compact header visibility when scrolled past hero
     useEffect(() => {
@@ -536,50 +703,82 @@ export default function PostPage() {
     );
     if (!post) return null;
 
-    const parserOptions = {
-        replace: domNode => {
-            if (domNode.type === 'tag' && (domNode.name === 'h2' || domNode.name === 'h3')) {
-                const textContent = getTextFromNode(domNode);
-                const id = generateSlug(textContent);
-                if (id) domNode.attribs.id = id;
-                return;
-            }
-            if (domNode.type === 'tag' && domNode.name === 'img') {
-                const src = domNode.attribs.src;
-                const index = imagesInPost.indexOf(src);
-                if (index > -1) {
+    const relatedPool = Array.isArray(relatedPosts)
+        ? relatedPosts.filter((candidate) => candidate._id !== post._id)
+        : [];
+    const previousPost = relatedPool[0] || null;
+    const nextPost = relatedPool[1] || null;
+    const previousPostPath = getPostPath(previousPost);
+    const nextPostPath = getPostPath(nextPost);
+    const hasRelatedPosts = relatedPool.length > 0;
+    const readingProgressPercent = Math.round(articleScrollProgress);
+    const canResumeReading = Number.isFinite(resumeProgress) && resumeProgress > 0.05 && resumeProgress < 0.98;
+    const isReadingComplete = readingProgressPercent >= 98;
+    const primaryReadingActionLabel = canResumeReading ? 'Resume article' : isReadingComplete ? 'Read again' : 'Start reading';
+    const primaryReadingAction = canResumeReading ? handleResumeReading : handleStartReading;
+    const readingProgressStatus = isReadingComplete ? 'Completed' : canResumeReading ? 'In progress' : 'Fresh start';
+    const activeHeading = headings.find((heading) => heading.id === activeHeadingId) || null;
+    const authorDisplayName = post.authorName || post.username || 'Scientist Shield Editorial';
+    const articleFormatLabel = primaryAsset?.type === 'video'
+        ? 'Video article'
+        : primaryAsset?.type === 'audio'
+            ? 'Audio article'
+            : primaryAsset?.type === 'document'
+                ? 'Document-backed article'
+                : illustrationItems.length > 0
+                    ? 'Illustrated article'
+                    : galleryItems.length > 1
+                        ? 'Media article'
+                        : 'Article';
+
+    const parserOptions = (() => {
+        let renderedHeadingIndex = 0;
+
+        return {
+            replace: domNode => {
+                if (domNode.type === 'tag' && (domNode.name === 'h2' || domNode.name === 'h3')) {
+                    const id = headings[renderedHeadingIndex]?.id || generateSlug(getTextFromNode(domNode));
+                    renderedHeadingIndex += 1;
+                    if (id) domNode.attribs.id = id;
+                    return;
+                }
+                if (domNode.type === 'tag' && domNode.name === 'img') {
+                    const src = domNode.attribs.src;
+                    const index = imagesInPost.indexOf(src);
+                    if (index > -1) {
+                        return (
+                            <img
+                                {...domNode.attribs}
+                                onClick={() => openImageViewer(index)}
+                                style={{ cursor: 'pointer' }}
+                                loading="lazy"
+                            />
+                        );
+                    }
+                }
+                // NEW: Render the CodeEditor component
+                if (domNode.type === 'tag' && domNode.name === 'div' && domNode.attribs['data-snippet-id']) {
+                    const snippetId = domNode.attribs['data-snippet-id'];
                     return (
-                        <img
-                            {...domNode.attribs}
-                            onClick={() => openImageViewer(index)}
-                            style={{ cursor: 'pointer' }}
-                            loading="lazy"
+                        <EmbeddedSnippetPreview
+                            snippetId={snippetId}
+                            className='my-6'
                         />
                     );
                 }
-            }
-            // NEW: Render the CodeEditor component
-            if (domNode.type === 'tag' && domNode.name === 'div' && domNode.attribs['data-snippet-id']) {
-                const snippetId = domNode.attribs['data-snippet-id'];
-                return (
-                    <EmbeddedSnippetPreview
-                        snippetId={snippetId}
-                        className='my-6'
-                    />
-                );
-            }
-            if (domNode.type === 'tag' && domNode.name === 'div' && domNode.attribs['data-lottie-src']) {
-                return (
-                    <LottieAnimationPlayer
-                        src={domNode.attribs['data-lottie-src']}
-                        autoplay={domNode.attribs['data-lottie-autoplay'] !== 'false'}
-                        loop={domNode.attribs['data-lottie-loop'] !== 'false'}
-                        className='my-6'
-                    />
-                );
-            }
-        }
-    };
+                if (domNode.type === 'tag' && domNode.name === 'div' && domNode.attribs['data-lottie-src']) {
+                    return (
+                        <LottieAnimationPlayer
+                            src={domNode.attribs['data-lottie-src']}
+                            autoplay={domNode.attribs['data-lottie-autoplay'] !== 'false'}
+                            loop={domNode.attribs['data-lottie-loop'] !== 'false'}
+                            className='my-6'
+                        />
+                    );
+                }
+            },
+        };
+    })();
 
     return (
         <>
@@ -589,7 +788,7 @@ export default function PostPage() {
                 <meta property="og:title" content={post.title} />
                 <meta property="og:description" content={metaDescription} />
                 <meta property="og:image" content={heroImage || post.image} />
-                <meta property="og:url" content={window.location.href} />
+                <meta property="og:url" content={pageUrl} />
                 <meta property="og:type" content="article" />
                 <script type="application/ld+json">
                     {JSON.stringify({
@@ -603,23 +802,21 @@ export default function PostPage() {
                         articleSection: post.category || undefined,
                         mainEntityOfPage: {
                             '@type': 'WebPage',
-                            '@id': typeof window !== 'undefined' ? window.location.href : ''
+                            '@id': pageUrl,
                         },
-                        url: typeof window !== 'undefined' ? window.location.href : '',
+                        url: pageUrl,
                         author: post.authorName || post.username || undefined,
                     })}
                 </script>
             </Helmet>
 
-            {!pagedMode && (
-                <ReadingControlCenter
-                    settings={readingSettings}
-                    onChange={updateReadingSetting}
-                    onReset={resetReadingSettings}
-                />
-            )}
+            <ReadingControlCenter
+                settings={readingSettings}
+                onChange={updateReadingSetting}
+                onReset={resetReadingSettings}
+            />
 
-            <ReadingProgressBar />
+            <ReadingProgressBar progressOverride={articleScrollProgress} />
             <div className='liquid-stage' data-theme='liquid-glass'>
                 <div className='liquid-stage__backdrop' aria-hidden='true'>
                     <div className='liquid-stage__blob liquid-stage__blob--cyan' />
@@ -629,16 +826,40 @@ export default function PostPage() {
                     <div className='liquid-stage__glint' />
                     <div className='liquid-stage__noise' />
                 </div>
-                <div className='relative z-10 min-h-screen pb-16'>
+                <div className='relative z-10 pb-28 lg:pb-16'>
                     {/* Compact sticky header when reading */}
                     {showCompactHeader && (
                         <div className='fixed inset-x-0 top-0 z-40 px-3 pt-2'>
                             <div className='glass-navbar glass-panel mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-2xl border border-white/20 bg-white/60 px-3 py-2 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:border-white/10 dark:bg-slate-900/70'>
                                 <div className='flex min-w-0 items-center gap-3'>
                                     <span className='inline-flex h-2.5 w-2.5 flex-none rounded-full bg-sky-500 ring-2 ring-sky-500/20' aria-hidden='true' />
-                                    <span className='truncate text-sm font-medium text-slate-700 dark:text-slate-200'>{post.title}</span>
+                                    <div className='min-w-0'>
+                                        <span className='block truncate text-sm font-medium text-slate-700 dark:text-slate-200'>{post.title}</span>
+                                        <span className='hidden truncate text-[11px] text-slate-500 dark:text-slate-400 md:block'>
+                                            {activeHeading?.text || 'Opening section'} · {readingProgressPercent}% read
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className='hidden min-w-[14rem] flex-1 md:block'>
+                                    <div className='flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400'>
+                                        <span className='truncate'>{readingProgressStatus}</span>
+                                        <span>{readingProgressPercent}%</span>
+                                    </div>
+                                    <div className='mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-700/80'>
+                                        <div
+                                            className='h-full rounded-full bg-gradient-to-r from-cyan-400 via-sky-500 to-emerald-400 transition-[width] duration-300'
+                                            style={{ width: `${readingProgressPercent}%` }}
+                                        />
+                                    </div>
                                 </div>
                                 <div className='flex items-center gap-2'>
+                                    <button
+                                        type='button'
+                                        onClick={primaryReadingAction}
+                                        className='hidden rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-100 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-200 dark:hover:border-sky-400/35 dark:hover:bg-sky-400/15 sm:inline-flex'
+                                    >
+                                        {canResumeReading ? 'Resume' : 'Read now'}
+                                    </button>
                                     <ClapButton
                                         postId={post._id}
                                         initialClaps={post.claps ?? 0}
@@ -667,87 +888,109 @@ export default function PostPage() {
                         className='relative isolate overflow-hidden text-white'
                         style={heroBackgroundStyle}
                     >
-                        <div className='absolute inset-0 bg-slate-900/82 backdrop-blur-lg dark:bg-slate-950/86' />
+                        <div className='absolute inset-0 bg-slate-900/84 backdrop-blur-lg dark:bg-slate-950/88' />
                         <div className='absolute inset-x-0 -bottom-44 h-[460px] bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent opacity-80 blur-3xl dark:from-slate-950 dark:via-slate-950/80' aria-hidden='true' />
-                        <div className='absolute -left-24 top-20 h-72 w-72 rounded-full bg-gradient-to-br from-sky-400/50 via-cyan-300/40 to-emerald-400/50 blur-3xl' aria-hidden='true' />
-                        <div className='absolute -right-28 bottom-10 h-80 w-80 rounded-full bg-gradient-to-br from-indigo-400/45 via-violet-400/38 to-amber-300/42 blur-3xl' aria-hidden='true' />
-                        <div className='absolute inset-x-10 top-16 h-40 rounded-full bg-white/10 blur-3xl mix-blend-screen' aria-hidden='true' />
-                        <div className='relative mx-auto flex max-w-6xl flex-col gap-8 px-4 py-20 sm:px-8 sm:py-24 lg:px-0'>
-                            {/* Breadcrumbs */}
-                            <div className='glass-panel liquid-hybrid-band lg-glass-strong mx-auto flex w-full max-w-5xl flex-col gap-6 rounded-[28px] border border-white/25 bg-white/10 p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-white/5 sm:p-10'>
-                                <nav aria-label='Breadcrumb' className='mx-auto -mb-2 flex items-center gap-2 text-xs text-slate-200/90'>
-                                    <Link to='/' className='link-premium'>Home</Link>
-                                    <span aria-hidden='true'>/</span>
-                                    <Link to={`/search?category=${categoryQuery}`} className='link-premium'>{formatCategory(post.category)}</Link>
-                                    <span aria-hidden='true'>/</span>
-                                    <span className='truncate max-w-[40ch]' title={post.title}>{post.title}</span>
-                                </nav>
-                                <div className='inline-flex flex-wrap items-center justify-center gap-3 self-center text-[11px] uppercase tracking-[0.28em] text-slate-100'>
-                                    <span className='inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1 font-semibold backdrop-blur'>
-                                        <HiOutlineSparkles className='h-4 w-4 text-amber-300' aria-hidden='true' />
-                                        Liquid Glass Feature
-                                    </span>
-                                    <Link
-                                        to={`/search?category=${categoryQuery}`}
-                                        className='inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-1 font-medium backdrop-blur transition hover:border-white/50 hover:bg-white/20'
-                                    >
-                                        {formatCategory(post.category)}
-                                    </Link>
-                                </div>
-                                <h1 className='text-balance text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl'>
+                        <div className='absolute -left-24 top-20 h-72 w-72 rounded-full bg-gradient-to-br from-sky-400/40 via-cyan-300/30 to-emerald-400/36 blur-3xl' aria-hidden='true' />
+                        <div className='absolute -right-28 bottom-10 h-80 w-80 rounded-full bg-gradient-to-br from-indigo-400/36 via-violet-400/28 to-amber-300/32 blur-3xl' aria-hidden='true' />
+                        <div className='relative mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-16 text-center sm:px-6 sm:py-20 lg:px-10'>
+                            <nav aria-label='Breadcrumb' className='flex flex-wrap items-center justify-center gap-2 text-xs text-slate-200/90'>
+                                <Link to='/' className='link-premium'>Home</Link>
+                                <span aria-hidden='true'>/</span>
+                                <Link to={`/search?category=${categoryQuery}`} className='link-premium'>{formatCategory(post.category)}</Link>
+                                <span aria-hidden='true'>/</span>
+                                <span className='truncate max-w-[40ch]' title={post.title}>{post.title}</span>
+                            </nav>
+
+                            <div className='flex flex-wrap items-center justify-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-100'>
+                                <span className='inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1.5 font-semibold backdrop-blur'>
+                                    {articleFormatLabel}
+                                </span>
+                                <Link
+                                    to={`/search?category=${categoryQuery}`}
+                                    className='inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-1.5 font-medium backdrop-blur transition hover:border-white/50 hover:bg-white/20'
+                                >
+                                    {formatCategory(post.category)}
+                                </Link>
+                            </div>
+
+                            <div className='mx-auto max-w-4xl space-y-4'>
+                                <h1 className='text-balance text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl xl:text-6xl'>
                                     {post.title}
                                 </h1>
                                 {heroDescriptionText && (
-                                    <p className='mx-auto max-w-3xl text-base text-slate-100/90 sm:text-lg'>
+                                    <p className='mx-auto max-w-3xl text-base leading-7 text-slate-100/90 sm:text-lg'>
                                         {heroDescriptionText}
                                     </p>
                                 )}
-                                <div className='flex flex-wrap items-center justify-center gap-3 sm:gap-4'>
-                                    <Button
-                                        gradientDuoTone='purpleToBlue'
-                                        className='group flex items-center gap-2 rounded-full px-6 py-2 text-sm font-semibold shadow-lg shadow-sky-500/35 backdrop-blur'
-                                        onClick={handleStartReading}
-                                    >
-                                        Start reading
-                                        <FaArrowRight className='h-4 w-4 transition-transform duration-300 group-hover:translate-x-1' />
-                                    </Button>
-                                    <Button
-                                        color='light'
-                                        className='group flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-2 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/20'
-                                        onClick={handleDiscuss}
-                                    >
-                                        Join the discussion
-                                        <FaCommentDots className='h-4 w-4 text-slate-200 transition-transform duration-300 group-hover:-translate-y-0.5' />
-                                    </Button>
-                                    <Button color='light' className='rounded-full border border-white/30 bg-white/10 px-6 py-2 text-sm font-semibold text-white hover:border-white/50 hover:bg-white/20' onClick={handleShare}>
-                                        Share
-                                    </Button>
-                                </div>
-                                <div className='mx-auto flex flex-wrap items-center justify-center gap-3 text-sm text-slate-200/90 sm:gap-4'>
-                                    {formattedPublishDate && (
-                                        <span className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
-                                            <FaCalendarAlt className='h-4 w-4 text-emerald-300' aria-hidden='true' />
-                                            {formattedPublishDate}
-                                        </span>
-                                    )}
-                                    {readingStats.readingMinutes > 0 && (
-                                        <span className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
-                                            <FaClock className='h-4 w-4 text-sky-300' aria-hidden='true' />
-                                            {readingStats.readingMinutes} minute read
-                                        </span>
-                                    )}
-                                    {readingStats.wordCount > 0 && (
-                                        <span className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
-                                            <FaBookOpen className='h-4 w-4 text-indigo-300' aria-hidden='true' />
-                                            {readingStats.wordCount.toLocaleString()} words
-                                        </span>
-                                    )}
-                                </div>
+                            </div>
+
+                            <div className='flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-slate-200/85'>
+                                <span className='font-semibold text-white'>{authorDisplayName}</span>
+                                {formattedPublishDate && (
+                                    <span>{formattedPublishDate}</span>
+                                )}
+                                <span>
+                                    {readingStats.readingMinutes > 0 ? `${readingStats.readingMinutes} min read` : 'Quick read'}
+                                </span>
+                                <span>
+                                    {headings.length ? `${headings.length} sections` : 'Continuous article'}
+                                </span>
+                            </div>
+
+                            <div className='flex flex-wrap items-center justify-center gap-3 sm:gap-4'>
+                                <button
+                                    type='button'
+                                    onClick={primaryReadingAction}
+                                    className='group inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-100 hover:shadow-xl'
+                                >
+                                    {primaryReadingActionLabel}
+                                    <FaArrowRight className='h-4 w-4 transition-transform duration-300 group-hover:translate-x-1' />
+                                </button>
+                                <button
+                                    type='button'
+                                    onClick={handleDiscuss}
+                                    className='inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/20'
+                                >
+                                    Join discussion
+                                    <FaCommentDots className='h-4 w-4 text-slate-200' />
+                                </button>
+                                <button
+                                    type='button'
+                                    onClick={handleShare}
+                                    className='inline-flex items-center gap-2 rounded-full border border-white/20 bg-slate-950/20 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-white/40 hover:bg-slate-950/30'
+                                >
+                                    <FaArrowRight className='h-4 w-4 rotate-[-45deg] text-cyan-200' />
+                                    Share article
+                                </button>
+                            </div>
+
+                            <div className='mx-auto flex flex-wrap items-center justify-center gap-3 text-sm text-slate-200/90 sm:gap-4'>
+                                {formattedPublishDate && (
+                                    <span className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
+                                        <FaCalendarAlt className='h-4 w-4 text-emerald-300' aria-hidden='true' />
+                                        {formattedPublishDate}
+                                    </span>
+                                )}
+                                {readingStats.readingMinutes > 0 && (
+                                    <span className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
+                                        <FaClock className='h-4 w-4 text-sky-300' aria-hidden='true' />
+                                        {readingStats.readingMinutes} minute read
+                                    </span>
+                                )}
+                                {readingStats.wordCount > 0 && (
+                                    <span className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
+                                        <FaBookOpen className='h-4 w-4 text-indigo-300' aria-hidden='true' />
+                                        {readingStats.wordCount.toLocaleString()} words
+                                    </span>
+                                )}
+                                <span className='inline-flex items-center rounded-full bg-white/10 px-4 py-2 backdrop-blur'>
+                                    {readingProgressPercent}% read
+                                </span>
                             </div>
                         </div>
                     </section>
 
-                    <main className='mx-auto flex max-w-6xl flex-col gap-10 px-4 py-10 lg:flex-row lg:px-10'>
+                    <main className='mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-10 sm:px-6 lg:flex-row lg:px-10'>
                         <article id='article-start' className='relative flex-1 space-y-10'>
                             {/* Desktop action rail */}
                             <div className='pointer-events-none absolute -left-14 top-0 hidden h-full lg:block'>
@@ -779,6 +1022,7 @@ export default function PostPage() {
                                     </Tooltip>
                                 </div>
                             </div>
+
                         {primaryAsset && (
                             <article className='liquid-hybrid-panel overflow-hidden shadow-2xl transition duration-500 hover:-translate-y-1'>
                                 {primaryAsset.type === 'video' ? (
@@ -842,55 +1086,23 @@ export default function PostPage() {
                             </div>
                         )}
 
-                        <div
-                            className='glass-panel liquid-hybrid-panel overflow-hidden'
-                            style={sharedContentStyle}
-                        >
-                            <div className='flex items-center justify-between border-b border-white/20 bg-white/30 px-6 py-3 text-xs text-slate-600 backdrop-blur dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-300 sm:px-8'>
-                                <span>Reading mode</span>
-                                <div className='inline-flex items-center gap-2'>
-                                    <button
-                                        type='button'
-                                        onClick={() => setPagedMode(false)}
-                                        className={`rounded-md px-2 py-1 ${!pagedMode ? 'bg-white/70 text-slate-800 shadow-sm backdrop-blur dark:bg-slate-800/70 dark:text-slate-100' : 'hover:bg-white/60 dark:hover:bg-slate-800/60'}`}
-                                    >Scroll</button>
-                                    <button
-                                        type='button'
-                                        onClick={() => setPagedMode(true)}
-                                        className={`rounded-md px-2 py-1 ${pagedMode ? 'bg-white/70 text-slate-800 shadow-sm backdrop-blur dark:bg-slate-800/70 dark:text-slate-100' : 'hover:bg-white/60 dark:hover:bg-slate-800/60'}`}
-                                    >Pages</button>
-                                </div>
-                            </div>
-
-                            {pagedMode ? (
-                                <div className='px-2 py-4 sm:px-4 sm:py-6'>
-                                    <PagedReader
-                                        content={sanitizedContent}
-                                        parserOptions={parserOptions}
-                                        chapterId={post._id}
-                                        readingMinutes={readingStats.readingMinutes}
-                                        // Share reading settings with paged mode
-                                        settings={readingSettings}
-                                        onChange={updateReadingSetting}
-                                        onReset={resetReadingSettings}
-                                        contentStyles={contentStyles}
-                                        contentMaxWidth={contentMaxWidth}
-                                        surfaceClass={surfaceClass}
-                                        showReadingControls={true}
-                                    />
-                                </div>
-                            ) : (
+                        <div className='post-article-shell glass-panel liquid-hybrid-panel overflow-hidden'>
+                            <div className='post-article-shell__body'>
                                 <InteractiveReadingSurface
                                     content={sanitizedContent}
                                     parserOptions={parserOptions}
-                                    contentStyles={contentStyles}
-                                    contentMaxWidth={contentMaxWidth}
+                                    contentStyles={postArticleContentStyles}
+                                    contentMaxWidth={postArticleContentMaxWidth}
                                     surfaceClass={surfaceClass}
-                                    className='post-content tiptap reading-surface w-full space-y-6 px-6 py-8 text-left text-slate-700 transition-all duration-300 dark:text-slate-200 sm:px-10 sm:py-12'
+                                    className='post-content tiptap reading-surface w-full px-5 py-6 text-left text-slate-700 transition-all duration-300 dark:text-slate-200 sm:px-8 sm:py-8 xl:px-8 xl:py-8'
                                     chapterId={post._id}
                                     readingMinutes={readingStats.readingMinutes}
+                                    variant='post-article'
+                                    scrollRootId={POST_ARTICLE_SCROLL_ROOT_ID}
+                                    hideToolbar
+                                    onProgressChange={handleArticleProgressChange}
                                 />
-                            )}
+                            </div>
                         </div>
 
                         {illustrationItems.length > 0 && (
@@ -933,53 +1145,43 @@ export default function PostPage() {
                         </div>
 
                         {/* Prev/Next quick nav based on related posts */}
-                        {relatedPosts && relatedPosts.filter(p => p._id !== post._id).length > 0 && (
-                            (() => {
-                                const pool = relatedPosts.filter(p => p._id !== post._id);
-                                const prev = pool[0];
-                                const next = pool[1];
-                                if (!prev && !next) return null;
-                                    return (
-                                        <div className='liquid-hybrid-tile flex flex-col gap-3 p-4 shadow-xl sm:flex-row sm:items-stretch sm:justify-between'>
-                                            <div className='flex-1'>
-                                                {prev && (
-                                                    <Link to={`/post/${prev.slug}`} className='group flex items-center gap-3 rounded-xl border border-white/50 bg-white/70 p-3 backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-300 dark:border-white/10 dark:bg-slate-900/60 dark:hover:border-sky-500'>
-                                                        <FaChevronLeft className='text-slate-400 group-hover:text-sky-500' />
-                                                        <div className='min-w-0'>
-                                                            <div className='text-xs uppercase tracking-wide text-slate-400'>Previous</div>
-                                                            <div className='truncate text-sm font-semibold text-slate-700 group-hover:text-sky-700 dark:text-slate-200 dark:group-hover:text-sky-300'>{prev.title}</div>
-                                                        </div>
-                                                    </Link>
-                                                )}
+                        {hasRelatedPosts && (
+                            <div className='liquid-hybrid-tile flex flex-col gap-3 p-4 shadow-xl sm:flex-row sm:items-stretch sm:justify-between'>
+                                <div className='flex-1'>
+                                    {previousPost && previousPostPath && (
+                                        <Link to={previousPostPath} className='group flex items-center gap-3 rounded-xl border border-white/50 bg-white/70 p-3 backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-300 dark:border-white/10 dark:bg-slate-900/60 dark:hover:border-sky-500'>
+                                            <FaChevronLeft className='text-slate-400 group-hover:text-sky-500' />
+                                            <div className='min-w-0'>
+                                                <div className='text-xs uppercase tracking-wide text-slate-400'>Previous</div>
+                                                <div className='truncate text-sm font-semibold text-slate-700 group-hover:text-sky-700 dark:text-slate-200 dark:group-hover:text-sky-300'>{previousPost.title}</div>
                                             </div>
-                                            <div className='flex-1'>
-                                                {next && (
-                                                    <Link to={`/post/${next.slug}`} className='group flex items-center justify-end gap-3 rounded-xl border border-white/50 bg-white/70 p-3 text-right backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-300 dark:border-white/10 dark:bg-slate-900/60 dark:hover:border-sky-500'>
-                                                        <div className='min-w-0'>
-                                                            <div className='text-xs uppercase tracking-wide text-slate-400'>Next</div>
-                                                            <div className='truncate text-sm font-semibold text-slate-700 group-hover:text-sky-700 dark:text-slate-200 dark:group-hover:text-sky-300'>{next.title}</div>
-                                                        </div>
-                                                        <FaChevronRight className='text-slate-400 group-hover:text-sky-500' />
-                                                    </Link>
-                                                )}
+                                        </Link>
+                                    )}
+                                </div>
+                                <div className='flex-1'>
+                                    {nextPost && nextPostPath && (
+                                        <Link to={nextPostPath} className='group flex items-center justify-end gap-3 rounded-xl border border-white/50 bg-white/70 p-3 text-right backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-300 dark:border-white/10 dark:bg-slate-900/60 dark:hover:border-sky-500'>
+                                            <div className='min-w-0'>
+                                                <div className='text-xs uppercase tracking-wide text-slate-400'>Next</div>
+                                                <div className='truncate text-sm font-semibold text-slate-700 group-hover:text-sky-700 dark:text-slate-200 dark:group-hover:text-sky-300'>{nextPost.title}</div>
                                             </div>
-                                        </div>
-                                    );
-                            })()
+                                            <FaChevronRight className='text-slate-400 group-hover:text-sky-500' />
+                                        </Link>
+                                    )}
+                                </div>
+                            </div>
                         )}
 
-                        {relatedPosts && relatedPosts.filter(p => p._id !== post._id).length > 0 && (
+                        {hasRelatedPosts && (
                             <section className='liquid-hybrid-panel space-y-6 p-6 shadow-xl'>
                                 <div className='flex items-center justify-between'>
                                     <h2 className='text-lg font-semibold text-slate-800 dark:text-slate-100'>Related articles</h2>
                                     <span className='text-xs uppercase tracking-wide text-slate-400'>Curated for you</span>
                                 </div>
                                 <div className='grid gap-5 md:grid-cols-2'>
-                                    {relatedPosts
-                                        .filter(p => p._id !== post._id)
-                                        .map((p) => (
-                                            <PostCard key={p._id} post={p} />
-                                        ))}
+                                    {relatedPool.map((candidate) => (
+                                        <PostCard key={candidate._id} post={candidate} />
+                                    ))}
                                 </div>
                             </section>
                         )}
@@ -991,37 +1193,67 @@ export default function PostPage() {
                                 <h2 className='text-base font-semibold text-slate-800 dark:text-slate-100'>On this page</h2>
                                 <p className='mt-2 text-sm text-slate-500 dark:text-slate-400'>Navigate through the key sections of this story.</p>
                                 <div className='mt-4 max-h-[60vh] overflow-y-auto pr-1 text-sm'>
-                                    <TableOfContents headings={headings} activeId={activeHeadingId} />
+                                    <TableOfContents
+                                        headings={headings}
+                                        activeId={activeHeadingId}
+                                        scrollContainerId={POST_ARTICLE_SCROLL_ROOT_ID}
+                                    />
                                 </div>
                             </div>
 
                             <div className='liquid-hybrid-panel p-6 shadow-xl'>
-                                <h3 className='text-base font-semibold text-slate-800 dark:text-slate-100'>Reading insights</h3>
+                                <div className='flex items-center justify-between gap-3'>
+                                    <h3 className='text-base font-semibold text-slate-800 dark:text-slate-100'>Reading insights</h3>
+                                    <span className='rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800/70 dark:text-slate-100'>
+                                        {readingProgressPercent}%
+                                    </span>
+                                </div>
+                                <div className='mt-4 h-2 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800'>
+                                    <div
+                                        className='h-full rounded-full bg-gradient-to-r from-cyan-400 via-sky-500 to-emerald-400 transition-[width] duration-300'
+                                        style={{ width: `${readingProgressPercent}%` }}
+                                    />
+                                </div>
                                 <ul className='mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300'>
                                     {formattedPublishDate && (
                                         <li className='flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 backdrop-blur dark:bg-slate-800/70'>
-                                            <FaCalendarAlt className='h-4 w-4 text-slate-500 dark:text-slate-400' aria-hidden="true" />
+                                            <FaCalendarAlt className='h-4 w-4 text-slate-500 dark:text-slate-400' aria-hidden='true' />
                                             Published on {formattedPublishDate}
                                         </li>
                                     )}
                                     {readingStats.readingMinutes > 0 && (
                                         <li className='flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 backdrop-blur dark:bg-slate-800/70'>
-                                            <FaClock className='h-4 w-4 text-slate-500 dark:text-slate-400' aria-hidden="true" />
+                                            <FaClock className='h-4 w-4 text-slate-500 dark:text-slate-400' aria-hidden='true' />
                                             {readingStats.readingMinutes} minute read
                                         </li>
                                     )}
                                     {readingStats.wordCount > 0 && (
                                         <li className='flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2 backdrop-blur dark:bg-slate-800/70'>
-                                            <FaBookOpen className='h-4 w-4 text-slate-500 dark:text-slate-400' aria-hidden="true" />
+                                            <FaBookOpen className='h-4 w-4 text-slate-500 dark:text-slate-400' aria-hidden='true' />
                                             {readingStats.wordCount.toLocaleString()} words to explore
                                         </li>
                                     )}
+                                    <li className='rounded-2xl bg-white/60 px-3 py-2 text-slate-700 backdrop-blur dark:bg-slate-800/70 dark:text-slate-200'>
+                                        Current section: {activeHeading?.text || 'Opening section'}
+                                    </li>
                                 </ul>
-                                <div className='mt-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-sky-500 to-indigo-500 p-[1px]'>
-                                    <div className='rounded-2xl bg-white p-5 text-center dark:bg-slate-950'>
-                                        <p className='text-sm font-medium text-slate-700 dark:text-slate-200'>Adjust the reading experience to match your focus preference.</p>
-                                        <p className='mt-2 text-xs text-slate-500 dark:text-slate-400'>Use the Control Center in the header to toggle focus mode and fine-tune brightness or sound.</p>
-                                    </div>
+                                <div className='mt-6 grid gap-2'>
+                                    <button
+                                        type='button'
+                                        onClick={primaryReadingAction}
+                                        className='inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
+                                    >
+                                        {primaryReadingActionLabel}
+                                        <FaArrowRight className='h-4 w-4' />
+                                    </button>
+                                    <button
+                                        type='button'
+                                        onClick={handleCopyLink}
+                                        className='inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-sky-300 hover:text-sky-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-sky-500 dark:hover:text-sky-300'
+                                    >
+                                        <FaLink className='h-4 w-4' />
+                                        Copy story link
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1082,25 +1314,19 @@ export default function PostPage() {
                                 headings={headings}
                                 activeId={activeHeadingId}
                                 onNavigate={() => setShowMobileToc(false)}
+                                scrollContainerId={POST_ARTICLE_SCROLL_ROOT_ID}
+                                revealContainerOnNavigate
                             />
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Resume reading prompt */}
-            {resumeProgress !== null && resumeProgress > 0.05 && resumeProgress < 0.98 && (
+            {canResumeReading && (
                 <div className='fixed bottom-6 left-6 z-40 rounded-full border border-slate-200/70 bg-white/95 px-4 py-2 text-sm text-slate-700 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 lg:hidden'>
                     <button
-                        onClick={() => {
-                            const c = document.querySelector('[data-reading-surface="true"]');
-                            if (!c) return;
-                            const rect = c.getBoundingClientRect();
-                            const start = window.scrollY + rect.top;
-                            const denom = Math.max(1, c.scrollHeight - window.innerHeight);
-                            const target = start + denom * resumeProgress;
-                            window.scrollTo({ top: target, behavior: 'smooth' });
-                        }}
+                        type='button'
+                        onClick={handleResumeReading}
                         className='font-medium hover:underline'
                         aria-label='Resume reading from last position'
                     >
@@ -1118,9 +1344,7 @@ export default function PostPage() {
                         <p><span className='font-semibold'>t</span> Back to top</p>
                         <p><span className='font-semibold'>c</span> Jump to comments</p>
                         <p><span className='font-semibold'>p</span> Print</p>
-                        <p><span className='font-semibold'>/</span> Focus in-page search</p>
                         <p><span className='font-semibold'>h / H</span> Previous / Next heading</p>
-                        <p><span className='font-semibold'>Enter</span> Next search hit (<span className='font-semibold'>Shift+Enter</span> previous)</p>
                     </div>
                 </Modal.Body>
             </Modal>
