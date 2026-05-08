@@ -35,6 +35,7 @@ const WINDOW_LIMIT_MESSAGE = `Window limit reached (${MAX_OPEN_WINDOWS}). Close 
 const SINGLE_WINDOW_MODE = false;
 const WINDOW_SESSION_ID = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 const MAIN_WINDOW_ID = 'main-window';
+const RECENT_CLOSED_APP_LIMIT = 6;
 const MAC_STAGE_MARGIN = 48;
 const MAC_HEADER_HEIGHT = 52;
 const DESKTOP_HEADER_RESERVE_PX = 86;
@@ -87,6 +88,8 @@ const LAYOUT_PRESETS = Object.freeze({
     br: { id: 'br', label: 'Bottom Right', target: 'br' },
     center: { id: 'center', label: 'Centered', target: 'center' },
 });
+
+const STAGE_STACK_MAX_LANES = 4;
 
 const LAYOUT_PRESET_MAP = Object.freeze(
     Object.values(LAYOUT_PRESETS).reduce((acc, preset) => {
@@ -598,6 +601,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
     const [windows, setWindows] = useState([]);
     const activePath = activeLocation?.pathname || '/';
     const [closedTypes, setClosedTypes] = useState([]);
+    const [recentClosedApps, setRecentClosedApps] = useState([]);
     const [scratchpadText, setScratchpadText] = useState(() => {
         if (typeof window === 'undefined') return '';
         return localStorage.getItem('scientistshield.desktop.scratchpad') ?? '';
@@ -752,6 +756,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         () => WINDOW_LAYOUT_OPTIONS,
         []
     );
+    const layoutPresetList = useMemo(() => Object.values(LAYOUT_PRESETS), []);
 
     const updateWindowSwitcher = useCallback((updater) => {
         setWindowSwitcher((prev) => {
@@ -2574,6 +2579,30 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             windowsToClose.length > 1
                 ? 'Utility windows closed'
                 : `${primary.title || typeToTitle(primary.type)} closed`;
+        const closedAppEntries = windowsToClose
+            .filter((win) => win.isAppWindow)
+            .map((win) => ({
+                ...serializeWindowEntry(win),
+                closedAt: Date.now(),
+            }));
+
+        if (closedAppEntries.length > 0) {
+            setRecentClosedApps((prev) => {
+                const next = [
+                    ...closedAppEntries,
+                    ...prev.filter(
+                        (entry) =>
+                            !closedAppEntries.some(
+                                (closed) =>
+                                    closed.id === entry.id ||
+                                    (closed.appRouteKey === entry.appRouteKey &&
+                                        closed.appRoutePath === entry.appRoutePath)
+                            )
+                    ),
+                ];
+                return next.slice(0, RECENT_CLOSED_APP_LIMIT);
+            });
+        }
 
         setClosedTypes((prev) => {
             const unique = new Set(prev);
@@ -2798,7 +2827,6 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         return true;
     }, [announce, layoutOptions, navigate]);
 
-
     const reopenWindow = useCallback(
         (type) => {
             if (typeof window === 'undefined') return;
@@ -2970,6 +2998,328 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         },
         [bringToFront]
     );
+
+    const reopenRecentAppWindow = useCallback(
+        (entry) => {
+            if (SINGLE_WINDOW_MODE || typeof window === 'undefined' || !entry?.id) {
+                return false;
+            }
+            const snapshot = windowsRef.current;
+            const existing = snapshot.find((win) => win.id === entry.id);
+            if (existing) {
+                restoreWindow(existing.id);
+                setRecentClosedApps((prev) => prev.filter((item) => item.id !== entry.id));
+                return true;
+            }
+            if (snapshot.length >= MAX_OPEN_WINDOWS) {
+                announce(WINDOW_LIMIT_MESSAGE);
+                return false;
+            }
+
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const nextZ = zRef.current + 1;
+            zRef.current = nextZ;
+
+            const restored = sanitizeWindowEntry(
+                {
+                    ...entry,
+                    z: nextZ,
+                    minimized: false,
+                    minimizedByUser: false,
+                    isMain: true,
+                },
+                viewportWidth,
+                viewportHeight,
+                layoutOptions
+            );
+
+            if (!restored) {
+                return false;
+            }
+
+            const nextWindow = {
+                ...restored,
+                z: nextZ,
+                minimized: false,
+                minimizedByUser: false,
+                isMain: true,
+                isAppWindow: true,
+                iconComponent: iconForAppKey(restored.appIconKey || restored.appRouteKey),
+            };
+
+            setWindows((wins) => [
+                ...wins.map((win) =>
+                    win.isAppWindow && win.appRouteKey === nextWindow.appRouteKey
+                        ? { ...win, isMain: false }
+                        : win
+                ),
+                nextWindow,
+            ]);
+            setRecentClosedApps((prev) => prev.filter((item) => item.id !== entry.id));
+            setActiveAppId(nextWindow.id);
+            activeAppIdRef.current = nextWindow.id;
+            navigateToWindowRoute(nextWindow);
+            announce(`${nextWindow.title || appLabelForKey(nextWindow.appRouteKey)} restored`);
+            return true;
+        },
+        [announce, layoutOptions, navigateToWindowRoute, restoreWindow]
+    );
+
+    const restoreAllWindows = useCallback(() => {
+        const minimizedCount = windowsRef.current.filter((win) => win.minimized).length;
+        if (minimizedCount === 0) {
+            announce('No minimized windows to restore');
+            return false;
+        }
+
+        setFocusMode(false);
+        setWindows((wins) =>
+            wins.map((win) => ({
+                ...win,
+                minimized: false,
+                minimizedByUser: false,
+            }))
+        );
+        announce(`${minimizedCount} window${minimizedCount === 1 ? '' : 's'} restored`);
+        return true;
+    }, [announce]);
+
+    const cascadeVisibleWindows = useCallback(() => {
+        if (typeof window === 'undefined') return false;
+        const visibleWindows = windowsRef.current
+            .filter((win) => !win.minimized)
+            .sort((a, b) => a.z - b.z);
+
+        if (visibleWindows.length === 0) {
+            announce('No visible windows to cascade');
+            return false;
+        }
+
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const stage = computeStageArea(viewportWidth, viewportHeight);
+        const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
+        const step = metrics.tablet ? 24 : 34;
+        const baseWidth = clampNumber(stage.width * 0.72, metrics.minWidth, Math.min(metrics.maxWidth, 980));
+        const baseHeight = clampNumber(stage.height * 0.74, metrics.minHeight, Math.min(metrics.maxHeight, 720));
+        const maxOffsetX = Math.max(stage.width - baseWidth, 0);
+        const maxOffsetY = Math.max(stage.height - baseHeight, 0);
+        const visibleIds = new Set(visibleWindows.map((win) => win.id));
+        const nextZBase = zRef.current + 1;
+        zRef.current = nextZBase + visibleWindows.length;
+        const indexById = new Map(visibleWindows.map((win, index) => [win.id, index]));
+
+        setFocusMode(false);
+        setWindows((wins) =>
+            wins.map((win) => {
+                if (!visibleIds.has(win.id)) {
+                    return win;
+                }
+                const index = indexById.get(win.id) ?? 0;
+                const offsetX = maxOffsetX > 0 ? (index * step) % (maxOffsetX + step) : 0;
+                const offsetY = maxOffsetY > 0 ? (index * step) % (maxOffsetY + step) : 0;
+                const coords = clampWindowCoords(
+                    stage.x + Math.min(offsetX, maxOffsetX),
+                    stage.y + Math.min(offsetY, maxOffsetY),
+                    baseWidth,
+                    baseHeight,
+                    viewportWidth,
+                    viewportHeight
+                );
+
+                return {
+                    ...win,
+                    x: coords.x,
+                    y: coords.y,
+                    width: baseWidth,
+                    height: baseHeight,
+                    z: nextZBase + index,
+                    isZoomed: false,
+                    snapshot: null,
+                    minimized: false,
+                    minimizedByUser: false,
+                };
+            })
+        );
+        announce(`${visibleWindows.length} window${visibleWindows.length === 1 ? '' : 's'} cascaded`);
+        return true;
+    }, [announce]);
+
+    const tileVisibleWindows = useCallback(() => {
+        if (typeof window === 'undefined') return false;
+        const visibleWindows = windowsRef.current
+            .filter((win) => !win.minimized)
+            .sort((a, b) => b.z - a.z);
+
+        if (visibleWindows.length === 0) {
+            announce('No visible windows to tile');
+            return false;
+        }
+
+        if (visibleWindows.length === 1) {
+            return applyLayoutPreset(visibleWindows[0].id, LAYOUT_PRESETS.center.id);
+        }
+
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const stage = computeStageArea(viewportWidth, viewportHeight);
+        const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
+        const gap = metrics.tablet ? 12 : 16;
+        const columns = Math.ceil(Math.sqrt(visibleWindows.length));
+        const rows = Math.ceil(visibleWindows.length / columns);
+        const cellWidth = (stage.width - gap * (columns - 1)) / columns;
+        const cellHeight = (stage.height - gap * (rows - 1)) / rows;
+        const visibleIds = new Set(visibleWindows.map((win) => win.id));
+        const indexById = new Map(visibleWindows.map((win, index) => [win.id, index]));
+        const nextZBase = zRef.current + 1;
+        zRef.current = nextZBase + visibleWindows.length;
+
+        setFocusMode(false);
+        setWindows((wins) =>
+            wins.map((win) => {
+                if (!visibleIds.has(win.id)) {
+                    return win;
+                }
+
+                const index = indexById.get(win.id) ?? 0;
+                const column = index % columns;
+                const row = Math.floor(index / columns);
+                const width = clampNumber(cellWidth, metrics.minWidth, metrics.maxWidth);
+                const height = clampNumber(cellHeight, metrics.minHeight, metrics.maxHeight);
+                const coords = clampWindowCoords(
+                    stage.x + column * (cellWidth + gap),
+                    stage.y + row * (cellHeight + gap),
+                    width,
+                    height,
+                    viewportWidth,
+                    viewportHeight
+                );
+
+                return {
+                    ...win,
+                    x: coords.x,
+                    y: coords.y,
+                    width,
+                    height,
+                    z: nextZBase + visibleWindows.length - index,
+                    isZoomed: false,
+                    snapshot: null,
+                    minimized: false,
+                    minimizedByUser: false,
+                };
+            })
+        );
+        announce(`${visibleWindows.length} window${visibleWindows.length === 1 ? '' : 's'} tiled`);
+        return true;
+    }, [announce, applyLayoutPreset]);
+
+    const stageStackVisibleWindows = useCallback(() => {
+        if (typeof window === 'undefined') return false;
+        const visibleWindows = windowsRef.current
+            .filter((win) => !win.minimized)
+            .sort((a, b) => b.z - a.z);
+
+        if (visibleWindows.length === 0) {
+            announce('No visible windows to stack');
+            return false;
+        }
+
+        if (visibleWindows.length === 1) {
+            return applyLayoutPreset(visibleWindows[0].id, LAYOUT_PRESETS.center.id);
+        }
+
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const stage = computeStageArea(viewportWidth, viewportHeight);
+        const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
+        const gap = metrics.tablet ? 12 : 18;
+
+        if (stage.width < metrics.minWidth * 2 + gap) {
+            return tileVisibleWindows();
+        }
+
+        const primary = visibleWindows[0];
+        const companions = visibleWindows.slice(1);
+        const laneCount = Math.min(companions.length, STAGE_STACK_MAX_LANES);
+        const sideWidth = clampNumber(
+            stage.width * (metrics.tablet ? 0.34 : 0.28),
+            metrics.minWidth,
+            Math.min(390, stage.width * 0.42)
+        );
+        const primaryWidth = Math.max(metrics.minWidth, stage.width - sideWidth - gap);
+        const primaryHeight = stage.height;
+        const sideHeight = Math.max(
+            metrics.minHeight,
+            (stage.height - gap * Math.max(laneCount - 1, 0)) / laneCount
+        );
+        const visibleIds = new Set(visibleWindows.map((win) => win.id));
+        const nextZBase = zRef.current + 1;
+        zRef.current = nextZBase + visibleWindows.length;
+        const companionIndexById = new Map(companions.map((win, index) => [win.id, index]));
+
+        setFocusMode(false);
+        setWindows((wins) =>
+            wins.map((win) => {
+                if (!visibleIds.has(win.id)) {
+                    return win;
+                }
+
+                if (win.id === primary.id) {
+                    const coords = clampWindowCoords(
+                        stage.x + sideWidth + gap,
+                        stage.y,
+                        primaryWidth,
+                        primaryHeight,
+                        viewportWidth,
+                        viewportHeight
+                    );
+                    return {
+                        ...win,
+                        x: coords.x,
+                        y: coords.y,
+                        width: primaryWidth,
+                        height: primaryHeight,
+                        z: nextZBase + visibleWindows.length,
+                        isZoomed: false,
+                        snapshot: null,
+                        minimized: false,
+                        minimizedByUser: false,
+                    };
+                }
+
+                const index = companionIndexById.get(win.id) ?? 0;
+                const lane = index % laneCount;
+                const stackOffset = Math.floor(index / laneCount) * (metrics.tablet ? 14 : 22);
+                const width = Math.max(metrics.minWidth, sideWidth - stackOffset);
+                const height = Math.min(metrics.maxHeight, sideHeight);
+                const coords = clampWindowCoords(
+                    stage.x + stackOffset,
+                    stage.y + lane * (sideHeight + gap) + stackOffset * 0.35,
+                    width,
+                    height,
+                    viewportWidth,
+                    viewportHeight
+                );
+
+                return {
+                    ...win,
+                    x: coords.x,
+                    y: coords.y,
+                    width,
+                    height,
+                    z: nextZBase + companions.length - index,
+                    isZoomed: false,
+                    snapshot: null,
+                    minimized: false,
+                    minimizedByUser: false,
+                };
+            })
+        );
+        bringToFront(primary.id);
+        announce(`${visibleWindows.length} windows stacked for stage work`);
+        return true;
+    }, [announce, applyLayoutPreset, bringToFront, tileVisibleWindows]);
 
     const focusNextWindow = useCallback(
         (direction = 1) => {
@@ -3373,6 +3723,30 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 return;
             }
 
+            if (metaOrCtrl && event.altKey && event.key.toLowerCase() === 't') {
+                event.preventDefault();
+                tileVisibleWindows();
+                return;
+            }
+
+            if (metaOrCtrl && event.altKey && event.key.toLowerCase() === 'c') {
+                event.preventDefault();
+                cascadeVisibleWindows();
+                return;
+            }
+
+            if (metaOrCtrl && event.altKey && event.key.toLowerCase() === 's') {
+                event.preventDefault();
+                stageStackVisibleWindows();
+                return;
+            }
+
+            if (metaOrCtrl && event.altKey && event.key.toLowerCase() === 'r') {
+                event.preventDefault();
+                restoreAllWindows();
+                return;
+            }
+
             if (metaOrCtrl && event.altKey && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
                 event.preventDefault();
                 const preset =
@@ -3480,6 +3854,10 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         applyLayoutPresetToTopWindow,
         openMissionControl,
         resolveTopWindow,
+        tileVisibleWindows,
+        stageStackVisibleWindows,
+        cascadeVisibleWindows,
+        restoreAllWindows,
     ]);
 
     useEffect(() => {
@@ -3906,9 +4284,9 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             all: windowsForUI.length,
             visible: windowsForUI.length - minimisedWindows.length,
             minimized: minimisedWindows.length,
-            closed: reopenableWindowTypes.length,
+            closed: reopenableWindowTypes.length + recentClosedApps.length,
         }),
-        [windowsForUI.length, minimisedWindows.length, reopenableWindowTypes.length]
+        [windowsForUI.length, minimisedWindows.length, reopenableWindowTypes.length, recentClosedApps.length]
     );
 
     const minimisedWindowSummary = useMemo(() => {
@@ -4192,6 +4570,46 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             onSelect: () => toggleQuickLook(),
         });
 
+        pushAction({
+            id: 'action:tile-visible',
+            label: 'Tile Visible Windows',
+            description: 'Arrange every visible window into a clean grid',
+            shortcut: joinKeys(metaKeyLabel, altKeyLabel, 'T'),
+            icon: <HiOutlineSquares2X2 className="h-5 w-5" />,
+            disabled: stagedWindows.length === 0,
+            onSelect: () => tileVisibleWindows(),
+        });
+
+        pushAction({
+            id: 'action:cascade-visible',
+            label: 'Cascade Visible Windows',
+            description: 'Fan visible windows into an ordered stack',
+            shortcut: joinKeys(metaKeyLabel, altKeyLabel, 'C'),
+            icon: <HiOutlineRectangleStack className="h-5 w-5" />,
+            disabled: stagedWindows.length === 0,
+            onSelect: () => cascadeVisibleWindows(),
+        });
+
+        pushAction({
+            id: 'action:stage-stack-visible',
+            label: 'Stage Stack Windows',
+            description: 'Keep the top window large with companion windows stacked beside it',
+            shortcut: joinKeys(metaKeyLabel, altKeyLabel, 'S'),
+            icon: <HiOutlineViewColumns className="h-5 w-5" />,
+            disabled: stagedWindows.length === 0,
+            onSelect: () => stageStackVisibleWindows(),
+        });
+
+        pushAction({
+            id: 'action:restore-all',
+            label: 'Restore All Windows',
+            description: 'Bring minimized windows back onto the stage',
+            shortcut: joinKeys(metaKeyLabel, altKeyLabel, 'R'),
+            icon: <HiOutlineArrowsPointingOut className="h-5 w-5" />,
+            disabled: windows.every((win) => !win.minimized),
+            onSelect: () => restoreAllWindows(),
+        });
+
         windows
             .filter((win) => !win.isAppWindow)
             .forEach((win) => {
@@ -4228,6 +4646,24 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                     },
                 });
             });
+
+        recentClosedApps.forEach((entry) => {
+            const appKey = entry.appIconKey || entry.appRouteKey || 'default';
+            const Icon = iconForAppKey(appKey);
+            const routeLabel = appLabelForKey(appKey);
+            const label = entry.title || routeLabel;
+            itemsList.push({
+                id: `recent-app:${entry.id}`,
+                group: 'Recently Closed',
+                groupPriority: 3.5,
+                label,
+                description: `Restore ${routeLabel}`,
+                badge: 'Closed',
+                icon: Icon ? <Icon className="h-5 w-5" /> : <HiOutlineSquares2X2 className="h-5 w-5" />,
+                accent: entry.appAccent || appAccentForKey(appKey),
+                onSelect: () => reopenRecentAppWindow(entry),
+            });
+        });
 
         const activeTileableWindow =
             focusedWindowRef.current && !focusedWindowRef.current.minimized
@@ -4282,14 +4718,21 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         applyLayoutPresetToTopWindow,
         shiftKeyLabel,
         stagePreviewAccent,
+        stageStackVisibleWindows,
         toggleControlCenter,
         toggleFocusMode,
         toggleQuickLook,
+        tileVisibleWindows,
+        cascadeVisibleWindows,
+        restoreAllWindows,
         usingShortcutGlyphs,
         windows,
+        stagedWindows.length,
         duplicateActiveAppWindow,
         activeAppWindow,
         controlCenterOpen,
+        recentClosedApps,
+        reopenRecentAppWindow,
     ]);
 
     if (isCompact) {
@@ -4500,6 +4943,42 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                                     ))}
                                 </div>
                                 <div className="mt-5 flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={tileVisibleWindows}
+                                        disabled={stagedWindows.length === 0}
+                                        className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/12 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-slate-100/90 transition hover:border-cyan-200/70 hover:bg-cyan-300/15 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                                    >
+                                        <HiOutlineSquares2X2 className="h-4 w-4" />
+                                        Tile
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={cascadeVisibleWindows}
+                                        disabled={stagedWindows.length === 0}
+                                        className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/12 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-slate-100/90 transition hover:border-cyan-200/70 hover:bg-cyan-300/15 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                                    >
+                                        <HiOutlineRectangleStack className="h-4 w-4" />
+                                        Cascade
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={stageStackVisibleWindows}
+                                        disabled={stagedWindows.length === 0}
+                                        className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/12 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-slate-100/90 transition hover:border-cyan-200/70 hover:bg-cyan-300/15 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                                    >
+                                        <HiOutlineViewColumns className="h-4 w-4" />
+                                        Stage
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={restoreAllWindows}
+                                        disabled={windows.every((win) => !win.minimized)}
+                                        className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/12 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-slate-100/90 transition hover:border-cyan-200/70 hover:bg-cyan-300/15 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                                    >
+                                        <HiOutlineArrowsPointingOut className="h-4 w-4" />
+                                        Restore
+                                    </button>
                                     {MISSION_CONTROL_FILTERS.map((filter) => {
                                         const active = missionControlFilter === filter.key;
                                         const count = missionControlFilterCounts[filter.key] ?? 0;
@@ -4648,15 +5127,41 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                                     <div className="flex items-end justify-between gap-2">
                                         <div>
                                             <p className="text-xs uppercase tracking-[0.3em] text-slate-200/75">Closed tools</p>
-                                            <h3 className="text-lg font-semibold text-white">Restore utility windows</h3>
+                                            <h3 className="text-lg font-semibold text-white">Restore windows</h3>
                                         </div>
                                         <p className="text-xs uppercase tracking-[0.24em] text-slate-200/75">
-                                            {reopenableWindowTypes.length} available
+                                            {reopenableWindowTypes.length + recentClosedApps.length} available
                                         </p>
                                     </div>
                                     <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                                        {reopenableWindowTypes.length > 0 ? (
-                                            reopenableWindowTypes.map((type) => (
+                                        {recentClosedApps.length > 0 || reopenableWindowTypes.length > 0 ? (
+                                            <>
+                                            {recentClosedApps.map((entry) => {
+                                                const appKey = entry.appIconKey || entry.appRouteKey || 'default';
+                                                const Icon = iconForAppKey(appKey);
+                                                return (
+                                                    <motion.button
+                                                        key={`mission-recent-app-${entry.id}`}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            reopenRecentAppWindow(entry);
+                                                            setMissionControlOpen(false);
+                                                        }}
+                                                        className="flex h-44 flex-col items-center justify-center rounded-3xl border border-white/35 bg-white/14 px-4 text-center text-white transition hover:border-cyan-200/70 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/70"
+                                                        whileHover={{ translateY: -3, scale: 1.02 }}
+                                                    >
+                                                        <span
+                                                            className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-xl text-xl shadow-lg shadow-slate-950/20"
+                                                            style={{ backgroundImage: entry.appAccent || appAccentForKey(appKey) }}
+                                                        >
+                                                            {Icon ? <Icon className="h-5 w-5" /> : <HiOutlineSquares2X2 className="h-5 w-5" />}
+                                                        </span>
+                                                        <p className="max-w-full truncate text-sm font-semibold">{entry.title || appLabelForKey(appKey)}</p>
+                                                        <p className="mt-1 text-xs uppercase tracking-[0.3em] text-white/75">Restore app</p>
+                                                    </motion.button>
+                                                );
+                                            })}
+                                            {reopenableWindowTypes.map((type) => (
                                                 <motion.button
                                                     key={`mission-closed-${type}`}
                                                     type="button"
@@ -4673,10 +5178,11 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                                                     <p className="text-sm font-semibold">{typeToTitle(type)}</p>
                                                     <p className="mt-1 text-xs uppercase tracking-[0.3em] text-white/75">Reopen</p>
                                                 </motion.button>
-                                            ))
+                                            ))}
+                                            </>
                                         ) : (
                                             <div className="col-span-full rounded-2xl border border-dashed border-white/35 bg-white/8 px-4 py-6 text-center text-sm text-slate-200/80">
-                                                No closed utility windows right now.
+                                                No closed windows right now.
                                             </div>
                                         )}
                                     </div>
@@ -4885,7 +5391,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                                             isActive
                                                 ? 'border-brand-300/80 bg-white/85 text-slate-800 shadow-[0_28px_80px_-46px_rgba(14,116,244,0.55)] dark:border-brand-400/70 dark:bg-slate-900/80 dark:text-slate-100 dark:shadow-[0_28px_80px_-46px_rgba(30,64,175,0.55)]'
                                                 : 'border-white/35 bg-white/70 text-slate-600 hover:border-brand-200/70 hover:text-brand-600 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-brand-400/50 dark:hover:text-brand-200'
-                                        }`}
+                                        } ${item.minimized ? 'opacity-75' : 'opacity-100'}`}
                                         style={isActive ? { boxShadow: '0 28px 80px -46px rgba(14,116,244,0.45)' } : undefined}
                                     >
                                         {isActive ? (
@@ -4908,9 +5414,14 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                                             <p className="truncate text-sm font-semibold text-inherit">
                                                 {item.title}
                                             </p>
-                                            <p className="text-[0.6rem] uppercase tracking-[0.32em] text-slate-500 dark:text-slate-400">
-                                                {item.context}
-                                            </p>
+                                            <div className="mt-1 flex min-w-0 items-center gap-2">
+                                                <p className="truncate text-[0.6rem] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                                                    {item.context}
+                                                </p>
+                                                <span className="shrink-0 rounded-full border border-slate-300/70 px-1.5 py-0.5 text-[0.5rem] uppercase tracking-[0.18em] text-slate-500 dark:border-white/15 dark:text-slate-400">
+                                                    {item.status}
+                                                </span>
+                                            </div>
                                         </div>
                                     </button>
                                 );
@@ -4962,9 +5473,18 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                         onClose={handleClose}
                         onMinimize={handleMinimize}
                         onZoom={handleZoom}
-                            onResizeStart={handleResizeStart}
-                            onFocus={handleFocus}
-                            reduceMotion={reduceMotion}
+                        onResizeStart={handleResizeStart}
+                        onFocus={handleFocus}
+                        onApplyLayout={(id, presetId) => {
+                            const target = windowsRef.current.find((entry) => entry.id === id);
+                            const applied = applyLayoutPreset(id, presetId);
+                            if (applied) {
+                                const presetLabel = LAYOUT_PRESET_MAP[presetId]?.label || labelForSnapTarget(presetId);
+                                announce(`${target?.title || 'Window'} moved to ${presetLabel}`);
+                            }
+                        }}
+                        layoutPresets={layoutPresetList}
+                        reduceMotion={reduceMotion}
                         />
                     ))}
                 </AnimatePresence>
@@ -5783,14 +6303,12 @@ function expandWindowToViewport(win, viewportWidth, viewportHeight) {
     const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
     const visibleWidth = Math.max(viewportWidth - insetLeft - insetRight, metrics.minWidth);
     const visibleHeight = Math.max(viewportHeight - insetTop - insetBottom, metrics.minHeight);
-    const stage = metrics.compact
-        ? {
-              x: 0,
-              y: 0,
-              width: visibleWidth,
-              height: visibleHeight,
-          }
-        : computeStageArea(visibleWidth, visibleHeight);
+    const stage = {
+        x: 0,
+        y: 0,
+        width: visibleWidth,
+        height: visibleHeight,
+    };
     const x = insetLeft + stage.x;
     const y = insetTop + stage.y;
     const width = Math.max(stage.width, 1);

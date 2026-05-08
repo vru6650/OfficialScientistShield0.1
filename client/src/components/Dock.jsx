@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useSelector } from 'react-redux';
 
@@ -29,12 +29,14 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 export default function Dock() {
     const location = useLocation();
+    const navigate = useNavigate();
     const { currentUser } = useSelector((state) => state.user || {});
 
     const [hoverX, setHoverX] = useState(null);
     const [hoverRatio, setHoverRatio] = useState(0.5);
     const [launchingKey, setLaunchingKey] = useState(null);
     const [customizerOpen, setCustomizerOpen] = useState(false);
+    const [quickAddOpen, setQuickAddOpen] = useState(false);
     const [dockSettings, setDockSettings] = useState(() => {
         if (typeof window === 'undefined') return DEFAULT_SETTINGS;
         try {
@@ -57,6 +59,7 @@ export default function Dock() {
     );
     const containerRef = useRef(null);
     const customizerRef = useRef(null);
+    const quickAddRef = useRef(null);
 
     const cancelHide = useCallback(() => {
         if (hideTimeoutRef.current && typeof window !== 'undefined') {
@@ -136,6 +139,24 @@ export default function Dock() {
     }, [customizerOpen]);
 
     useEffect(() => {
+        if (!quickAddOpen) return undefined;
+        const handleClick = (event) => {
+            if (quickAddRef.current && !quickAddRef.current.contains(event.target)) {
+                setQuickAddOpen(false);
+            }
+        };
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') setQuickAddOpen(false);
+        };
+        document.addEventListener('mousedown', handleClick);
+        document.addEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('mousedown', handleClick);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [quickAddOpen]);
+
+    useEffect(() => {
         iconRefs.current = iconRefs.current.slice(0, visualItems.length);
         updateCenters();
         const handleResize = () => {
@@ -197,6 +218,39 @@ export default function Dock() {
     const handleLaunch = (key) => {
         setLaunchingKey(key);
         window.setTimeout(() => setLaunchingKey(null), 680);
+    };
+
+    const quickAddActions = useMemo(() => {
+        if (currentUser?.isAdmin) {
+            return [
+                { label: 'New post', description: 'Publish an article', path: '/create-post' },
+                { label: 'New tutorial', description: 'Build a guided lesson', path: '/create-tutorial' },
+                { label: 'New quiz', description: 'Create a practice check', path: '/create-quiz' },
+                { label: 'New problem', description: 'Add a coding challenge', path: '/create-problem' },
+                { label: 'New page', description: 'Compose a custom page', path: '/create-page' },
+                { label: 'File manager', description: 'Manage uploaded assets', path: '/file-manager' },
+            ];
+        }
+
+        if (currentUser) {
+            return [
+                { label: 'Create community post', description: 'Share an update', path: '/community/create' },
+                { label: 'Open dashboard', description: 'Review your workspace', path: '/dashboard' },
+                { label: 'Search library', description: 'Find tutorials and posts', path: '/search' },
+            ];
+        }
+
+        return [
+            { label: 'Create account', description: 'Save progress and preferences', path: '/sign-up' },
+            { label: 'Sign in', description: 'Access your workspace', path: '/sign-in' },
+            { label: 'Search library', description: 'Browse public content', path: '/search' },
+        ];
+    }, [currentUser]);
+
+    const openQuickAddAction = (action) => {
+        handleLaunch('quick-add');
+        setQuickAddOpen(false);
+        navigate(action.path);
     };
 
     const isCompactDock = viewportWidth < 900;
@@ -324,8 +378,11 @@ export default function Dock() {
                         return <li key={`divider-${idx}`} className="macos-dock__divider" aria-hidden />;
                     }
                     const isSettings = item.type === 'settings';
+                    const isQuickAdd = item.type === 'quick-add';
                     const isActive = isSettings
                         ? customizerOpen
+                        : isQuickAdd
+                        ? quickAddOpen
                         : item.match
                         ? item.match(activePath)
                         : false;
@@ -365,7 +422,7 @@ export default function Dock() {
                         />
                     );
 
-                    const isAction = isSettings;
+                    const isAction = isSettings || isQuickAdd;
                     const commonProps = {
                         className: 'group relative flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 focus-visible:ring-offset-2',
                         tabIndex: isDockVisible ? 0 : -1,
@@ -378,15 +435,26 @@ export default function Dock() {
                         <button
                             type="button"
                             aria-label={item.label}
+                            aria-haspopup={isQuickAdd ? 'menu' : undefined}
+                            aria-expanded={isQuickAdd ? quickAddOpen : undefined}
                             title={item.label}
                             onClick={() => {
                                 handleLaunch(item.key);
+                                if (isQuickAdd) {
+                                    setCustomizerOpen(false);
+                                    setQuickAddOpen((open) => !open);
+                                    return;
+                                }
+                                setQuickAddOpen(false);
                                 setCustomizerOpen((open) => !open);
                             }}
                             {...commonProps}
                         >
                             {tile}
                             {indicator}
+                            <span className="macos-dock__label absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-950/85 px-3 py-1 text-[10px] font-bold uppercase text-white opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 dark:bg-white/90 dark:text-slate-950">
+                                {item.label}
+                            </span>
                         </button>
                     ) : (
                         <Link
@@ -398,6 +466,9 @@ export default function Dock() {
                         >
                             {tile}
                             {indicator}
+                            <span className="macos-dock__label absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-950/85 px-3 py-1 text-[10px] font-bold uppercase text-white opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 dark:bg-white/90 dark:text-slate-950">
+                                {item.label}
+                            </span>
                         </Link>
                     );
 
@@ -415,6 +486,56 @@ export default function Dock() {
                     );
                 })}
             </motion.ul>
+
+            {quickAddOpen ? (
+                <motion.div
+                    ref={quickAddRef}
+                    role="menu"
+                    aria-label="Quick add actions"
+                    className="pointer-events-auto absolute bottom-28 right-24 z-[80] w-[340px] max-w-[calc(100vw-32px)] rounded-2xl border border-white/45 bg-white/94 p-3 shadow-[0_32px_90px_-52px_rgba(15,23,42,0.8)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/94"
+                    initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                >
+                    <div className="mb-2 flex items-center justify-between px-1">
+                        <div>
+                            <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">Quick Add</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Start the next useful action.</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setQuickAddOpen(false)}
+                            className="rounded-lg px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                        >
+                            Close
+                        </button>
+                    </div>
+                    <div className="grid gap-2">
+                        {quickAddActions.map((action) => (
+                            <button
+                                key={action.path}
+                                type="button"
+                                role="menuitem"
+                                onClick={() => openQuickAddAction(action)}
+                                className="group flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white/82 px-3 py-2.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60 dark:border-slate-700/70 dark:bg-slate-800/82 dark:hover:border-cyan-300/40 dark:hover:bg-slate-800"
+                            >
+                                <span className="min-w-0">
+                                    <span className="block truncate text-sm font-semibold text-slate-900 dark:text-slate-50">
+                                        {action.label}
+                                    </span>
+                                    <span className="mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400">
+                                        {action.description}
+                                    </span>
+                                </span>
+                                <span className="rounded-lg bg-sky-50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-sky-700 transition group-hover:bg-sky-100 dark:bg-cyan-300/10 dark:text-cyan-200">
+                                    Open
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </motion.div>
+            ) : null}
 
             {customizerOpen ? (
                 <motion.div

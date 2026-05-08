@@ -9,6 +9,11 @@ import useDebounce from '../hooks/useDebounce';
 import { getPostPreviewImage, getPrimaryPostAsset } from '../utils/postMedia.js';
 import { getPostPath } from '../utils/postPath.js';
 
+const formatDate = (date) => {
+  if (!date) return 'Unknown';
+  return new Date(date).toLocaleDateString();
+};
+
 export default function DashPosts() {
   const { currentUser } = useSelector((state) => state.user);
   const queryClient = useQueryClient();
@@ -125,8 +130,8 @@ export default function DashPosts() {
           </div>
         </div>
 
-        <div className='grid gap-3 md:grid-cols-4'>
-          <div className='md:col-span-2'>
+        <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-5'>
+          <div className='sm:col-span-2'>
             <div className='relative'>
               <HiMagnifyingGlass className='absolute left-3 top-3.5 h-5 w-5 text-slate-400' />
               <TextInput
@@ -157,9 +162,8 @@ export default function DashPosts() {
           </Select>
         </div>
 
-        <div className='table-auto overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 scrollbar scrollbar-track-slate-100 scrollbar-thumb-slate-300 dark:scrollbar-track-slate-700 dark:scrollbar-thumb-slate-500'>
         {isLoading && (
-            <div className='flex justify-center items-center min-h-screen'>
+            <div className='flex min-h-64 items-center justify-center'>
               <Spinner size='xl' />
             </div>
         )}
@@ -176,24 +180,98 @@ export default function DashPosts() {
 
         {currentUser.isAdmin && posts.length > 0 ? (
             <>
-              <Table hoverable>
-                <Table.Head>
-                  <Table.HeadCell>Updated</Table.HeadCell>
-                  <Table.HeadCell>Media</Table.HeadCell>
-                  <Table.HeadCell>Title</Table.HeadCell>
-                  <Table.HeadCell>Meta</Table.HeadCell>
-                  <Table.HeadCell>Actions</Table.HeadCell>
-                </Table.Head>
-                <Table.Body className='divide-y'>
-                  {posts.map((post) => {
+              <div className='grid gap-3 md:hidden'>
+                {posts.map((post) => {
                       const postPath = getPostPath(post);
 
                       return (
-                      <Table.Row key={post._id} className='bg-white dark:border-gray-700 dark:bg-gray-800'>
-                        <Table.Cell>{new Date(post.updatedAt).toLocaleDateString()}</Table.Cell>
-                        <Table.Cell>
-                          {postPath ? (
-                              <Link to={postPath}>
+                        <article
+                          key={post._id}
+                          className='rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900'
+                        >
+                          <div className='flex items-start gap-3'>
+                            {postPath ? (
+                              <Link to={postPath} className='flex-none'>
+                                {renderPreview(post)}
+                              </Link>
+                            ) : (
+                              <div className='flex-none'>{renderPreview(post)}</div>
+                            )}
+                            <div className='min-w-0 flex-1'>
+                              <p className='text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>
+                                Updated {formatDate(post.updatedAt)}
+                              </p>
+                              {postPath ? (
+                                <Link className='mt-1 block break-words text-base font-semibold text-slate-900 hover:text-teal-600 dark:text-white dark:hover:text-teal-300' to={postPath}>
+                                  {post.title}
+                                </Link>
+                              ) : (
+                                <span className='mt-1 block break-words text-base font-semibold text-slate-900 dark:text-white'>{post.title}</span>
+                              )}
+                              <div className='mt-2 flex flex-wrap items-center gap-2'>
+                                <span className='inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200'>
+                                  {mediaIcon(post)}
+                                  {post.category || 'Uncategorized'}
+                                </span>
+                                <Badge color={post.kind === 'community' ? 'purple' : 'info'}>{post.kind || 'article'}</Badge>
+                                {post.claps > 0 && <Badge color='success'>{post.claps} claps</Badge>}
+                                {Array.isArray(post.mediaAssets) && post.mediaAssets.length > 1 && (
+                                  <Badge color='gray'>{post.mediaAssets.length} items</Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className='mt-4 grid grid-cols-2 gap-2'>
+                            <Link
+                              className='inline-flex min-h-11 items-center justify-center rounded-xl border border-teal-200 px-4 text-sm font-semibold text-teal-600 transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-100 dark:border-teal-500/30 dark:text-teal-300 dark:hover:bg-teal-500/10 dark:focus-visible:ring-teal-900/40'
+                              to={`/update-post/${post._id}`}
+                            >
+                              Edit
+                            </Link>
+                            <button
+                              type='button'
+                              className='inline-flex min-h-11 items-center justify-center rounded-xl border border-red-200 px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10 dark:focus-visible:ring-red-900/40'
+                              onClick={() => {
+                                setShowModal(true);
+                                setPostToDelete({ postId: post._id, userId: post.userId });
+                              }}
+                              disabled={deleteMutation.isPending}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </article>
+                      );
+                  })}
+              </div>
+              <div className='hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm scrollbar scrollbar-track-slate-100 scrollbar-thumb-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:scrollbar-track-slate-700 dark:scrollbar-thumb-slate-500 md:block'>
+                <Table hoverable>
+                  <Table.Head>
+                    <Table.HeadCell>Updated</Table.HeadCell>
+                    <Table.HeadCell>Media</Table.HeadCell>
+                    <Table.HeadCell>Title</Table.HeadCell>
+                    <Table.HeadCell>Meta</Table.HeadCell>
+                    <Table.HeadCell>Actions</Table.HeadCell>
+                  </Table.Head>
+                  <Table.Body className='divide-y'>
+                    {posts.map((post) => {
+                        const postPath = getPostPath(post);
+
+                        return (
+                        <Table.Row key={post._id} className='bg-white dark:border-gray-700 dark:bg-gray-800'>
+                          <Table.Cell>{formatDate(post.updatedAt)}</Table.Cell>
+                          <Table.Cell>
+                            {postPath ? (
+                                <Link to={postPath}>
+                                  <div className='flex items-center gap-2'>
+                                    {mediaIcon(post)}
+                                    {renderPreview(post)}
+                                    {Array.isArray(post.mediaAssets) && post.mediaAssets.length > 1 && (
+                                        <Badge color='gray'>{post.mediaAssets.length} items</Badge>
+                                    )}
+                                  </div>
+                                </Link>
+                            ) : (
                                 <div className='flex items-center gap-2'>
                                   {mediaIcon(post)}
                                   {renderPreview(post)}
@@ -201,65 +279,58 @@ export default function DashPosts() {
                                       <Badge color='gray'>{post.mediaAssets.length} items</Badge>
                                   )}
                                 </div>
-                              </Link>
-                          ) : (
-                              <div className='flex items-center gap-2'>
-                                {mediaIcon(post)}
-                                {renderPreview(post)}
-                                {Array.isArray(post.mediaAssets) && post.mediaAssets.length > 1 && (
-                                    <Badge color='gray'>{post.mediaAssets.length} items</Badge>
+                            )}
+                          </Table.Cell>
+                          <Table.Cell className='max-w-sm'>
+                            {postPath ? (
+                                <Link className='font-medium text-gray-900 dark:text-white' to={postPath}>{post.title}</Link>
+                            ) : (
+                                <span className='font-medium text-gray-900 dark:text-white'>{post.title}</span>
+                            )}
+                          </Table.Cell>
+                          <Table.Cell>
+                            <div className='flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300'>
+                              <span className='font-semibold text-slate-800 dark:text-white'>{post.category}</span>
+                              <div className='flex flex-wrap items-center gap-2'>
+                                <Badge color={post.kind === 'community' ? 'purple' : 'info'}>{post.kind || 'article'}</Badge>
+                                {post.claps > 0 && <Badge color='success'>{post.claps} claps</Badge>}
+                                {Array.isArray(post.bookmarkedBy) && post.bookmarkedBy.length > 0 && (
+                                    <Badge color='gray'>{post.bookmarkedBy.length} saves</Badge>
                                 )}
                               </div>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>
-                          {postPath ? (
-                              <Link className='font-medium text-gray-900 dark:text-white' to={postPath}>{post.title}</Link>
-                          ) : (
-                              <span className='font-medium text-gray-900 dark:text-white'>{post.title}</span>
-                          )}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <div className='flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300'>
-                            <span className='font-semibold text-slate-800 dark:text-white'>{post.category}</span>
-                            <div className='flex flex-wrap items-center gap-2'>
-                              <Badge color={post.kind === 'community' ? 'purple' : 'info'}>{post.kind || 'article'}</Badge>
-                              {post.claps > 0 && <Badge color='success'>{post.claps} claps</Badge>}
-                              {Array.isArray(post.bookmarkedBy) && post.bookmarkedBy.length > 0 && (
-                                  <Badge color='gray'>{post.bookmarkedBy.length} saves</Badge>
-                              )}
                             </div>
-                          </div>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <div className='flex items-center gap-2'>
-                            <Link className='text-teal-500 hover:underline' to={`/update-post/${post._id}`}>
-                              Edit
-                            </Link>
-                            <Tooltip content='Delete post'>
-                              <button
-                                type='button'
-                                className='font-medium text-red-500 hover:underline'
-                                onClick={() => {
-                                  setShowModal(true);
-                                  setPostToDelete({ postId: post._id, userId: post.userId });
-                                }}
-                              >
-                                Delete
-                              </button>
-                            </Tooltip>
-                          </div>
-                        </Table.Cell>
-                      </Table.Row>
-                      );
-                  })}
-                </Table.Body>
-              </Table>
+                          </Table.Cell>
+                          <Table.Cell>
+                            <div className='flex items-center gap-2'>
+                              <Link className='text-teal-500 hover:underline' to={`/update-post/${post._id}`}>
+                                Edit
+                              </Link>
+                              <Tooltip content='Delete post'>
+                                <button
+                                  type='button'
+                                  className='font-medium text-red-500 hover:underline disabled:cursor-not-allowed disabled:opacity-60'
+                                  onClick={() => {
+                                    setShowModal(true);
+                                    setPostToDelete({ postId: post._id, userId: post.userId });
+                                  }}
+                                  disabled={deleteMutation.isPending}
+                                >
+                                  Delete
+                                </button>
+                              </Tooltip>
+                            </div>
+                          </Table.Cell>
+                        </Table.Row>
+                        );
+                    })}
+                  </Table.Body>
+                </Table>
+              </div>
               {hasNextPage && (
                   <button
                       onClick={() => fetchNextPage()}
                       disabled={isFetchingNextPage}
-                      className='w-full text-teal-500 self-center text-sm py-4'
+                      className='min-h-11 w-full self-center py-3 text-sm font-semibold text-teal-500'
                   >
                     {isFetchingNextPage ? 'Loading...' : 'Show more'}
                   </button>
@@ -268,8 +339,6 @@ export default function DashPosts() {
         ) : (
             !isLoading && <p className='p-4 text-sm text-slate-600 dark:text-slate-300'>No posts found for these filters.</p>
         )}
-
-        </div>
 
         <Modal show={showModal} onClose={() => setShowModal(false)} popup size='md'>
           <Modal.Header />

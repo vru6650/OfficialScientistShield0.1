@@ -78,6 +78,10 @@ const themePreviewClassMap = {
 };
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const controlCenterSafeAreaStyle = {
+    bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)',
+    right: 'max(env(safe-area-inset-right, 0px), 0.75rem)',
+};
 
 export default function ReadingControlCenter({ settings, onChange, onReset }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -324,14 +328,14 @@ export default function ReadingControlCenter({ settings, onChange, onReset }) {
 
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 lg:hidden">
+        <div className="fixed z-50 flex flex-col items-end gap-3 lg:hidden" style={controlCenterSafeAreaStyle}>
             <motion.button
                 ref={triggerRef}
                 type="button"
                 onClick={() => setIsOpen(prev => !prev)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-4 py-2 shadow-lg shadow-slate-900/20 dark:shadow-slate-900/40 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                className="flex min-h-11 items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-white shadow-lg shadow-slate-900/20 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:bg-slate-100 dark:text-slate-900 dark:shadow-slate-900/40"
             >
                 <HiOutlineAdjustmentsHorizontal className="h-5 w-5" />
                 <span className="font-semibold text-sm">Reading Controls</span>
@@ -366,7 +370,7 @@ export default function ReadingControlCenter({ settings, onChange, onReset }) {
                                     <HiOutlineArrowsPointingOut/> Drag to move panel
                                 </p>
                             </div>
-                            <button type="button" onClick={() => setIsOpen(false)} className="rounded-full p-1 text-slate-500 transition hover:bg-slate-200/60 hover:text-slate-900 dark:hover:bg-slate-700/60 cursor-pointer">
+                            <button type="button" onClick={() => setIsOpen(false)} className="inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/60 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:hover:bg-slate-700/60 cursor-pointer">
                                 <HiOutlineXMark className="h-5 w-5" />
                             </button>
                         </motion.div>

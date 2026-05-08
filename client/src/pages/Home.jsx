@@ -101,7 +101,7 @@ export default function Home() {
                 icon: HiOutlineSparkles,
                 eyebrow: 'Tools',
                 title: 'Open the lab instantly',
-                description: 'Jump into the reader, playground, and visualizers without hunting through the interface.',
+                description: 'Jump into the reader, playground, and visualizers whenever an idea needs a quick test.',
                 metric: 'Studio utilities',
                 kind: 'route',
                 linkTo: '/tools',
@@ -178,16 +178,16 @@ export default function Home() {
     const workspacePrinciples = useMemo(
         () => [
             {
-                title: 'Calmer hierarchy',
-                description: 'Bigger section headers, stronger contrast, and more consistent spacing reduce scanning fatigue.',
+                title: 'Focused sessions',
+                description: 'Keep lessons, drills, and reading in a predictable rhythm for longer study blocks.',
             },
             {
-                title: 'Faster navigation',
-                description: 'The page surfaces the next action immediately, whether you want to learn, practice, or read.',
+                title: 'Direct action',
+                description: 'Start a lesson, solve a problem, open a tool, or read new ideas from a single hub.',
             },
             {
-                title: 'One visual system',
-                description: 'Home, reading, problem solving, and tool surfaces now feel related instead of assembled.',
+                title: 'Connected progress',
+                description: 'Move from discovery to practice to publishing while keeping context intact.',
             },
         ],
         []
@@ -405,21 +405,6 @@ export default function Home() {
 
     return (
         <main className="workspace-page liquid-app-shell relative min-h-screen pb-16">
-            <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 -top-32 -z-10 blur-3xl opacity-40 dark:opacity-25"
-            >
-                <div className="mx-auto h-64 w-3/4 rounded-full bg-gradient-to-tr from-sky-400 via-cyan-400 to-teal-400" />
-            </div>
-            <div
-                aria-hidden
-                className="pointer-events-none absolute -left-20 top-28 -z-10 h-80 w-80 rounded-full bg-cyan-300/25 blur-[90px] dark:bg-cyan-500/25"
-            />
-            <div
-                aria-hidden
-                className="pointer-events-none absolute -right-16 top-[34rem] -z-10 h-72 w-72 rounded-full bg-sky-300/18 blur-[92px] dark:bg-indigo-500/22"
-            />
-
             {error ? (
                 <div className="workspace-page__content workspace-page__content--xl px-4 pt-4 sm:px-6 lg:px-8">
                     <Alert color="failure" onDismiss={() => setError(null)}>
@@ -450,18 +435,18 @@ export default function Home() {
                                 eyebrow="Mission Control"
                                 id="mission-control"
                                 title="Pick the next action without hunting for it."
-                                description="The landing flow now acts more like a launchpad. You can start a lesson, solve a problem, open a tool, or scan new writing from clearly separated entry points."
+                                description="Start a lesson, solve a problem, open a tool, or scan new writing from one focused place."
                             />
-                            <div className="flex flex-wrap gap-3">
-                                <span className="macos-chip macos-chip--accent">
-                                    <span className="macos-chip__dot bg-sky-500" aria-hidden />
-                                    Faster wayfinding
-                                </span>
-                                <span className="macos-chip macos-chip--ghost">
-                                    <span className="macos-chip__dot bg-emerald-500" aria-hidden />
-                                    Better section rhythm
-                                </span>
-                            </div>
+                                <div className="flex flex-wrap gap-3">
+                                    <span className="macos-chip macos-chip--accent">
+                                        <span className="macos-chip__dot bg-sky-500" aria-hidden />
+                                    Fast starts
+                                    </span>
+                                    <span className="macos-chip macos-chip--ghost">
+                                        <span className="macos-chip__dot bg-emerald-500" aria-hidden />
+                                    Focused sessions
+                                    </span>
+                                </div>
                         </div>
                         <div className="home-launch-grid mt-10">
                             {missionControl.map(renderMissionCard)}
@@ -477,7 +462,7 @@ export default function Home() {
                                     eyebrow="Community Impact"
                                     id="community-impact"
                                     title="Built for learners who want momentum, not clutter."
-                                    description="ScientistShield blends guided learning, practice loops, and publishing surfaces so progress feels continuous. The theme upgrade leans into that by making the hierarchy clearer and the actions easier to reach."
+                                    description="ScientistShield blends guided learning, practice loops, and publishing surfaces so progress feels continuous across every session."
                                 />
                                 <div className="flex flex-wrap gap-3">
                                     <span className="macos-chip macos-chip--accent">Desktop-grade navigation</span>
@@ -513,8 +498,8 @@ export default function Home() {
                             <SectionHeader
                                 eyebrow="Why ScientistShield"
                                 id="why-scientistshield"
-                                title="A stronger product theme needs stronger product flow."
-                                description="The UI refresh is not just brighter glass. It reorganizes the home experience so you can understand what the platform does, where to go next, and why each area matters."
+                                title="Build a learning loop that keeps moving."
+                                description="ScientistShield combines lessons, challenges, tools, articles, and community feedback so each session can end with a useful next step."
                             />
                             <div className="mt-8 grid gap-4 md:grid-cols-2">
                                 {highlights.map(({ icon: Icon, title, description }) => (
@@ -563,7 +548,7 @@ export default function Home() {
                             eyebrow="Learning Library"
                             id="learn-tech-heading"
                             title="Choose a technology lane and get moving."
-                            description="Start with small wins or dive deep. The category grid keeps the visual language consistent while making each topic feel distinct and easy to scan."
+                            description="Start with small wins or dive deep into a stack. Each path points you toward focused lessons and practice."
                         />
 
                         <Suspense
@@ -614,7 +599,7 @@ export default function Home() {
                                     eyebrow="Challenge Studio"
                                     id="problem-solving-heading"
                                     title="Practice computer science with clearer progression."
-                                    description="The challenge area now reads more like a deliberate studio surface. It emphasizes progression, structured help, and editorial feedback instead of dropping you into a cold problem list."
+                                    description="Work through progressive challenges with structured help, sample tests, and editorials when you need them."
                                 />
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <div className="liquid-hybrid-tile rounded-3xl p-5">
@@ -693,8 +678,8 @@ export default function Home() {
                             <SectionHeader
                                 eyebrow="Playground"
                                 id="playground-heading"
-                                title="Experiment without leaving the landing flow."
-                                description="The code playground stays on the home surface so the experience feels alive right away. You can read, decide, and test ideas in one pass."
+                                title="Experiment while the idea is still fresh."
+                                description="Try snippets quickly while you read, compare approaches, or sketch the next idea."
                             />
                             <div className="flex flex-wrap gap-3">
                                 <span className="macos-chip macos-chip--ghost">Instant feedback</span>
@@ -716,7 +701,7 @@ export default function Home() {
                             eyebrow="Journey"
                             id="learning-journey-heading"
                             title="Move from curiosity to a repeatable learning system."
-                            description="Each step now sits inside the same UI language, which helps the whole journey read like a continuous workflow instead of a series of unrelated pages."
+                            description="Discover the topic, practice the idea, collaborate for feedback, then publish proof of what you built."
                         />
                         <ol className="mt-10 grid grid-cols-1 gap-4 lg:grid-cols-4">
                             {learningPath.map(({ step, title, description, icon: Icon }) => (
@@ -743,8 +728,8 @@ export default function Home() {
                             <SectionHeader
                                 eyebrow="Recent Articles"
                                 id="recent-articles-heading"
-                                title="Fresh writing stays in the same visual rhythm."
-                                description="Posts are now part of the same discovery flow as tutorials and challenges, which makes the home page feel more like a working dashboard than a marketing page."
+                                title="Fresh writing for your next study sprint."
+                                description="Read practical notes, platform updates, and community posts when you want context before the next lesson or challenge."
                             />
                             <Button as={Link} to="/search" pill className="btn-glass-secondary">
                                 View all articles
@@ -799,8 +784,8 @@ export default function Home() {
                                 Turn the workspace into your operating system for learning.
                             </h2>
                             <p className="theme-ink-secondary max-w-2xl text-base leading-8 sm:text-lg">
-                                {primaryCta.description} The refreshed theme is designed to keep you in flow longer, with clearer
-                                navigation, calmer surfaces, and faster access to the next meaningful action.
+                                {primaryCta.description} Keep tutorials, problems, tools, articles, and community feedback close to
+                                the work you are already doing.
                             </p>
                             <div className="flex flex-wrap gap-4">
                                 <Button as={Link} to={primaryCta.to} pill size="lg" className="btn-aqua">
@@ -817,9 +802,9 @@ export default function Home() {
                                 <p className="theme-ink-muted text-xs font-semibold uppercase tracking-[0.28em]">
                                     Surfaces
                                 </p>
-                                <p className="theme-ink-primary mt-3 text-2xl font-black">Unified</p>
+                                <p className="theme-ink-primary mt-3 text-2xl font-black">Connected</p>
                                 <p className="theme-ink-secondary mt-2 text-sm leading-6">
-                                    Tutorials, articles, challenges, and tools now feel part of the same product family.
+                                    Tutorials, articles, challenges, and tools stay close to the same learning path.
                                 </p>
                             </div>
                             <div className="liquid-hybrid-tile rounded-[1.5rem] p-5">
@@ -828,7 +813,7 @@ export default function Home() {
                                 </p>
                                 <p className="theme-ink-primary mt-3 text-2xl font-black">Direct</p>
                                 <p className="theme-ink-secondary mt-2 text-sm leading-6">
-                                    Mission control cards and better section framing cut down on hunting for the next step.
+                                    Mission control cards help you jump to the next useful action quickly.
                                 </p>
                             </div>
                             <div className="liquid-hybrid-tile rounded-[1.5rem] p-5">
@@ -837,7 +822,7 @@ export default function Home() {
                                 </p>
                                 <p className="theme-ink-primary mt-3 text-2xl font-black">Calmer</p>
                                 <p className="theme-ink-secondary mt-2 text-sm leading-6">
-                                    Bigger headings, cleaner spacing, and steadier contrast support longer sessions.
+                                    Focused reading, compact actions, and steady pacing support longer sessions.
                                 </p>
                             </div>
                         </div>

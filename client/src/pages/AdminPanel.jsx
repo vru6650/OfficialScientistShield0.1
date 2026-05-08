@@ -297,6 +297,29 @@ export default function AdminPanel() {
                                 linkTo='/dashboard?tab=posts'
                                 headers={['Post', 'Category']}
                                 data={data.posts}
+                                renderCard={(post) => (
+                                    <article key={post._id} className='rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900'>
+                                        <div className='flex items-start gap-3'>
+                                            {getPostPreviewImage(post) ? (
+                                                <img
+                                                    src={getPostPreviewImage(post)}
+                                                    alt={post.title}
+                                                    className='h-12 w-16 flex-none rounded-lg object-cover'
+                                                />
+                                            ) : (
+                                                <div className='flex h-12 w-16 flex-none items-center justify-center rounded-lg bg-slate-100 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-200'>
+                                                    Media
+                                                </div>
+                                            )}
+                                            <div className='min-w-0'>
+                                                <p className='line-clamp-2 break-words text-sm font-semibold text-slate-900 dark:text-white'>{post.title}</p>
+                                                <Badge color='info' className='mt-2 capitalize'>
+                                                    {post.category || 'general'}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    </article>
+                                )}
                                 renderRow={(post) => (
                                     <Table.Body key={post._id} className='divide-y'>
                                         <Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>
@@ -330,6 +353,14 @@ export default function AdminPanel() {
                                 linkTo='/dashboard?tab=tutorials'
                                 headers={['Tutorial', 'Category']}
                                 data={data.tutorials}
+                                renderCard={(tutorial) => (
+                                    <article key={tutorial._id} className='rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900'>
+                                        <p className='break-words text-sm font-semibold text-slate-900 dark:text-white'>{tutorial.title}</p>
+                                        <Badge color='purple' className='mt-2 capitalize'>
+                                            {tutorial.category || 'general'}
+                                        </Badge>
+                                    </article>
+                                )}
                                 renderRow={(tutorial) => (
                                     <Table.Body key={tutorial._id} className='divide-y'>
                                         <Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>
@@ -350,6 +381,14 @@ export default function AdminPanel() {
                                 linkTo='/dashboard?tab=quizzes'
                                 headers={['Quiz', 'Questions']}
                                 data={data.quizzes}
+                                renderCard={(quiz) => (
+                                    <article key={quiz._id} className='rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900'>
+                                        <p className='break-words text-sm font-semibold text-slate-900 dark:text-white'>{quiz.title}</p>
+                                        <Badge color='success' className='mt-2'>
+                                            {quiz.questions?.length ?? 0} items
+                                        </Badge>
+                                    </article>
+                                )}
                                 renderRow={(quiz) => (
                                     <Table.Body key={quiz._id} className='divide-y'>
                                         <Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>
@@ -370,6 +409,16 @@ export default function AdminPanel() {
                                 linkTo='/dashboard?tab=content'
                                 headers={['Title', 'Status']}
                                 data={data.pages}
+                                renderCard={(page) => (
+                                    <article key={page._id} className='rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900'>
+                                        <div className='flex items-start justify-between gap-3'>
+                                            <p className='min-w-0 break-words text-sm font-semibold text-slate-900 dark:text-white'>{page.title}</p>
+                                            <Badge color={page.status === 'published' ? 'success' : 'warning'} className='capitalize'>
+                                                {page.status}
+                                            </Badge>
+                                        </div>
+                                    </article>
+                                )}
                                 renderRow={(page) => (
                                     <Table.Body key={page._id} className='divide-y'>
                                         <Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>

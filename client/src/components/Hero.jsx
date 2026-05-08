@@ -43,9 +43,9 @@ export default function Hero() {
 
     const heroStatus = useMemo(
         () => [
-            { label: 'Theme', value: 'Glass depth' },
-            { label: 'Flow', value: 'Learn -> build -> publish' },
-            { label: 'Pace', value: 'Keyboard-first' },
+            { label: 'Focus', value: 'Learn -> build -> publish' },
+            { label: 'Mode', value: 'Guided practice' },
+            { label: 'Access', value: 'Search-first' },
         ],
         []
     );
@@ -65,7 +65,7 @@ export default function Hero() {
             {
                 label: 'Publishing lane',
                 value: 'Fresh articles',
-                description: 'Read, capture ideas, and publish from the same visual system.',
+                description: 'Read new ideas, capture notes, and turn your progress into published work.',
             },
         ],
         []
@@ -74,8 +74,8 @@ export default function Hero() {
     const focusFlow = useMemo(
         () => [
             'Search any topic, tutorial, post, or problem from one command bar.',
-            'Open the next best route quickly with clearer section entry points.',
-            'Stay in one calm product shell instead of bouncing between mismatched surfaces.',
+            'Move between lessons, challenges, and tools without losing your place.',
+            'Keep the next meaningful step close while you study, practice, and publish.',
         ],
         []
     );
@@ -183,15 +183,6 @@ export default function Hero() {
                 </Suspense>
             ) : null}
 
-            <div
-                aria-hidden
-                className="pointer-events-none absolute -top-24 left-[-10%] h-[360px] w-[380px] rounded-full bg-sky-400/25 blur-[86px] dark:bg-sky-500/28"
-            />
-            <div
-                aria-hidden
-                className="pointer-events-none absolute -top-16 right-[-8%] h-[320px] w-[340px] rounded-full bg-cyan-300/22 blur-[88px] dark:bg-cyan-400/22"
-            />
-
             <div className="macos-hero-window macos-hero-window--hybrid liquid-hybrid-panel macos-window macos-window--focused relative z-10">
                 <div className="macos-hero-titlebar">
                     <div className="macos-hero-lights" aria-hidden>
@@ -215,10 +206,10 @@ export default function Hero() {
                             <div className="flex flex-wrap items-center gap-3">
                                 <span className="macos-hero-ribbon">
                                     <HiOutlineSparkles className="h-4 w-4" aria-hidden />
-                                    Focused product shell
+                                    Guided learning studio
                                 </span>
                                 <span className="macos-chip macos-chip--accent text-[11px]">
-                                    Fresh landing experience
+                                    Practice-ready workspace
                                 </span>
                             </div>
                             <p className="theme-ink-muted text-xs font-semibold uppercase tracking-[0.34em]">
@@ -230,8 +221,8 @@ export default function Hero() {
                                     <span className="macos-hero-gradient block pt-2">one focused workspace.</span>
                                 </h1>
                                 <p className="theme-ink-secondary max-w-2xl text-base leading-8 sm:text-lg">
-                                    The theme now leans harder into tactile glass surfaces, clearer entry points, and faster wayfinding so
-                                    tutorials, articles, problems, and tools feel like one product instead of separate pages.
+                                    Follow structured tutorials, solve coding challenges, test ideas in the lab, and publish what you
+                                    learn without breaking your study flow.
                                 </p>
                             </div>
                         </div>
@@ -267,7 +258,7 @@ export default function Hero() {
                             <div className="desktop-status liquid-hybrid-panel">
                                 <div className="desktop-status__chip">
                                     <span className="desktop-status__dot" aria-hidden />
-                                    Refined UX
+                                    Study mode
                                 </div>
                                 <div className="desktop-status__divider" aria-hidden />
                                 {heroStatus.map(({ label, value }) => (
@@ -309,7 +300,7 @@ export default function Hero() {
                                         Workspace pulse
                                     </p>
                                     <h2 className="theme-ink-primary text-2xl font-bold">
-                                        Everything you need is easier to spot.
+                                        Pick up the right tool for the moment.
                                     </h2>
                                 </div>
                                 <span className="macos-chip macos-chip--ghost text-[11px]">Live now</span>

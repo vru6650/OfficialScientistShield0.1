@@ -7,6 +7,11 @@ import { Link } from 'react-router-dom';
 import { HiOutlineExclamationCircle } from 'react-icons/hi';
 import { getQuizzes as getQuizzesService, deleteQuiz as deleteQuizService } from '../services/quizService'; // NEW: Import quiz services
 
+const formatDate = (date) => {
+    if (!date) return 'Unknown';
+    return new Date(date).toLocaleDateString();
+};
+
 export default function DashQuizzes() {
     const { currentUser } = useSelector((state) => state.user);
     const queryClient = useQueryClient();
@@ -49,9 +54,9 @@ export default function DashQuizzes() {
     const quizzes = data?.pages.flatMap(page => page.quizzes) ?? [];
 
     return (
-        <div className='table-auto overflow-x-scroll md:mx-auto p-3 scrollbar scrollbar-track-slate-100 scrollbar-thumb-slate-300 dark:scrollbar-track-slate-700 dark:scrollbar-thumb-slate-500'>
+        <div className='space-y-4 p-3 md:mx-auto'>
             {isLoading && (
-                <div className='flex justify-center items-center min-h-screen'>
+                <div className='flex min-h-64 items-center justify-center'>
                     <Spinner size='xl' />
                 </div>
             )}
@@ -68,51 +73,105 @@ export default function DashQuizzes() {
 
             {currentUser?.isAdmin && quizzes.length > 0 ? (
                 <>
-                    <Table hoverable className='shadow-md'>
-                        <Table.Head>
-                            <Table.HeadCell>Date updated</Table.HeadCell>
-                            <Table.HeadCell>Quiz title</Table.HeadCell>
-                            <Table.HeadCell>Category</Table.HeadCell>
-                            <Table.HeadCell>Questions</Table.HeadCell>
-                            <Table.HeadCell>Delete</Table.HeadCell>
-                            <Table.HeadCell>
-                                <span>Edit</span>
-                            </Table.HeadCell>
-                        </Table.Head>
-                        <Table.Body className='divide-y'>
-                            {quizzes.map((quiz) => (
-                                <Table.Row key={quiz._id} className='bg-white dark:border-gray-700 dark:bg-gray-800'>
-                                    <Table.Cell>{new Date(quiz.updatedAt).toLocaleDateString()}</Table.Cell>
-                                    <Table.Cell>
-                                        <Link className='font-medium text-gray-900 dark:text-white' to={`/quizzes/${quiz.slug}`}>{quiz.title}</Link>
-                                    </Table.Cell>
-                                    <Table.Cell>{quiz.category}</Table.Cell>
-                                    <Table.Cell>{quiz.questions.length}</Table.Cell>
-                                    <Table.Cell>
-                                        <span
-                                            onClick={() => {
-                                                setShowModal(true);
-                                                setQuizToDelete({ quizId: quiz._id });
-                                            }}
-                                            className='font-medium text-red-500 hover:underline cursor-pointer'
+                    <div className='grid gap-3 md:hidden'>
+                        {quizzes.map((quiz) => (
+                            <article
+                                key={quiz._id}
+                                className='rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900'
+                            >
+                                <div className='flex items-start justify-between gap-3'>
+                                    <div className='min-w-0'>
+                                        <p className='text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>
+                                            Updated {formatDate(quiz.updatedAt)}
+                                        </p>
+                                        <Link
+                                            className='mt-1 block break-words text-base font-semibold text-slate-900 hover:text-teal-600 dark:text-white dark:hover:text-teal-300'
+                                            to={`/quizzes/${quiz.slug}`}
                                         >
-                                            Delete
-                                        </span>
-                                    </Table.Cell>
-                                    <Table.Cell>
-                                        <Link className='text-teal-500 hover:underline' to={`/update-quiz/${quiz._id}`}>
-                                            <span>Edit</span>
+                                            {quiz.title}
                                         </Link>
-                                    </Table.Cell>
-                                </Table.Row>
-                            ))}
-                        </Table.Body>
-                    </Table>
+                                    </div>
+                                    <span className='inline-flex min-h-8 flex-none items-center rounded-full bg-slate-100 px-3 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200'>
+                                        {quiz.questions?.length ?? 0} questions
+                                    </span>
+                                </div>
+                                <dl className='mt-4 grid gap-2 text-sm text-slate-600 dark:text-slate-300'>
+                                    <div>
+                                        <dt className='text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'>Category</dt>
+                                        <dd className='mt-1 break-words'>{quiz.category}</dd>
+                                    </div>
+                                </dl>
+                                <div className='mt-4 grid grid-cols-2 gap-2'>
+                                    <Link
+                                        className='inline-flex min-h-11 items-center justify-center rounded-xl border border-teal-200 px-4 text-sm font-semibold text-teal-600 transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-100 dark:border-teal-500/30 dark:text-teal-300 dark:hover:bg-teal-500/10 dark:focus-visible:ring-teal-900/40'
+                                        to={`/update-quiz/${quiz._id}`}
+                                    >
+                                        Edit
+                                    </Link>
+                                    <button
+                                        type='button'
+                                        onClick={() => {
+                                            setShowModal(true);
+                                            setQuizToDelete({ quizId: quiz._id });
+                                        }}
+                                        disabled={deleteMutation.isPending}
+                                        className='inline-flex min-h-11 items-center justify-center rounded-xl border border-red-200 px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10 dark:focus-visible:ring-red-900/40'
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                    <div className='hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-md scrollbar scrollbar-track-slate-100 scrollbar-thumb-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:scrollbar-track-slate-700 dark:scrollbar-thumb-slate-500 md:block'>
+                        <Table hoverable>
+                            <Table.Head>
+                                <Table.HeadCell>Date updated</Table.HeadCell>
+                                <Table.HeadCell>Quiz title</Table.HeadCell>
+                                <Table.HeadCell>Category</Table.HeadCell>
+                                <Table.HeadCell>Questions</Table.HeadCell>
+                                <Table.HeadCell>Delete</Table.HeadCell>
+                                <Table.HeadCell>
+                                    <span>Edit</span>
+                                </Table.HeadCell>
+                            </Table.Head>
+                            <Table.Body className='divide-y'>
+                                {quizzes.map((quiz) => (
+                                    <Table.Row key={quiz._id} className='bg-white dark:border-gray-700 dark:bg-gray-800'>
+                                        <Table.Cell>{formatDate(quiz.updatedAt)}</Table.Cell>
+                                        <Table.Cell className='max-w-sm'>
+                                            <Link className='font-medium text-gray-900 dark:text-white' to={`/quizzes/${quiz.slug}`}>{quiz.title}</Link>
+                                        </Table.Cell>
+                                        <Table.Cell>{quiz.category}</Table.Cell>
+                                        <Table.Cell>{quiz.questions?.length ?? 0}</Table.Cell>
+                                        <Table.Cell>
+                                            <button
+                                                type='button'
+                                                onClick={() => {
+                                                    setShowModal(true);
+                                                    setQuizToDelete({ quizId: quiz._id });
+                                                }}
+                                                disabled={deleteMutation.isPending}
+                                                className='font-medium text-red-500 hover:underline disabled:cursor-not-allowed disabled:opacity-60'
+                                            >
+                                                Delete
+                                            </button>
+                                        </Table.Cell>
+                                        <Table.Cell>
+                                            <Link className='text-teal-500 hover:underline' to={`/update-quiz/${quiz._id}`}>
+                                                <span>Edit</span>
+                                            </Link>
+                                        </Table.Cell>
+                                    </Table.Row>
+                                ))}
+                            </Table.Body>
+                        </Table>
+                    </div>
                     {hasNextPage && (
                         <button
                             onClick={() => fetchNextPage()}
                             disabled={isFetchingNextPage}
-                            className='w-full text-teal-500 self-center text-sm py-7'
+                            className='min-h-11 w-full self-center py-3 text-sm font-semibold text-teal-500'
                         >
                             {isFetchingNextPage ? 'Loading...' : 'Show more'}
                         </button>

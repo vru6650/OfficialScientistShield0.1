@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
     HiOutlineAdjustmentsHorizontal,
+    HiOutlineArrowLeft,
     HiOutlineArrowLeftOnRectangle,
     HiOutlineArrowsPointingOut,
     HiOutlineBars3,
@@ -72,6 +73,26 @@ const NOTIFICATION_TONE_CLASSES = {
 };
 
 const buildShortcutTitle = (label, shortcut) => (shortcut ? `${label} (${shortcut})` : label);
+const buildBackFallbackPath = (pathname = '/') => {
+    const path = pathname || '/';
+
+    if (path === '/' || path === '') return '/';
+    if (path.startsWith('/post/')) return '/posts';
+    if (path.startsWith('/tutorials/')) return '/tutorials';
+    if (path.startsWith('/quizzes/')) return '/quizzes';
+    if (path.startsWith('/problems/')) return '/problems';
+    if (path.startsWith('/tools/')) return '/tools';
+    if (path.startsWith('/content/')) return '/';
+    if (path.startsWith('/community/')) return '/community';
+    if (path.startsWith('/create-') || path.startsWith('/update-') || path === '/file-manager') return '/admin';
+
+    const segments = path.split('/').filter(Boolean);
+    if (segments.length > 1) {
+        return `/${segments.slice(0, -1).join('/')}`;
+    }
+
+    return '/';
+};
 const readNonEmptyString = (value, fallback = '') => {
     const text = typeof value === 'string' ? value.trim() : '';
     return text || fallback;
@@ -251,6 +272,16 @@ export default function AdvancedHeader({
     }, [branding, routeLabel]);
     const quickLookCanToggle = quickLookAvailable || quickLookOpen;
     const shortcutHintTitle = buildShortcutTitle('Search tools, windows, and actions', commandPaletteShortcut);
+    const backFallbackPath = useMemo(
+        () => buildBackFallbackPath(location.pathname),
+        [location.pathname]
+    );
+    const canUseBrowserBack =
+        typeof window !== 'undefined' && typeof window.history?.state?.idx === 'number' && window.history.state.idx > 0;
+    const canGoBack = canUseBrowserBack || location.pathname !== '/' || Boolean(location.search || location.hash);
+    const backButtonTitle = canUseBrowserBack
+        ? 'Go back to previous page (Alt + Left Arrow)'
+        : `Go back to ${backFallbackPath === '/' ? 'home' : backFallbackPath}`;
     const missionControlTitle = buildShortcutTitle(missionControlOpen ? 'Hide Mission Control' : 'Show Mission Control', missionControlShortcut);
     const controlCenterTitle = buildShortcutTitle(controlCenterOpen ? 'Hide Control Center' : 'Show Control Center', controlCenterShortcut);
     const quickLookTitle = buildShortcutTitle(
@@ -674,6 +705,29 @@ export default function AdvancedHeader({
         [closeNotificationsPanel, closeProfileMenu, navigate]
     );
 
+    const goBack = useCallback(() => {
+        if (!canGoBack) {
+            return;
+        }
+
+        closeProfileMenu();
+        closeNotificationsPanel();
+
+        if (canUseBrowserBack) {
+            navigate(-1);
+            return;
+        }
+
+        navigate(backFallbackPath, { replace: true });
+    }, [
+        backFallbackPath,
+        canGoBack,
+        canUseBrowserBack,
+        closeNotificationsPanel,
+        closeProfileMenu,
+        navigate,
+    ]);
+
     const handleProfileTriggerKeyDown = (event) => {
         if (event.key === 'ArrowDown') {
             event.preventDefault();
@@ -796,6 +850,15 @@ export default function AdvancedHeader({
     const workspaceMenuItems = useMemo(
         () => [
             {
+                key: 'back',
+                label: 'Back',
+                description: canUseBrowserBack ? 'Return to the previous page' : `Return to ${backFallbackPath}`,
+                shortcut: 'Alt + ←',
+                Icon: HiOutlineArrowLeft,
+                disabled: !canGoBack,
+                onSelect: goBack,
+            },
+            {
                 key: 'home',
                 label: 'Home',
                 description: 'Go to workspace home',
@@ -858,6 +921,9 @@ export default function AdvancedHeader({
             },
         ],
         [
+            backFallbackPath,
+            canGoBack,
+            canUseBrowserBack,
             closeProfileMenu,
             commandPaletteShortcut,
             controlCenterOpen,
@@ -865,6 +931,7 @@ export default function AdvancedHeader({
             handleControlCenterToggle,
             missionControlOpen,
             missionControlShortcut,
+            goBack,
             onGoHome,
             onOpenCommandPalette,
             onToggleMissionControl,
@@ -995,6 +1062,20 @@ export default function AdvancedHeader({
                         </span>
                     </motion.button>
                 </div>
+
+                <motion.button
+                    whileHover={canGoBack ? { y: -2, scale: 1.04 } : {}}
+                    whileTap={canGoBack ? { scale: 0.96 } : {}}
+                    type="button"
+                    onClick={goBack}
+                    disabled={!canGoBack}
+                    aria-label={backButtonTitle}
+                    title={backButtonTitle}
+                    className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-white/45 bg-white/80 text-slate-700 shadow-sm transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-900 dark:disabled:hover:bg-slate-900"
+                >
+                    <HiOutlineArrowLeft className="h-5 w-5" aria-hidden="true" />
+                    <span className="sr-only">Back</span>
+                </motion.button>
 
                 <motion.button
                     whileHover={{ y: -2, scale: 1.005 }}

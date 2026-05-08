@@ -6,6 +6,11 @@ import { Link } from 'react-router-dom';
 import { HiOutlineExclamationCircle } from 'react-icons/hi';
 import { getTutorials as getTutorialsService, deleteTutorial as deleteTutorialService } from '../services/tutorialService';
 
+const formatDate = (date) => {
+    if (!date) return 'Unknown';
+    return new Date(date).toLocaleDateString();
+};
+
 export default function DashTutorials() {
     const { currentUser } = useSelector((state) => state.user);
     const queryClient = useQueryClient();
@@ -56,9 +61,9 @@ export default function DashTutorials() {
     const tutorials = data?.pages.flatMap(page => page.tutorials) ?? [];
 
     return (
-        <div className='table-auto overflow-x-scroll md:mx-auto p-3 scrollbar scrollbar-track-slate-100 scrollbar-thumb-slate-300 dark:scrollbar-track-slate-700 dark:scrollbar-thumb-slate-500'>
+        <div className='space-y-4 p-3 md:mx-auto'>
             {isLoading && (
-                <div className='flex justify-center items-center min-h-screen'>
+                <div className='flex min-h-64 items-center justify-center'>
                     <Spinner size='xl' />
                 </div>
             )}
@@ -75,61 +80,129 @@ export default function DashTutorials() {
 
             {currentUser.isAdmin && tutorials.length > 0 ? (
                 <>
-                    <Table hoverable className='shadow-md'>
-                        <Table.Head>
-                            <Table.HeadCell>Date updated</Table.HeadCell>
-                            <Table.HeadCell>Thumbnail</Table.HeadCell>
-                            <Table.HeadCell>Tutorial title</Table.HeadCell>
-                            <Table.HeadCell>Category</Table.HeadCell>
-                            <Table.HeadCell>Chapters</Table.HeadCell>
-                            <Table.HeadCell>Delete</Table.HeadCell>
-                            <Table.HeadCell>
-                                <span>Edit</span>
-                            </Table.HeadCell>
-                        </Table.Head>
-                        <Table.Body className='divide-y'>
-                            {tutorials.map((tutorial) => (
-                                <Table.Row key={tutorial._id} className='bg-white dark:border-gray-700 dark:bg-gray-800'>
-                                    <Table.Cell>{new Date(tutorial.updatedAt).toLocaleDateString()}</Table.Cell>
-                                    <Table.Cell>
-                                        <Link to={`/tutorials/${tutorial.slug}`}>
-                                            <img src={tutorial.thumbnail} alt={tutorial.title} className='w-20 h-10 object-cover bg-gray-500' />
-                                        </Link>
-                                    </Table.Cell>
-                                    <Table.Cell>
-                                        <Link className='font-medium text-gray-900 dark:text-white' to={`/tutorials/${tutorial.slug}`}>{tutorial.title}</Link>
-                                    </Table.Cell>
-                                    <Table.Cell>{tutorial.category}</Table.Cell>
-                                    <Table.Cell>{tutorial.chapters.length}</Table.Cell>
-                                    <Table.Cell>
-                                        <span
-                                            onClick={() => {
-                                                setShowModal(true);
-                                                // =================================================================
-                                                // FIX: Only store the tutorial ID in state
-                                                // =================================================================
-                                                setTutorialToDelete({ tutorialId: tutorial._id });
-                                            }}
-                                            className='font-medium text-red-500 hover:underline cursor-pointer'
+                    <div className='grid gap-3 md:hidden'>
+                        {tutorials.map((tutorial) => (
+                            <article
+                                key={tutorial._id}
+                                className='rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900'
+                            >
+                                <div className='flex items-start gap-3'>
+                                    <Link to={`/tutorials/${tutorial.slug}`} className='flex-none'>
+                                        {tutorial.thumbnail ? (
+                                            <img
+                                                src={tutorial.thumbnail}
+                                                alt={tutorial.title}
+                                                className='h-14 w-20 rounded-lg bg-gray-500 object-cover'
+                                            />
+                                        ) : (
+                                            <div className='flex h-14 w-20 items-center justify-center rounded-lg bg-slate-100 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-200'>
+                                                Tutorial
+                                            </div>
+                                        )}
+                                    </Link>
+                                    <div className='min-w-0 flex-1'>
+                                        <p className='text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>
+                                            Updated {formatDate(tutorial.updatedAt)}
+                                        </p>
+                                        <Link
+                                            className='mt-1 block break-words text-base font-semibold text-slate-900 hover:text-teal-600 dark:text-white dark:hover:text-teal-300'
+                                            to={`/tutorials/${tutorial.slug}`}
                                         >
-                                            Delete
-                                        </span>
-                                    </Table.Cell>
-                                    <Table.Cell>
-                                        {/* You're linking to a route, this is fine, no change needed here */}
-                                        <Link className='text-teal-500 hover:underline' to={`/update-tutorial/${tutorial._id}`}>
-                                            <span>Edit</span>
+                                            {tutorial.title}
                                         </Link>
-                                    </Table.Cell>
-                                </Table.Row>
-                            ))}
-                        </Table.Body>
-                    </Table>
+                                        <div className='mt-2 flex flex-wrap items-center gap-2'>
+                                            <span className='inline-flex min-h-8 items-center rounded-full bg-slate-100 px-3 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200'>
+                                                {tutorial.category || 'Uncategorized'}
+                                            </span>
+                                            <span className='inline-flex min-h-8 items-center rounded-full bg-slate-100 px-3 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200'>
+                                                {tutorial.chapters?.length ?? 0} chapters
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className='mt-4 grid grid-cols-2 gap-2'>
+                                    <Link
+                                        className='inline-flex min-h-11 items-center justify-center rounded-xl border border-teal-200 px-4 text-sm font-semibold text-teal-600 transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-100 dark:border-teal-500/30 dark:text-teal-300 dark:hover:bg-teal-500/10 dark:focus-visible:ring-teal-900/40'
+                                        to={`/update-tutorial/${tutorial._id}`}
+                                    >
+                                        Edit
+                                    </Link>
+                                    <button
+                                        type='button'
+                                        onClick={() => {
+                                            setShowModal(true);
+                                            setTutorialToDelete({ tutorialId: tutorial._id });
+                                        }}
+                                        disabled={deleteMutation.isPending}
+                                        className='inline-flex min-h-11 items-center justify-center rounded-xl border border-red-200 px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10 dark:focus-visible:ring-red-900/40'
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                    <div className='hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-md scrollbar scrollbar-track-slate-100 scrollbar-thumb-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:scrollbar-track-slate-700 dark:scrollbar-thumb-slate-500 md:block'>
+                        <Table hoverable>
+                            <Table.Head>
+                                <Table.HeadCell>Date updated</Table.HeadCell>
+                                <Table.HeadCell>Thumbnail</Table.HeadCell>
+                                <Table.HeadCell>Tutorial title</Table.HeadCell>
+                                <Table.HeadCell>Category</Table.HeadCell>
+                                <Table.HeadCell>Chapters</Table.HeadCell>
+                                <Table.HeadCell>Delete</Table.HeadCell>
+                                <Table.HeadCell>
+                                    <span>Edit</span>
+                                </Table.HeadCell>
+                            </Table.Head>
+                            <Table.Body className='divide-y'>
+                                {tutorials.map((tutorial) => (
+                                    <Table.Row key={tutorial._id} className='bg-white dark:border-gray-700 dark:bg-gray-800'>
+                                        <Table.Cell>{formatDate(tutorial.updatedAt)}</Table.Cell>
+                                        <Table.Cell>
+                                            <Link to={`/tutorials/${tutorial.slug}`}>
+                                                {tutorial.thumbnail ? (
+                                                    <img src={tutorial.thumbnail} alt={tutorial.title} className='h-10 w-20 rounded-md bg-gray-500 object-cover' />
+                                                ) : (
+                                                    <div className='flex h-10 w-20 items-center justify-center rounded-md bg-slate-100 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-200'>
+                                                        Tutorial
+                                                    </div>
+                                                )}
+                                            </Link>
+                                        </Table.Cell>
+                                        <Table.Cell className='max-w-sm'>
+                                            <Link className='font-medium text-gray-900 dark:text-white' to={`/tutorials/${tutorial.slug}`}>{tutorial.title}</Link>
+                                        </Table.Cell>
+                                        <Table.Cell>{tutorial.category}</Table.Cell>
+                                        <Table.Cell>{tutorial.chapters?.length ?? 0}</Table.Cell>
+                                        <Table.Cell>
+                                            <button
+                                                type='button'
+                                                onClick={() => {
+                                                    setShowModal(true);
+                                                    setTutorialToDelete({ tutorialId: tutorial._id });
+                                                }}
+                                                disabled={deleteMutation.isPending}
+                                                className='font-medium text-red-500 hover:underline disabled:cursor-not-allowed disabled:opacity-60'
+                                            >
+                                                Delete
+                                            </button>
+                                        </Table.Cell>
+                                        <Table.Cell>
+                                            <Link className='text-teal-500 hover:underline' to={`/update-tutorial/${tutorial._id}`}>
+                                                <span>Edit</span>
+                                            </Link>
+                                        </Table.Cell>
+                                    </Table.Row>
+                                ))}
+                            </Table.Body>
+                        </Table>
+                    </div>
                     {hasNextPage && (
                         <button
                             onClick={() => fetchNextPage()}
                             disabled={isFetchingNextPage}
-                            className='w-full text-teal-500 self-center text-sm py-7'
+                            className='min-h-11 w-full self-center py-3 text-sm font-semibold text-teal-500'
                         >
                             {isFetchingNextPage ? 'Loading...' : 'Show more'}
                         </button>

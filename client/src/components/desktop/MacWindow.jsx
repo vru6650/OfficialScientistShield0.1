@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { iconComponentForType } from './windowIcons';
 
@@ -17,6 +17,8 @@ function MacWindow({
     onZoom,
     onFocus,
     onResizeStart,
+    onApplyLayout,
+    layoutPresets,
 }) {
     const {
         id,
@@ -34,6 +36,8 @@ function MacWindow({
     const isFullScreen = Boolean(windowData.isZoomed);
     const isWorkspaceWindow = Boolean(windowData.isMain || windowData.isAppWindow);
     const IconComponent = windowData.iconComponent || iconComponentForType(type);
+    const [snapMenuOpen, setSnapMenuOpen] = useState(false);
+    const snapMenuEnabled = allowZoom && layoutPresets.length > 0 && typeof onApplyLayout === 'function';
 
     const windowClassName = useMemo(
         () =>
@@ -103,8 +107,46 @@ function MacWindow({
 
     const handleZoomClick = (event) => {
         event.stopPropagation();
+        setSnapMenuOpen(false);
         handleZoom(buildModifierState(event));
     };
+
+    const openSnapMenu = (event) => {
+        event.stopPropagation();
+        if (snapMenuEnabled) {
+            setSnapMenuOpen(true);
+        }
+    };
+
+    const closeSnapMenu = () => {
+        setSnapMenuOpen(false);
+    };
+
+    const handleSnapMenuPointerDown = (event) => {
+        event.stopPropagation();
+    };
+
+    const handleSnapMenuKeyDown = (event) => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            setSnapMenuOpen(false);
+        }
+    };
+
+    const handleApplyLayout = (presetId) => (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (snapMenuEnabled) {
+            onApplyLayout(id, presetId);
+            setSnapMenuOpen(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!snapMenuEnabled && snapMenuOpen) {
+            setSnapMenuOpen(false);
+        }
+    }, [snapMenuEnabled, snapMenuOpen]);
 
     const startResize = (direction) => (event) => {
         if (typeof onResizeStart === 'function') {
@@ -138,6 +180,8 @@ function MacWindow({
             exit={motionExit}
             transition={motionTransition}
             onMouseDown={handleFocus}
+            onFocus={handleFocus}
+            tabIndex={0}
             role="group"
             aria-label={`${title} window`}
             data-dragging={isDragging ? 'true' : 'false'}
@@ -157,7 +201,7 @@ function MacWindow({
                 title={`Drag to move${allowZoom ? ' • Double-click to toggle full screen' : ''} • Hold Alt for power controls`}
                 role="presentation"
             >
-                <div className="macos-traffic-lights" aria-hidden="true">
+                <div className="macos-traffic-lights">
                     <button
                         type="button"
                         className={`macos-traffic-light macos-traffic-light--close ${!allowClose ? 'opacity-40 cursor-not-allowed' : 'hover:brightness-110 transition'} `}
@@ -186,14 +230,55 @@ function MacWindow({
                         type="button"
                         className={`macos-traffic-light macos-traffic-light--zoom ${!allowZoom ? 'opacity-40 cursor-not-allowed' : 'hover:brightness-110 transition'} `}
                         aria-label="Zoom window"
+                        aria-expanded={snapMenuEnabled ? snapMenuOpen : undefined}
+                        aria-haspopup={snapMenuEnabled ? 'menu' : undefined}
                         data-window-control="zoom"
-                        onPointerDown={handleControlPointerDown}
+                        onPointerDown={(event) => {
+                            handleControlPointerDown(event);
+                            openSnapMenu(event);
+                        }}
+                        onMouseEnter={openSnapMenu}
+                        onFocus={openSnapMenu}
                         onClick={handleZoomClick}
                         title="Zoom window (Alt+Click: toggle focus mode)"
                         disabled={!allowZoom}
                     >
                         <span className="macos-traffic-light__glyph macos-traffic-light__glyph--zoom" aria-hidden="true" />
                     </button>
+                    {snapMenuOpen ? (
+                        <div
+                            className="macos-snap-menu"
+                            role="menu"
+                            aria-label="Window layout presets"
+                            onMouseLeave={closeSnapMenu}
+                            onPointerDown={handleSnapMenuPointerDown}
+                            onKeyDown={handleSnapMenuKeyDown}
+                        >
+                            <div className="macos-snap-menu__header">
+                                <span>Snap Layouts</span>
+                            </div>
+                            <div className="macos-snap-menu__grid">
+                                {layoutPresets.map((preset) => (
+                                    <button
+                                        key={preset.id}
+                                        type="button"
+                                        role="menuitem"
+                                        className={`macos-snap-menu__option macos-snap-menu__option--${preset.id}`}
+                                        onClick={handleApplyLayout(preset.id)}
+                                        title={preset.label}
+                                    >
+                                        <span className="macos-snap-menu__diagram" aria-hidden="true">
+                                            <span />
+                                            <span />
+                                            <span />
+                                            <span />
+                                        </span>
+                                        <span>{preset.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ) : null}
                 </div>
                 <div className="macos-window__titlebar-center">
                     {IconComponent ? (
@@ -202,6 +287,11 @@ function MacWindow({
                         </span>
                     ) : null}
                     <span className="macos-window__titletext">{title}</span>
+                </div>
+                <div className="macos-window__titlebar-grip" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
                 </div>
             </div>
             <div className="macos-window__content">
@@ -241,6 +331,13 @@ MacWindow.propTypes = {
     onZoom: PropTypes.func.isRequired,
     onFocus: PropTypes.func.isRequired,
     onResizeStart: PropTypes.func.isRequired,
+    onApplyLayout: PropTypes.func,
+    layoutPresets: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.string.isRequired,
+            label: PropTypes.string.isRequired,
+        })
+    ),
 };
 
 MacWindow.defaultProps = {
@@ -249,6 +346,8 @@ MacWindow.defaultProps = {
     reduceMotion: false,
     renderContent: null,
     children: null,
+    onApplyLayout: null,
+    layoutPresets: [],
 };
 
 export default memo(MacWindow);

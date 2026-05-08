@@ -22,7 +22,10 @@ const statusColor = {
     closed: 'gray',
 };
 
-const formatDate = (value) => new Date(value).toLocaleString();
+const formatDate = (value) => {
+    if (!value) return 'Unknown';
+    return new Date(value).toLocaleString();
+};
 
 const fetchPage = async ({ pageParam = 0, queryKey }) => {
     const [, status, email] = queryKey;
@@ -85,14 +88,14 @@ export default function DashCommunitySubmissions() {
     }
 
     return (
-        <div className='p-3 md:mx-auto md:p-4'>
-            <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4'>
-                <div className='space-y-1'>
+        <div className='space-y-4 p-3 md:mx-auto md:p-4'>
+            <div className='mb-4 flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'>
+                <div className='min-w-0 space-y-1'>
                     <p className='text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400'>Community</p>
                     <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>Submissions</h2>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>Match members to circles, reviewers, and tracks.</p>
                 </div>
-                <div className='flex flex-wrap gap-2'>
+                <div className='grid min-w-0 gap-2 sm:grid-cols-3 lg:max-w-2xl'>
                     <Select value={status} onChange={(e) => setStatus(e.target.value)}>
                         {statusOptions.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -105,7 +108,7 @@ export default function DashCommunitySubmissions() {
                         value={emailFilter}
                         onChange={(e) => setEmailFilter(e.target.value)}
                     />
-                    <Button color='light' onClick={() => refetch()} disabled={isFetching}>
+                    <Button color='light' onClick={() => refetch()} disabled={isFetching} className='min-h-11 w-full'>
                         <HiOutlineRefresh className={isFetching ? 'mr-2 h-5 w-5 animate-spin' : 'mr-2 h-5 w-5'} />
                         Refresh
                     </Button>
@@ -135,66 +138,129 @@ export default function DashCommunitySubmissions() {
             ) : null}
 
             {submissions.length > 0 ? (
-                <div className='table-auto overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800/80'>
-                    <Table hoverable>
-                        <Table.Head>
-                            <Table.HeadCell>Name</Table.HeadCell>
-                            <Table.HeadCell>Email</Table.HeadCell>
-                            <Table.HeadCell>Role</Table.HeadCell>
-                            <Table.HeadCell>Experience</Table.HeadCell>
-                            <Table.HeadCell>Interests</Table.HeadCell>
-                            <Table.HeadCell>Status</Table.HeadCell>
-                            <Table.HeadCell>Submitted</Table.HeadCell>
-                        </Table.Head>
+                <div className='space-y-3'>
+                    <div className='grid gap-3 md:hidden'>
                         {submissions.map((submission) => (
-                            <Table.Body className='divide-y' key={submission._id}>
-                                <Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>
-                                    <Table.Cell className='font-medium text-gray-900 dark:text-white'>{submission.name}</Table.Cell>
-                                    <Table.Cell className='text-sm'>{submission.email}</Table.Cell>
-                                    <Table.Cell>{submission.role || '—'}</Table.Cell>
-                                    <Table.Cell>{submission.experienceLevel || '—'}</Table.Cell>
-                                    <Table.Cell>
-                                        <div className='flex flex-wrap gap-1'>
-                                            {(submission.interests ?? []).map((interest) => (
-                                                <Badge key={interest} color='indigo' className='text-xs'>
-                                                    {interest}
-                                                </Badge>
+                            <article
+                                key={submission._id}
+                                className='rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900'
+                            >
+                                <div className='flex items-start justify-between gap-3'>
+                                    <div className='min-w-0'>
+                                        <h3 className='break-words text-base font-semibold text-slate-900 dark:text-white'>{submission.name}</h3>
+                                        <p className='mt-1 break-all text-sm text-slate-600 dark:text-slate-300'>{submission.email}</p>
+                                    </div>
+                                    <Badge color={statusColor[submission.status] || 'gray'}>{submission.status}</Badge>
+                                </div>
+                                <dl className='mt-4 grid gap-3 text-sm text-slate-600 dark:text-slate-300'>
+                                    <div>
+                                        <dt className='text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'>Role</dt>
+                                        <dd className='mt-1 break-words'>{submission.role || '-'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className='text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'>Experience</dt>
+                                        <dd className='mt-1'>{submission.experienceLevel || '-'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className='text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'>Submitted</dt>
+                                        <dd className='mt-1'>{formatDate(submission.createdAt)}</dd>
+                                    </div>
+                                    {submission.interests?.length ? (
+                                        <div>
+                                            <dt className='text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'>Interests</dt>
+                                            <dd className='mt-2 flex flex-wrap gap-1'>
+                                                {submission.interests.map((interest) => (
+                                                    <Badge key={interest} color='indigo' className='text-xs'>
+                                                        {interest}
+                                                    </Badge>
+                                                ))}
+                                            </dd>
+                                        </div>
+                                    ) : null}
+                                </dl>
+                                <div className='mt-4'>
+                                    <label className='mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'>
+                                        Update status
+                                    </label>
+                                    <Select
+                                        value={submission.status}
+                                        disabled={updateStatus.isPending}
+                                        onChange={(e) => handleStatusChange(submission._id, e.target.value)}
+                                        className='min-h-11'
+                                    >
+                                        {statusOptions
+                                            .filter((option) => option.value !== 'all')
+                                            .map((option) => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
                                             ))}
-                                        </div>
-                                    </Table.Cell>
-                                    <Table.Cell>
-                                        <div className='flex items-center gap-2'>
-                                                <Badge color={statusColor[submission.status] || 'gray'}>{submission.status}</Badge>
-                                            <Select
-                                                sizing='sm'
-                                                value={submission.status}
-                                                disabled={updateStatus.isPending}
-                                                onChange={(e) => handleStatusChange(submission._id, e.target.value)}
-                                            >
-                                                {statusOptions
-                                                    .filter((option) => option.value !== 'all')
-                                                    .map((option) => (
-                                                        <option key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </option>
-                                                    ))}
-                                            </Select>
-                                        </div>
-                                    </Table.Cell>
-                                    <Table.Cell className='text-sm text-gray-500 dark:text-gray-400'>
-                                        {formatDate(submission.createdAt)}
-                                    </Table.Cell>
-                                </Table.Row>
-                            </Table.Body>
+                                    </Select>
+                                </div>
+                            </article>
                         ))}
-                    </Table>
-                    <div className='flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-3 text-sm dark:border-gray-700 dark:bg-gray-800/90'>
+                    </div>
+                    <div className='hidden overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800/80 md:block'>
+                        <Table hoverable>
+                            <Table.Head>
+                                <Table.HeadCell>Name</Table.HeadCell>
+                                <Table.HeadCell>Email</Table.HeadCell>
+                                <Table.HeadCell>Role</Table.HeadCell>
+                                <Table.HeadCell>Experience</Table.HeadCell>
+                                <Table.HeadCell>Interests</Table.HeadCell>
+                                <Table.HeadCell>Status</Table.HeadCell>
+                                <Table.HeadCell>Submitted</Table.HeadCell>
+                            </Table.Head>
+                            <Table.Body className='divide-y'>
+                                {submissions.map((submission) => (
+                                    <Table.Row key={submission._id} className='bg-white dark:border-gray-700 dark:bg-gray-800'>
+                                        <Table.Cell className='font-medium text-gray-900 dark:text-white'>{submission.name}</Table.Cell>
+                                        <Table.Cell className='max-w-[16rem] truncate text-sm'>{submission.email}</Table.Cell>
+                                        <Table.Cell>{submission.role || '-'}</Table.Cell>
+                                        <Table.Cell>{submission.experienceLevel || '-'}</Table.Cell>
+                                        <Table.Cell>
+                                            <div className='flex flex-wrap gap-1'>
+                                                {(submission.interests ?? []).map((interest) => (
+                                                    <Badge key={interest} color='indigo' className='text-xs'>
+                                                        {interest}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </Table.Cell>
+                                        <Table.Cell>
+                                            <div className='flex items-center gap-2'>
+                                                <Badge color={statusColor[submission.status] || 'gray'}>{submission.status}</Badge>
+                                                <Select
+                                                    sizing='sm'
+                                                    value={submission.status}
+                                                    disabled={updateStatus.isPending}
+                                                    onChange={(e) => handleStatusChange(submission._id, e.target.value)}
+                                                >
+                                                    {statusOptions
+                                                        .filter((option) => option.value !== 'all')
+                                                        .map((option) => (
+                                                            <option key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </option>
+                                                        ))}
+                                                </Select>
+                                            </div>
+                                        </Table.Cell>
+                                        <Table.Cell className='text-sm text-gray-500 dark:text-gray-400'>
+                                            {formatDate(submission.createdAt)}
+                                        </Table.Cell>
+                                    </Table.Row>
+                                ))}
+                            </Table.Body>
+                        </Table>
+                    </div>
+                    <div className='flex flex-col gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm dark:border-gray-700 dark:bg-gray-800/90 sm:flex-row sm:items-center sm:justify-between'>
                         <div className='flex items-center gap-2 text-gray-600 dark:text-gray-300'>
                             <HiOutlineCheckCircle className='h-5 w-5 text-emerald-500' />
                             {data?.pages?.[0]?.totalCount ?? 0} total submissions
                         </div>
                         {hasNextPage && (
-                            <Button size='sm' color='light' onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+                            <Button size='sm' color='light' onClick={() => fetchNextPage()} disabled={isFetchingNextPage} className='min-h-11 w-full sm:w-auto'>
                                 {isFetchingNextPage ? 'Loading…' : 'Show more'}
                             </Button>
                         )}

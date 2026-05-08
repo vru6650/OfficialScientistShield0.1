@@ -18,6 +18,34 @@ import {
     registerApiRoutes,
 } from './registerApiRoutes.js';
 
+const localDevelopmentOriginPattern = /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/;
+
+const createCorsOriginResolver = (corsOrigin) => {
+    const allowedOrigins = Array.isArray(corsOrigin) ? corsOrigin : [corsOrigin].filter(Boolean);
+
+    return (origin, callback) => {
+        if (!origin) {
+            callback(null, true);
+            return;
+        }
+
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        if (
+            process.env.NODE_ENV !== 'production' &&
+            localDevelopmentOriginPattern.test(origin)
+        ) {
+            callback(null, true);
+            return;
+        }
+
+        callback(null, false);
+    };
+};
+
 export const createApp = ({ corsOrigin }) => {
     const app = express();
     const __dirname = path.resolve();
@@ -45,7 +73,7 @@ export const createApp = ({ corsOrigin }) => {
     app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
     app.use(cors({
-        origin: corsOrigin,
+        origin: createCorsOriginResolver(corsOrigin),
         credentials: true,
     }));
 

@@ -7,6 +7,10 @@ import { footerLinks, socialMediaLinks } from '../data/footerData';
 import FooterWave from './FooterWave';
 
 const isExternalLink = (href) => /^https?:\/\//i.test(href);
+const backToTopButtonStyle = {
+    bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)',
+    right: 'max(env(safe-area-inset-right, 0px), 1.5rem)',
+};
 
 export default function FooterCom() {
     const [isVisible, setIsVisible] = useState(false);
@@ -148,7 +152,7 @@ export default function FooterCom() {
                                     aria-label={`Visit ${social.name}`}
                                     whileHover={{ y: -2, scale: 1.08 }}
                                     whileTap={{ scale: 0.94 }}
-                                    className="liquid-hybrid-tile inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-500 transition hover:border-sky-300 hover:text-sky-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-sky-400/50 dark:hover:text-sky-300"
+                                    className="liquid-hybrid-tile inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-500 transition hover:border-sky-300 hover:text-sky-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-sky-400/50 dark:hover:text-sky-300 dark:focus-visible:ring-sky-900/50 sm:h-9 sm:w-9"
                                 >
                                     <social.icon className="h-4 w-4" />
                                 </motion.a>
@@ -167,7 +171,8 @@ export default function FooterCom() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 12, scale: 0.9 }}
                         transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="btn-aqua fixed bottom-6 right-6 z-50 inline-flex h-12 w-12 items-center justify-center rounded-full text-white shadow-xl transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300/50 dark:text-white"
+                        className="btn-aqua fixed z-50 inline-flex h-12 w-12 items-center justify-center rounded-full text-white shadow-xl transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300/50 dark:text-white"
+                        style={backToTopButtonStyle}
                         aria-label="Back to top"
                     >
                         <HiOutlineArrowUp className="h-5 w-5" />

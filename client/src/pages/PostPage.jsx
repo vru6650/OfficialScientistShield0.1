@@ -20,6 +20,7 @@ import ClapButton from '../components/ClapButton';
 import VideoPlayer from '../components/VideoPlayer';
 import LottieAnimationPlayer from '../components/LottieAnimationPlayer.jsx';
 import ReadingControlCenter from '../components/ReadingControlCenter';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 import useReadingSettings from '../hooks/useReadingSettings';
 import InteractiveReadingSurface from '../components/InteractiveReadingSurface.jsx';
 import GalleryCarousel from '../components/media/GalleryCarousel.jsx';
@@ -125,6 +126,21 @@ const formatCategory = (category) => {
         .join(' ');
 };
 const POST_ARTICLE_SCROLL_ROOT_ID = 'post-article-scroll-root';
+const compactHeaderSafeAreaStyle = {
+    paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)',
+};
+const mobileQuickActionsStyle = {
+    bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+    right: 'max(env(safe-area-inset-right, 0px), 0.75rem)',
+};
+const mobileResumeStyle = {
+    bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+    left: 'max(env(safe-area-inset-left, 0px), 0.75rem)',
+};
+const mobileTocPanelStyle = {
+    paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)',
+    paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)',
+};
 
 export default function PostPage() {
     const { postSlug } = useParams();
@@ -829,7 +845,7 @@ export default function PostPage() {
                 <div className='relative z-10 pb-28 lg:pb-16'>
                     {/* Compact sticky header when reading */}
                     {showCompactHeader && (
-                        <div className='fixed inset-x-0 top-0 z-40 px-3 pt-2'>
+                        <div className='fixed inset-x-0 top-0 z-40 px-3' style={compactHeaderSafeAreaStyle}>
                             <div className='glass-navbar glass-panel mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-2xl border border-white/20 bg-white/60 px-3 py-2 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/50 dark:border-white/10 dark:bg-slate-900/70'>
                                 <div className='flex min-w-0 items-center gap-3'>
                                     <span className='inline-flex h-2.5 w-2.5 flex-none rounded-full bg-sky-500 ring-2 ring-sky-500/20' aria-hidden='true' />
@@ -852,7 +868,7 @@ export default function PostPage() {
                                         />
                                     </div>
                                 </div>
-                                <div className='flex items-center gap-2'>
+                                <div className='flex flex-none items-center gap-1.5 sm:gap-2'>
                                     <button
                                         type='button'
                                         onClick={primaryReadingAction}
@@ -860,23 +876,25 @@ export default function PostPage() {
                                     >
                                         {canResumeReading ? 'Resume' : 'Read now'}
                                     </button>
-                                    <ClapButton
-                                        postId={post._id}
-                                        initialClaps={post.claps ?? 0}
-                                        initialClappedBy={post.clappedBy ?? []}
-                                    />
+                                    <div className='hidden sm:block'>
+                                        <ClapButton
+                                            postId={post._id}
+                                            initialClaps={post.claps ?? 0}
+                                            initialClappedBy={post.clappedBy ?? []}
+                                        />
+                                    </div>
                                     <Tooltip content='Copy link'>
-                                        <button onClick={handleCopyLink} className='rounded-full border border-slate-200 bg-white p-1.5 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
+                                        <button onClick={handleCopyLink} className='inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus-visible:ring-sky-900/50'>
                                             <FaLink className='h-4 w-4' />
                                         </button>
                                     </Tooltip>
                                     <Tooltip content='Share'>
-                                        <button onClick={handleShare} className='rounded-full border border-slate-200 bg-white p-1.5 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
+                                        <button onClick={handleShare} className='inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus-visible:ring-sky-900/50'>
                                             <FaArrowRight className='h-4 w-4 rotate-[-45deg]' />
                                         </button>
                                     </Tooltip>
                                     <Tooltip content='Print'>
-                                        <button onClick={() => window.print()} className='rounded-full border border-slate-200 bg-white p-1.5 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'>
+                                        <button onClick={() => window.print()} className='hidden h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus-visible:ring-sky-900/50 md:inline-flex'>
                                             <FaPrint className='h-4 w-4' />
                                         </button>
                                     </Tooltip>
@@ -892,7 +910,7 @@ export default function PostPage() {
                         <div className='absolute inset-x-0 -bottom-44 h-[460px] bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent opacity-80 blur-3xl dark:from-slate-950 dark:via-slate-950/80' aria-hidden='true' />
                         <div className='absolute -left-24 top-20 h-72 w-72 rounded-full bg-gradient-to-br from-sky-400/40 via-cyan-300/30 to-emerald-400/36 blur-3xl' aria-hidden='true' />
                         <div className='absolute -right-28 bottom-10 h-80 w-80 rounded-full bg-gradient-to-br from-indigo-400/36 via-violet-400/28 to-amber-300/32 blur-3xl' aria-hidden='true' />
-                        <div className='relative mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-16 text-center sm:px-6 sm:py-20 lg:px-10'>
+                        <ResponsiveContainer width='post' gutters='article' className='relative flex w-full flex-col gap-8 py-14 text-center sm:py-20'>
                             <nav aria-label='Breadcrumb' className='flex flex-wrap items-center justify-center gap-2 text-xs text-slate-200/90'>
                                 <Link to='/' className='link-premium'>Home</Link>
                                 <span aria-hidden='true'>/</span>
@@ -987,13 +1005,13 @@ export default function PostPage() {
                                     {readingProgressPercent}% read
                                 </span>
                             </div>
-                        </div>
+                        </ResponsiveContainer>
                     </section>
 
-                    <main className='mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-10 sm:px-6 lg:flex-row lg:px-10'>
+                    <ResponsiveContainer as='main' width='post' gutters='article' className='flex flex-col gap-8 py-8 sm:py-10 lg:flex-row lg:gap-10'>
                         <article id='article-start' className='relative flex-1 space-y-10'>
                             {/* Desktop action rail */}
-                            <div className='pointer-events-none absolute -left-14 top-0 hidden h-full lg:block'>
+                            <div className='pointer-events-none absolute -left-14 top-0 hidden h-full xl:block'>
                                 <div className='pointer-events-auto sticky top-40 flex flex-col items-center gap-2'>
                                     <Tooltip content='Copy link'>
                                         <button onClick={handleCopyLink} className='rounded-full border border-white/40 bg-white/80 p-2 text-slate-600 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200'>
@@ -1258,30 +1276,30 @@ export default function PostPage() {
                             </div>
                         </div>
                     </aside>
-                </main>
+                </ResponsiveContainer>
             </div>
             </div>
 
             {/* Floating quick actions: Back to top, Discuss, and TOC on mobile */}
-            <div className='fixed bottom-6 right-6 z-40 flex flex-col gap-3 lg:hidden'>
+            <div className='fixed z-40 flex flex-col gap-2 lg:hidden' style={mobileQuickActionsStyle}>
                 <button
                     aria-label='Back to top'
                     onClick={handleScrollTop}
-                    className='rounded-full border border-white/60 bg-white/80 p-3 text-slate-700 shadow-xl backdrop-blur transition hover:-translate-y-0.5 hover:shadow-2xl dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200'
+                    className='inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/60 bg-white/80 text-slate-700 shadow-xl backdrop-blur transition hover:-translate-y-0.5 hover:shadow-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200 dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200 dark:focus-visible:ring-sky-900/50'
                 >
                     <FaChevronUp className='h-5 w-5' />
                 </button>
                 <button
                     aria-label='Jump to comments'
                     onClick={handleDiscuss}
-                    className='rounded-full border border-white/60 bg-white/80 p-3 text-slate-700 shadow-xl backdrop-blur transition hover:-translate-y-0.5 hover:shadow-2xl dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200'
+                    className='inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/60 bg-white/80 text-slate-700 shadow-xl backdrop-blur transition hover:-translate-y-0.5 hover:shadow-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200 dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200 dark:focus-visible:ring-sky-900/50'
                 >
                     <FaCommentDots className='h-5 w-5' />
                 </button>
                 <button
                     aria-label='Open table of contents'
                     onClick={() => setShowMobileToc(true)}
-                    className='rounded-full border border-white/60 bg-white/80 p-3 text-slate-700 shadow-xl backdrop-blur transition hover:-translate-y-0.5 hover:shadow-2xl dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200 lg:hidden'
+                    className='inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/60 bg-white/80 text-slate-700 shadow-xl backdrop-blur transition hover:-translate-y-0.5 hover:shadow-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200 dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200 dark:focus-visible:ring-sky-900/50 lg:hidden'
                 >
                     <span className='text-xs font-bold'>TOC</span>
                 </button>
@@ -1302,10 +1320,10 @@ export default function PostPage() {
             {showMobileToc && (
                 <div className='fixed inset-0 z-50 lg:hidden'>
                     <div className='absolute inset-0 bg-black/40 backdrop-blur-sm' onClick={() => setShowMobileToc(false)} />
-                    <div className='absolute inset-y-0 right-0 w-5/6 max-w-sm overflow-y-auto border-l border-slate-200/70 bg-white p-5 shadow-2xl dark:border-white/10 dark:bg-slate-900'>
+                    <div className='absolute inset-y-0 right-0 w-[min(88vw,22rem)] max-w-[calc(100vw-1.5rem)] overflow-y-auto border-l border-slate-200/70 bg-white px-5 shadow-2xl dark:border-white/10 dark:bg-slate-900' style={mobileTocPanelStyle}>
                         <div className='mb-3 flex items-center justify-between'>
                             <h3 className='text-base font-semibold text-slate-800 dark:text-slate-100'>On this page</h3>
-                            <button aria-label='Close' onClick={() => setShowMobileToc(false)} className='rounded-md border border-slate-200 p-1 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>
+                            <button aria-label='Close' onClick={() => setShowMobileToc(false)} className='inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:focus-visible:ring-sky-900/50'>
                                 <FaTimes />
                             </button>
                         </div>
@@ -1323,11 +1341,11 @@ export default function PostPage() {
             )}
 
             {canResumeReading && (
-                <div className='fixed bottom-6 left-6 z-40 rounded-full border border-slate-200/70 bg-white/95 px-4 py-2 text-sm text-slate-700 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 lg:hidden'>
+                <div className='fixed z-40 rounded-full border border-slate-200/70 bg-white/95 px-3 py-2 text-sm text-slate-700 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-200 lg:hidden' style={mobileResumeStyle}>
                     <button
                         type='button'
                         onClick={handleResumeReading}
-                        className='font-medium hover:underline'
+                        className='inline-flex min-h-11 items-center font-medium hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200 dark:focus-visible:ring-sky-900/50'
                         aria-label='Resume reading from last position'
                     >
                         Resume reading

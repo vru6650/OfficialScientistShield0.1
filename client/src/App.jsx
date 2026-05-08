@@ -7,7 +7,7 @@ import { appRouter } from './router/appRouter.jsx';
 
 // A fallback component to show while pages are loading
 const LoadingFallback = () => (
-    <div className="flex justify-center items-center min-h-screen">
+    <div className="flex min-h-screen min-w-0 items-center justify-center px-4">
         <Spinner size="xl" />
     </div>
 );

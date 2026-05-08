@@ -7,6 +7,11 @@ import { apiFetch } from '../utils/apiFetch';
 
 const PAGE_SIZE = 9;
 
+const formatDate = (date) => {
+  if (!date) return 'Unknown';
+  return new Date(date).toLocaleDateString();
+};
+
 const fetchCommentsPage = async ({ pageParam = 0 }) => {
   const res = await apiFetch(`/api/v1/comment/getcomments?startIndex=${pageParam}&limit=${PAGE_SIZE}`);
   const data = await res.json();
@@ -77,50 +82,101 @@ export default function DashComments() {
     deleteMutation.mutate(commentIdToDelete);
   };
 
+  const openDeleteModal = (commentId) => {
+    setShowModal(true);
+    setCommentIdToDelete(commentId);
+  };
+
   const shouldShowEmpty = !isLoading && !isError && comments.length === 0;
 
   return (
-    <div className='table-auto overflow-x-scroll md:mx-auto p-3 scrollbar scrollbar-track-slate-100 scrollbar-thumb-slate-300 dark:scrollbar-track-slate-700 dark:scrollbar-thumb-slate-500'>
+    <div className='space-y-4 p-3 md:mx-auto'>
       {isAdmin && comments.length > 0 ? (
         <>
-          <Table hoverable className='shadow-md'>
-            <Table.Head>
-              <Table.HeadCell>Date updated</Table.HeadCell>
-              <Table.HeadCell>Comment content</Table.HeadCell>
-              <Table.HeadCell>Number of likes</Table.HeadCell>
-              <Table.HeadCell>PostId</Table.HeadCell>
-              <Table.HeadCell>UserId</Table.HeadCell>
-              <Table.HeadCell>Delete</Table.HeadCell>
-            </Table.Head>
+          <div className='grid gap-3 md:hidden'>
             {comments.map((comment) => (
-              <Table.Body className='divide-y' key={comment._id}>
-                <Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>
-                  <Table.Cell>
-                    {new Date(comment.updatedAt).toLocaleDateString()}
-                  </Table.Cell>
-                  <Table.Cell>{comment.content}</Table.Cell>
-                  <Table.Cell>{comment.numberOfLikes}</Table.Cell>
-                  <Table.Cell>{comment.postId}</Table.Cell>
-                  <Table.Cell>{comment.userId}</Table.Cell>
-                  <Table.Cell>
-                    <span
-                      onClick={() => {
-                        setShowModal(true);
-                        setCommentIdToDelete(comment._id);
-                      }}
-                      className='font-medium text-red-500 hover:underline cursor-pointer'
-                    >
-                      Delete
-                    </span>
-                  </Table.Cell>
-                </Table.Row>
-              </Table.Body>
+              <article
+                key={comment._id}
+                className='rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900'
+              >
+                <div className='flex items-start justify-between gap-3'>
+                  <div className='min-w-0'>
+                    <p className='text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>
+                      Updated
+                    </p>
+                    <p className='mt-1 text-sm font-semibold text-slate-900 dark:text-white'>
+                      {formatDate(comment.updatedAt)}
+                    </p>
+                  </div>
+                  <span className='inline-flex min-h-8 flex-none items-center rounded-full bg-slate-100 px-3 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200'>
+                    {comment.numberOfLikes} likes
+                  </span>
+                </div>
+                <p className='mt-3 break-words text-sm leading-6 text-slate-700 dark:text-slate-200'>
+                  {comment.content}
+                </p>
+                <dl className='mt-4 grid gap-2 text-xs text-slate-500 dark:text-slate-400'>
+                  <div>
+                    <dt className='font-semibold uppercase tracking-wide'>Post ID</dt>
+                    <dd className='mt-1 break-all font-mono'>{comment.postId}</dd>
+                  </div>
+                  <div>
+                    <dt className='font-semibold uppercase tracking-wide'>User ID</dt>
+                    <dd className='mt-1 break-all font-mono'>{comment.userId}</dd>
+                  </div>
+                </dl>
+                <button
+                  type='button'
+                  onClick={() => openDeleteModal(comment._id)}
+                  disabled={deleteMutation.isPending}
+                  className='mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-red-200 px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10 dark:focus-visible:ring-red-900/40'
+                >
+                  Delete
+                </button>
+              </article>
             ))}
-          </Table>
+          </div>
+          <div className='hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-md scrollbar scrollbar-track-slate-100 scrollbar-thumb-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:scrollbar-track-slate-700 dark:scrollbar-thumb-slate-500 md:block'>
+            <Table hoverable>
+              <Table.Head>
+                <Table.HeadCell>Date updated</Table.HeadCell>
+                <Table.HeadCell>Comment content</Table.HeadCell>
+                <Table.HeadCell>Number of likes</Table.HeadCell>
+                <Table.HeadCell>PostId</Table.HeadCell>
+                <Table.HeadCell>UserId</Table.HeadCell>
+                <Table.HeadCell>Delete</Table.HeadCell>
+              </Table.Head>
+              <Table.Body className='divide-y'>
+                {comments.map((comment) => (
+                  <Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800' key={comment._id}>
+                    <Table.Cell>
+                      {formatDate(comment.updatedAt)}
+                    </Table.Cell>
+                    <Table.Cell className='max-w-sm'>
+                      <p className='line-clamp-2 break-words'>{comment.content}</p>
+                    </Table.Cell>
+                    <Table.Cell>{comment.numberOfLikes}</Table.Cell>
+                    <Table.Cell className='max-w-[14rem] truncate font-mono text-xs'>{comment.postId}</Table.Cell>
+                    <Table.Cell className='max-w-[14rem] truncate font-mono text-xs'>{comment.userId}</Table.Cell>
+                    <Table.Cell>
+                      <button
+                        type='button'
+                        onClick={() => openDeleteModal(comment._id)}
+                        disabled={deleteMutation.isPending}
+                        className='font-medium text-red-500 hover:underline disabled:cursor-not-allowed disabled:opacity-60'
+                      >
+                        Delete
+                      </button>
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table>
+          </div>
           {hasNextPage && (
             <button
               onClick={handleShowMore}
-              className='w-full text-teal-500 self-center text-sm py-7'
+              className='min-h-11 w-full self-center py-3 text-sm font-semibold text-teal-500'
               disabled={isFetchingNextPage}
             >
               {isFetchingNextPage ? 'Loading...' : 'Show more'}
@@ -128,10 +184,10 @@ export default function DashComments() {
           )}
         </>
       ) : null}
-      {isAdmin && isLoading && comments.length === 0 ? <p>Loading comments...</p> : null}
-      {isAdmin && isError ? <p>{error?.message || 'Failed to load comments.'}</p> : null}
-      {isAdmin && shouldShowEmpty ? <p>You have no comments yet!</p> : null}
-      {!isAdmin ? <p>You have no comments yet!</p> : null}
+      {isAdmin && isLoading && comments.length === 0 ? <p className='text-sm text-slate-600 dark:text-slate-300'>Loading comments...</p> : null}
+      {isAdmin && isError ? <p className='text-sm text-red-600 dark:text-red-300'>{error?.message || 'Failed to load comments.'}</p> : null}
+      {isAdmin && shouldShowEmpty ? <p className='text-sm text-slate-600 dark:text-slate-300'>You have no comments yet!</p> : null}
+      {!isAdmin ? <p className='text-sm text-slate-600 dark:text-slate-300'>You have no comments yet!</p> : null}
       <Modal
         show={showModal}
         onClose={() => setShowModal(false)}

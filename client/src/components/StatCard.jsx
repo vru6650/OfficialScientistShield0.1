@@ -17,7 +17,7 @@ export default function StatCard({
     // 1. Add a skeleton loading state for better UX
     if (loading) {
         return (
-            <div className='glass-card flex flex-col p-3 gap-4 md:w-72 w-full'>
+            <div className='dashboard-stat-card glass-card w-full'>
                 <div className='flex justify-between'>
                     <div>
                         <h3 className='text-gray-500 text-md uppercase'><Skeleton width={100} /></h3>

@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { Badge, Button, Card } from 'flowbite-react';
+import ResponsiveContainer from './layout/ResponsiveContainer.jsx';
 
 const getBackgroundClass = (background) => {
     switch (background) {
@@ -52,12 +53,12 @@ const HeroSection = ({ section }) => (
         )}`}
     >
         <div className='absolute inset-0 bg-gradient-to-br from-white/70 via-transparent to-transparent dark:from-slate-950/80' />
-        <div className='relative grid gap-10 p-10 md:grid-cols-2 md:items-center'>
+        <div className='relative grid gap-6 p-5 sm:gap-8 sm:p-8 md:grid-cols-2 md:items-center lg:gap-10 lg:p-10'>
             <div className='flex flex-col gap-4'>
                 <Badge className='w-fit border border-sky-200 bg-sky-100 text-sm uppercase tracking-wide text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200'>
                     {section.subtitle || 'Featured'}
                 </Badge>
-                <h2 className='text-4xl font-bold text-gray-900 dark:text-white md:text-5xl'>{section.title}</h2>
+                <h2 className='text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl md:text-5xl'>{section.title}</h2>
                 <Paragraphs text={section.body} />
                 {section.cta?.label && (
                     <div className='mt-4'>
@@ -99,13 +100,13 @@ HeroSection.propTypes = {
 };
 
 const FeatureGridSection = ({ section }) => (
-    <div className={`workspace-surface p-6 ${getBackgroundClass(section.background)}`}>
+    <div className={`workspace-surface p-5 sm:p-6 ${getBackgroundClass(section.background)}`}>
         <div className={`flex flex-col gap-4 ${alignmentClass(section.alignment)}`}>
             <div>
                 {section.subtitle && (
                     <span className='text-sm font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-300'>{section.subtitle}</span>
                 )}
-                <h3 className='text-3xl font-semibold text-gray-900 dark:text-white'>{section.title}</h3>
+                <h3 className='text-2xl font-semibold text-gray-900 dark:text-white sm:text-3xl'>{section.title}</h3>
             </div>
             <Paragraphs text={section.body} />
             <div className='grid gap-6 md:grid-cols-2'>
@@ -146,7 +147,7 @@ FeatureGridSection.propTypes = {
 
 const CTASection = ({ section }) => (
     <div
-        className={`workspace-surface relative overflow-hidden p-10 text-center shadow-sm ${getBackgroundClass(
+        className={`workspace-surface relative overflow-hidden p-6 text-center shadow-sm sm:p-8 lg:p-10 ${getBackgroundClass(
             section.background
         )}`}
     >
@@ -156,7 +157,7 @@ const CTASection = ({ section }) => (
                     {section.subtitle}
                 </Badge>
             )}
-            <h3 className='text-3xl font-semibold text-gray-900 dark:text-white'>{section.title}</h3>
+            <h3 className='text-2xl font-semibold text-gray-900 dark:text-white sm:text-3xl'>{section.title}</h3>
             <Paragraphs text={section.body} />
             {section.cta?.label && (
                 <Button className='btn-aqua' size='lg' href={section.cta.url || '#'} as='a'>
@@ -181,13 +182,13 @@ CTASection.propTypes = {
 };
 
 const RichTextSection = ({ section }) => (
-    <div className={`workspace-surface p-8 ${getBackgroundClass(section.background)}`}>
+    <div className={`workspace-surface p-5 sm:p-8 ${getBackgroundClass(section.background)}`}>
         <div className={`flex flex-col gap-4 ${alignmentClass(section.alignment)}`}>
             <div>
                 {section.subtitle && (
                     <span className='text-sm font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-300'>{section.subtitle}</span>
                 )}
-                <h3 className='text-3xl font-semibold text-gray-900 dark:text-white'>{section.title}</h3>
+                <h3 className='text-2xl font-semibold text-gray-900 dark:text-white sm:text-3xl'>{section.title}</h3>
             </div>
             <Paragraphs text={section.body} />
             {section.media?.url && (
@@ -251,7 +252,7 @@ const PageRenderer = ({ page, compact = false }) => {
         : 'workspace-page';
     const contentClasses = compact
         ? 'flex flex-col gap-6'
-        : 'workspace-page__content workspace-page__content--story flex flex-col gap-10 px-4 py-10 sm:px-6 lg:px-8';
+        : 'flex flex-col gap-8 sm:gap-10';
 
     const headerClasses = compact
         ? 'flex flex-col gap-3 text-left'
@@ -259,7 +260,13 @@ const PageRenderer = ({ page, compact = false }) => {
 
     return (
         <div className={containerClasses}>
-            <div className={contentClasses}>
+            <ResponsiveContainer
+                as={compact ? 'div' : 'div'}
+                width={compact ? 'default' : 'story'}
+                gutters={compact ? 'none' : 'page'}
+                spacing={compact ? 'none' : 'page'}
+                className={contentClasses}
+            >
                 <header className={headerClasses}>
                     <h1
                         className={`font-bold tracking-tight text-gray-900 dark:text-white ${
@@ -282,7 +289,7 @@ const PageRenderer = ({ page, compact = false }) => {
                         </section>
                     ))}
                 </div>
-            </div>
+            </ResponsiveContainer>
         </div>
     );
 };

@@ -117,23 +117,23 @@ const DashPages = () => {
     }
 
     return (
-        <div className='p-3 md:mx-auto'>
+        <div className='space-y-5 p-3 md:mx-auto'>
             <div className='mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-                <div>
+                <div className='min-w-0'>
                     <h1 className='text-2xl font-semibold text-gray-900 dark:text-white'>Content management</h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
                         Build bespoke landing pages, curriculum outlines, and resource hubs without deploying code.
                     </p>
                 </div>
-                <Button gradientDuoTone='purpleToBlue' as={Link} to='/create-page'>
+                <Button gradientDuoTone='purpleToBlue' as={Link} to='/create-page' className='w-full sm:w-auto'>
                     <HiOutlinePlus className='mr-2 h-5 w-5' /> New page
                 </Button>
             </div>
 
             <Card className='mb-5'>
-                <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
-                    <div className='grid w-full gap-3 sm:grid-cols-2'>
-                        <div className='flex flex-col gap-2'>
+                <div className='flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between'>
+                    <div className='grid min-w-0 w-full gap-3 sm:grid-cols-2 lg:max-w-3xl'>
+                        <div className='flex min-w-0 flex-col gap-2'>
                             <Label htmlFor='page-search'>Search</Label>
                             <TextInput
                                 id='page-search'
@@ -143,7 +143,7 @@ const DashPages = () => {
                                 onChange={(event) => setSearchTerm(event.target.value)}
                             />
                         </div>
-                        <div className='flex flex-col gap-2'>
+                        <div className='flex min-w-0 flex-col gap-2'>
                             <Label htmlFor='status-filter'>Status</Label>
                             <Select
                                 id='status-filter'
@@ -156,7 +156,7 @@ const DashPages = () => {
                             </Select>
                         </div>
                     </div>
-                    <div className='flex flex-col gap-1 text-sm text-gray-500 dark:text-gray-400'>
+                    <div className='flex flex-none flex-col gap-1 text-sm text-gray-500 dark:text-gray-400'>
                         <span>Total pages: {totalCount}</span>
                         <span>Created in last 30 days: {lastMonthCount}</span>
                     </div>
@@ -191,7 +191,70 @@ const DashPages = () => {
                 </Card>
             ) : (
                 <div className='space-y-4'>
-                    <div className='table-auto overflow-x-auto rounded-2xl border border-gray-100 shadow-sm dark:border-gray-700'>
+                    <div className='grid gap-3 md:hidden'>
+                        {pages.map((page) => (
+                            <article
+                                key={page._id}
+                                className='rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900'
+                            >
+                                <div className='flex items-start justify-between gap-3'>
+                                    <div className='min-w-0'>
+                                        <p className='text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>
+                                            Updated {formatDate(page.updatedAt)}
+                                        </p>
+                                        <h2 className='mt-1 break-words text-base font-semibold text-slate-900 dark:text-white'>
+                                            {page.title}
+                                        </h2>
+                                    </div>
+                                    <Badge color={statusColor(page.status)}>{page.status}</Badge>
+                                </div>
+                                {page.description ? (
+                                    <p className='mt-3 line-clamp-3 break-words text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                                        {page.description}
+                                    </p>
+                                ) : null}
+                                <dl className='mt-4 grid gap-2 text-sm text-slate-600 dark:text-slate-300'>
+                                    <div>
+                                        <dt className='text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'>Slug</dt>
+                                        <dd className='mt-1 break-all font-mono text-xs'>/{page.slug}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className='text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400'>Sections</dt>
+                                        <dd className='mt-1'>{page.sections?.length ?? 0}</dd>
+                                    </div>
+                                </dl>
+                                <div className='mt-4 grid gap-2 sm:grid-cols-3'>
+                                    <Link
+                                        to={`/update-page/${page._id}`}
+                                        className='inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:focus-visible:ring-sky-900/40'
+                                    >
+                                        <HiPencilAlt className='h-4 w-4' />
+                                        Edit
+                                    </Link>
+                                    <Link
+                                        to={`/content/${page.slug}`}
+                                        className='inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:focus-visible:ring-sky-900/40'
+                                    >
+                                        <HiOutlineExternalLink className='h-4 w-4' />
+                                        View
+                                    </Link>
+                                    <button
+                                        type='button'
+                                        onClick={() => {
+                                            setPageToDelete(page._id);
+                                            setShowModal(true);
+                                        }}
+                                        disabled={deleteMutation.isPending}
+                                        className='inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10 dark:focus-visible:ring-red-900/40'
+                                    >
+                                        <HiTrash className='h-4 w-4' />
+                                        Delete
+                                    </button>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                    <div className='hidden overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800/80 md:block'>
                         <Table hoverable>
                             <Table.Head>
                                 <Table.HeadCell>Updated</Table.HeadCell>
@@ -267,6 +330,7 @@ const DashPages = () => {
                                 color='light'
                                 onClick={() => fetchNextPage()}
                                 disabled={isFetchingNextPage}
+                                className='min-h-11 w-full sm:w-auto'
                             >
                                 {isFetchingNextPage ? 'Loading…' : 'Load more'}
                             </Button>
