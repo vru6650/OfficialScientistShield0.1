@@ -192,18 +192,14 @@ export default function PostListPage() {
                         </div>
                         <div className='flex flex-wrap items-center gap-3'>
                             {currentUser?.isAdmin ? (
-                                <Link to='/create-post'>
-                                    <Button className='bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500 text-white shadow-md ring-1 ring-sky-300 transition hover:shadow-lg focus:ring-2 focus:ring-sky-300 dark:ring-sky-500/70'>
-                                        Start a new post
-                                    </Button>
-                                </Link>
+                                <Button as={Link} to='/create-post' className='bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500 text-white shadow-md ring-1 ring-sky-300 transition hover:shadow-lg focus:ring-2 focus:ring-sky-300 dark:ring-sky-500/70'>
+                                    Start a new post
+                                </Button>
                             ) : null}
                             {currentUser ? (
-                                <Link to='/community/create'>
-                                    <Button color='light' className='border border-slate-200 bg-white text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'>
-                                        Share with community
-                                    </Button>
-                                </Link>
+                                <Button as={Link} to='/community/create' color='light' className='border border-slate-200 bg-white text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'>
+                                    Share with community
+                                </Button>
                             ) : null}
                             <Button color='light' onClick={() => refetch()} className='border border-slate-200 bg-white text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'>
                                 <div className='flex items-center gap-2'>
@@ -371,14 +367,14 @@ export default function PostListPage() {
                         <div className='space-y-5'>
                             {featured && (
                                 <div className='overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xl shadow-slate-200/70 ring-1 ring-slate-200/60 transition hover:-translate-y-1 hover:shadow-2xl dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-slate-900/60'>
-                                    <div className='grid gap-0 lg:grid-cols-[1.1fr,0.9fr]'>
-                                        <div className='relative h-full'>
-                                            <div className='absolute inset-0 bg-gradient-to-br from-slate-900/80 via-slate-900/40 to-slate-900/70' aria-hidden />
+                                    <div className='grid gap-0 lg:grid-cols-[1.1fr_0.9fr]'>
+                                        <div className='relative min-h-[360px] overflow-hidden lg:min-h-full'>
+                                            <div className='absolute inset-0 z-10 bg-gradient-to-br from-slate-900/80 via-slate-900/40 to-slate-900/70' aria-hidden />
                                             {featuredPreviewImage ? (
                                                 <img
                                                     src={featuredPreviewImage}
                                                     alt={featured.title}
-                                                    className='h-full w-full object-cover'
+                                                    className='absolute inset-0 h-full w-full object-cover'
                                                     loading='lazy'
                                                 />
                                             ) : (
@@ -392,7 +388,7 @@ export default function PostListPage() {
                                                                 : 'Featured post'}
                                                 </div>
                                             )}
-                                            <div className='absolute inset-0 flex items-end p-6 sm:p-8'>
+                                            <div className='absolute inset-0 z-20 flex items-end p-6 sm:p-8'>
                                                 <div className='space-y-3 text-white'>
                                                     <div className='flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200'>
                                                         <span className='rounded-full bg-white/15 px-3 py-1 backdrop-blur'>{featured.category || 'Uncategorized'}</span>
@@ -405,11 +401,9 @@ export default function PostListPage() {
                                                     <p className='max-w-2xl text-sm text-slate-100/90 sm:text-base'>{buildPreview(featured.content, featured.title, featured.summary)}</p>
                                                     <div className='flex flex-wrap items-center gap-3'>
                                                         {featuredPath ? (
-                                                            <Link to={featuredPath}>
-                                                                <Button className='bg-white text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus:ring-2 focus:ring-sky-300'>
-                                                                    Read featured
-                                                                </Button>
-                                                            </Link>
+                                                            <Button as={Link} to={featuredPath} className='bg-white text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus:ring-2 focus:ring-sky-300'>
+                                                                Read featured
+                                                            </Button>
                                                         ) : (
                                                             <Button disabled className='bg-white text-slate-900 shadow-sm'>
                                                                 Read featured

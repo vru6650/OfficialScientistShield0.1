@@ -1,10 +1,26 @@
 // In api/controllers/javascript.controller.js
 
-import vm from 'node:vm';
+import { execFile } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { promisify } from 'util';
 import { errorHandler } from '../utils/error.js';
+import {
+    cleanupWorkspace,
+    createWorkspace,
+    detectDocker,
+    resolveRunnerMode,
+    runDocker,
+    TEMP_DIR,
+} from '../services/codeRunnerSandbox.service.js';
 
-// Executes user-provided JavaScript in a restricted VM context
-// Captures console output and returns it as the response
+const execFileAsync = promisify(execFile);
+const LOCAL_TIMEOUT_MS = 5000;
+const DOCKER_TIMEOUT_MS = 7000;
+
+export const missingNodeDockerMessage =
+    'Docker sandbox is not available for JavaScript execution. Install Docker and set CODE_RUNNER_DOCKER_IMAGE_NODE, or set CODE_RUNNER_MODE=local to use the host runtime.';
+
 export const runJavascriptCode = async (req, res, next) => {
     const { code } = req.body ?? {};
 
@@ -12,39 +28,55 @@ export const runJavascriptCode = async (req, res, next) => {
         return next(errorHandler(400, 'JavaScript code is required.'));
     }
 
-    // Capture console output
-    let output = '';
-    const sandboxConsole = {
-        log: (...args) => {
-            output += `${args.map(String).join(' ')}\n`;
-        },
-        error: (...args) => {
-            output += `${args.map(String).join(' ')}\n`;
-        },
-        warn: (...args) => {
-            output += `${args.map(String).join(' ')}\n`;
-        },
-        info: (...args) => {
-            output += `${args.map(String).join(' ')}\n`;
-        },
-    };
+    const runnerMode = resolveRunnerMode();
+    const dockerImage = process.env.CODE_RUNNER_DOCKER_IMAGE_NODE;
 
-    // Minimal, locked-down global context
-    const context = vm.createContext({ console: sandboxConsole });
+    let workDir;
 
     try {
-        const script = new vm.Script(code, { displayErrors: true });
-        // Limit execution time and disable async require/import
-        script.runInContext(context, { timeout: 1000 });
+        const workspace = await createWorkspace({ fsModule: fs, tempDir: TEMP_DIR });
+        workDir = workspace.workDir;
+
+        if (runnerMode === 'docker') {
+            const dockerReady = await detectDocker(execFileAsync);
+            if (!dockerReady || !dockerImage) {
+                return res.status(200).json({ output: missingNodeDockerMessage, error: true });
+            }
+
+            const filePath = path.join(workDir, 'main.js');
+            await fs.promises.writeFile(filePath, code);
+
+            const { stdout } = await runDocker({
+                execFile: execFileAsync,
+                image: dockerImage,
+                workDir,
+                command: ['node', 'main.js'],
+                timeoutMs: DOCKER_TIMEOUT_MS,
+            });
+
+            return res.status(200).json({ output: stdout, error: false });
+        }
+
+        const filePath = path.join(workDir, 'main.js');
+        await fs.promises.writeFile(filePath, code);
+
+        const { stdout } = await execFileAsync('node', [filePath], {
+            timeout: LOCAL_TIMEOUT_MS,
+            encoding: 'utf8',
+        });
+
+        return res.status(200).json({ output: stdout, error: false });
     } catch (err) {
-        const rawMessage = err?.message ?? err;
-        const errorMessage = typeof rawMessage === 'string' ? rawMessage : String(rawMessage);
-        const combinedOutput = output ? `${output}${errorMessage}` : errorMessage;
-
-        // Keep the response shape consistent with other runtimes so the client can
-        // render the failure message without relying on the global error handler.
-        return res.status(200).json({ output: combinedOutput, error: true });
+        const stdoutStr = err?.stdout ? String(err.stdout) : '';
+        const stderrStr = err?.stderr ? String(err.stderr) : '';
+        const msgStr = err?.message ? String(err.message) : String(err);
+        const output = stdoutStr + stderrStr || msgStr;
+        return res.status(200).json({ output, error: true });
+    } finally {
+        try {
+            await cleanupWorkspace({ fsModule: fs, workDir });
+        } catch {
+            // Ignore cleanup errors
+        }
     }
-
-    return res.status(200).json({ output, error: false });
 };

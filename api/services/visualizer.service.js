@@ -1,4 +1,3 @@
-import vm from 'vm';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
@@ -19,8 +18,12 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const PYTHON_LOCAL_TIMEOUT_MS = 5000;
 const PYTHON_DOCKER_TIMEOUT_MS = 7000;
+const NODE_LOCAL_TIMEOUT_MS = 5000;
+const NODE_DOCKER_TIMEOUT_MS = 7000;
 const MISSING_PYTHON_DOCKER_MESSAGE =
     'Docker sandbox is not available for Python visualizer execution. Install Docker and set CODE_RUNNER_DOCKER_IMAGE_PYTHON, or set CODE_RUNNER_MODE=local to use the host runtime.';
+const MISSING_NODE_DOCKER_MESSAGE =
+    'Docker sandbox is not available for JavaScript visualizer execution. Install Docker and set CODE_RUNNER_DOCKER_IMAGE_NODE, or set CODE_RUNNER_MODE=local to use the host runtime.';
 
 const createSortingConfig = (size) => {
     const length = clamp(size ?? 10, 4, 32);
@@ -737,60 +740,82 @@ const runBuiltIn = (algorithmId, config) => {
     };
 };
 
-const runJavaScriptSandbox = (code, config) => {
-    const sandbox = {
-        Math,
-        JSON,
-        Number,
-        String,
-        Boolean,
-        Array,
-        console: { log: () => {} },
-        runAlgorithm: undefined,
-        module: {},
-        exports: {},
-    };
+const runJavaScriptSandbox = async (code, config) => {
+    const runnerMode = resolveRunnerMode();
+    const dockerImage = process.env.CODE_RUNNER_DOCKER_IMAGE_NODE;
 
-    const context = vm.createContext(sandbox, {
-        codeGeneration: { strings: false, wasm: false },
-    });
-
-    const scriptSource = `'use strict';\n${code}\n`;
-    try {
-        const script = new vm.Script(scriptSource, { timeout: 500 });
-        script.runInContext(context, { timeout: 500 });
-    } catch (error) {
-        return { error: error.message };
-    }
-
-    let runner = context.runAlgorithm;
-    if (typeof runner !== 'function') {
-        if (typeof context.module?.exports?.runAlgorithm === 'function') {
-            runner = context.module.exports.runAlgorithm;
-        } else if (typeof context.exports?.runAlgorithm === 'function') {
-            runner = context.exports.runAlgorithm;
-        }
-    }
-
-    if (typeof runner !== 'function') {
-        return { error: 'runAlgorithm function was not found in the provided JavaScript code.' };
-    }
-
-    const steps = [];
-    const emit = (value) => {
-        try {
-            const normalized = JSON.parse(JSON.stringify(value));
-            steps.push(normalized);
-        } catch (error) {
-            steps.push(value);
-        }
-    };
+    let workDir;
+    const script = `const steps = [];\n` +
+        `const config = JSON.parse(${JSON.stringify(JSON.stringify(config))});\n\n` +
+        `${code}\n\n` +
+        `if (typeof runAlgorithm !== 'function') {\n` +
+        `    console.error('runAlgorithm function was not found in the provided JavaScript code.');\n` +
+        `    process.exit(1);\n` +
+        `}\n` +
+        `function emit(step) {\n` +
+        `    try { steps.push(JSON.parse(JSON.stringify(step))); } catch(e) { steps.push(step); }\n` +
+        `}\n` +
+        `const summary = runAlgorithm(config, emit) || {};\n` +
+        `for (const item of steps) {\n` +
+        `    console.log(JSON.stringify({ type: 'step', payload: item }));\n` +
+        `}\n` +
+        `console.log(JSON.stringify({ type: 'summary', payload: summary }));\n`;
 
     try {
-        const summary = runner(JSON.parse(JSON.stringify(config)), emit) || {};
+        ({ workDir } = await createWorkspace({ fsModule: fs, tempDir: TEMP_DIR }));
+        const filePath = path.join(workDir, 'visualizer.js');
+        await fs.promises.writeFile(filePath, script);
+
+        let stdout = '';
+        if (runnerMode === 'docker') {
+            const dockerReady = await detectDocker(execFileAsync);
+            if (!dockerReady || !dockerImage) {
+                return { error: MISSING_NODE_DOCKER_MESSAGE };
+            }
+
+            const result = await runDocker({
+                execFile: execFileAsync,
+                image: dockerImage,
+                workDir,
+                command: ['node', 'visualizer.js'],
+                timeoutMs: NODE_DOCKER_TIMEOUT_MS,
+            });
+            stdout = result?.stdout || '';
+        } else {
+            const result = await execFileAsync('node', [filePath], {
+                timeout: NODE_LOCAL_TIMEOUT_MS,
+                encoding: 'utf8',
+            });
+            stdout = result?.stdout || '';
+        }
+
+        const steps = [];
+        let summary = {};
+        stdout
+            .split(/\r?\n/)
+            .filter(Boolean)
+            .forEach((line) => {
+                try {
+                    const parsed = JSON.parse(line);
+                    if (parsed.type === 'step') {
+                        steps.push(parsed.payload);
+                    } else if (parsed.type === 'summary') {
+                        summary = parsed.payload || {};
+                    }
+                } catch (error) {
+                    steps.push({ raw: line });
+                }
+            });
+
         return { steps, summary };
     } catch (error) {
-        return { error: error.message };
+        return { error: error?.stderr?.toString() || error.message };
+    } finally {
+        try {
+            await cleanupWorkspace({ fsModule: fs, workDir });
+        } catch (error) {
+            // Ignore cleanup errors
+        }
     }
 };
 
@@ -937,7 +962,7 @@ export const runAlgorithmVisualization = async ({ algorithmId, language, code, p
     let result = null;
 
     if (language === 'javascript' && code) {
-        result = runJavaScriptSandbox(code, config);
+        result = await runJavaScriptSandbox(code, config);
     } else if (language === 'python' && code) {
         result = await runPythonSandbox(code, config);
     }

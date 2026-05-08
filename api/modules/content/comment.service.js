@@ -45,20 +45,17 @@ export const toggleCommentLike = async ({ commentId, userId }) => {
         throw errorHandler(401, 'You must be signed in to like a comment');
     }
 
-    const normalizedLikes = comment.likes
-        .map((likeUserId) => likeUserId?.toString?.())
-        .filter(Boolean);
-
-    const existingIndex = normalizedLikes.findIndex((likeUserId) => likeUserId === userId);
+    const existingIndex = comment.likes.findIndex(
+        (id) => id?.toString() === userId?.toString()
+    );
 
     if (existingIndex === -1) {
-        normalizedLikes.push(userId);
+        comment.likes.push(userId);
     } else {
-        normalizedLikes.splice(existingIndex, 1);
+        comment.likes.splice(existingIndex, 1);
     }
 
-    comment.likes = normalizedLikes;
-    comment.numberOfLikes = normalizedLikes.length;
+    comment.numberOfLikes = comment.likes.length;
 
     await comment.save();
     return comment;

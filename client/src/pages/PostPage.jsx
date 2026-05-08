@@ -1094,7 +1094,7 @@ export default function PostPage() {
                                     contentStyles={postArticleContentStyles}
                                     contentMaxWidth={postArticleContentMaxWidth}
                                     surfaceClass={surfaceClass}
-                                    className='post-content tiptap reading-surface w-full px-5 py-6 text-left text-slate-700 transition-all duration-300 dark:text-slate-200 sm:px-8 sm:py-8 xl:px-8 xl:py-8'
+                                    className='post-content post-article-reading-surface tiptap reading-surface w-full px-5 py-6 text-left text-slate-700 transition-all duration-300 dark:text-slate-200 sm:px-8 sm:py-8 xl:px-8 xl:py-8'
                                     chapterId={post._id}
                                     readingMinutes={readingStats.readingMinutes}
                                     variant='post-article'

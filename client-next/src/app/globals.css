@@ -107,3 +107,9 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+@layer utilities {
+  .glassy {
+    @apply bg-background/70 backdrop-blur-md border border-border/50 shadow-sm;
+  }
+}

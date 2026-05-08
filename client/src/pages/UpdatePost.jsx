@@ -267,7 +267,7 @@ export default function UpdatePost() {
                     </div>
                 </header>
 
-                <div className='mt-6 grid gap-6 lg:grid-cols-[1.6fr,1fr]'>
+                <div className='mt-6 grid gap-6 lg:grid-cols-[1.6fr_1fr]'>
                     <form className='space-y-5' onSubmit={handleSubmit}>
                         <div className='rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-lg shadow-slate-200/60 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-slate-900/60'>
                             <div className='flex flex-wrap items-center justify-between gap-3'>

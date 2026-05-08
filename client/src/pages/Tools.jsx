@@ -5843,7 +5843,7 @@ function EbookReaderTool() {
                     </Button>
                 </div>
             ) : null}
-            <div className="ebook-reader-grid grid gap-space-xl lg:grid-cols-[1fr,320px]">
+            <div className="ebook-reader-grid grid gap-space-xl lg:grid-cols-[1fr_320px]">
                 <div className="relative space-y-space-md">
                     <input
                         id="reader-file-input"

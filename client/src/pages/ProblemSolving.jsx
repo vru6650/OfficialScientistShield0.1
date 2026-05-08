@@ -166,7 +166,7 @@ export default function ProblemSolving() {
                         </Alert>
                     )}
 
-                    <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+                    <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
                         <div className="space-y-6">
                             {isLoading || isFetching ? (
                                 <div className="grid gap-6 sm:grid-cols-2">

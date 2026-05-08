@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
-import { Button, Alert } from 'flowbite-react';
+import { Alert, Button } from 'flowbite-react';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import {
     HiOutlineAcademicCap,
+    HiOutlineArrowRightCircle,
     HiOutlineChartBar,
     HiOutlineCodeBracket,
     HiOutlineGlobeAmericas,
@@ -15,18 +16,34 @@ import {
 } from 'react-icons/hi2';
 import { getPosts } from '../services/postService';
 
-// Lazy-load heavy UI chunks for faster first paint
 const Hero = lazy(() => import('../components/Hero'));
 const CategoryCard = lazy(() => import('../components/CategoryCard'));
 const CodeEditor = lazy(() => import('../components/CodeEditor'));
 const PostCard = lazy(() => import('../components/PostCard'));
 
-// Simple skeletons (no extra deps)
+function SectionHeader({ eyebrow, title, description, id, align = 'left', action = null }) {
+    const alignmentClass = align === 'center' ? 'mx-auto max-w-3xl text-center' : 'max-w-3xl';
+    const actionClass = align === 'center' ? 'flex justify-center pt-1' : 'pt-1';
+
+    return (
+        <div className={`${alignmentClass} space-y-4`}>
+            <p className="theme-ink-accent text-xs font-semibold uppercase tracking-[0.34em]">{eyebrow}</p>
+            <div className="space-y-3">
+                <h2 id={id} className="theme-ink-primary text-3xl font-extrabold tracking-tight sm:text-4xl">
+                    {title}
+                </h2>
+                <p className="theme-ink-secondary text-base leading-7 sm:text-lg">{description}</p>
+            </div>
+            {action ? <div className={actionClass}>{action}</div> : null}
+        </div>
+    );
+}
+
 function CategoryCardSkeleton() {
     return (
         <div className="liquid-hybrid-tile rounded-2xl p-6 animate-pulse">
-            <div className="h-8 w-1/2 rounded bg-slate-200/85 dark:bg-slate-700/80 mb-3" />
-            <div className="h-4 w-2/3 rounded bg-slate-200/85 dark:bg-slate-700/80 mb-1.5" />
+            <div className="mb-3 h-8 w-1/2 rounded bg-slate-200/85 dark:bg-slate-700/80" />
+            <div className="mb-1.5 h-4 w-2/3 rounded bg-slate-200/85 dark:bg-slate-700/80" />
             <div className="h-4 w-1/3 rounded bg-slate-200/85 dark:bg-slate-700/80" />
         </div>
     );
@@ -34,11 +51,11 @@ function CategoryCardSkeleton() {
 
 function PostCardSkeleton() {
     return (
-        <div className="liquid-hybrid-tile rounded-2xl overflow-hidden animate-pulse">
+        <div className="liquid-hybrid-tile overflow-hidden rounded-2xl animate-pulse">
             <div className="h-40 bg-slate-200/85 dark:bg-slate-700/80" />
             <div className="p-4">
-                <div className="h-6 w-3/4 rounded bg-slate-200/85 dark:bg-slate-700/80 mb-3" />
-                <div className="h-4 w-full rounded bg-slate-200/85 dark:bg-slate-700/80 mb-2" />
+                <div className="mb-3 h-6 w-3/4 rounded bg-slate-200/85 dark:bg-slate-700/80" />
+                <div className="mb-2 h-4 w-full rounded bg-slate-200/85 dark:bg-slate-700/80" />
                 <div className="h-4 w-5/6 rounded bg-slate-200/85 dark:bg-slate-700/80" />
             </div>
         </div>
@@ -48,7 +65,7 @@ function PostCardSkeleton() {
 function EditorSkeleton() {
     return (
         <div className="liquid-hybrid-tile rounded-2xl p-4 animate-pulse">
-            <div className="h-8 w-1/3 rounded bg-slate-200/85 dark:bg-slate-700/80 mb-4" />
+            <div className="mb-4 h-8 w-1/3 rounded bg-slate-200/85 dark:bg-slate-700/80" />
             <div className="h-64 rounded bg-slate-200/85 dark:bg-slate-700/80" />
         </div>
     );
@@ -59,6 +76,48 @@ export default function Home() {
     const [latestPosts, setLatestPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const missionControl = useMemo(
+        () => [
+            {
+                icon: HiOutlineAcademicCap,
+                eyebrow: 'Tutorials',
+                title: 'Start a focused learning sprint',
+                description: 'Open structured lessons and roadmaps built to move you from basics to production patterns.',
+                metric: '120+ guided paths',
+                kind: 'route',
+                linkTo: '/tutorials',
+            },
+            {
+                icon: HiOutlineCodeBracket,
+                eyebrow: 'Practice',
+                title: 'Solve real coding challenges',
+                description: 'Work through curated problems with hints, editorials, and cleaner challenge surfaces.',
+                metric: '340+ exercises',
+                kind: 'route',
+                linkTo: '/problems',
+            },
+            {
+                icon: HiOutlineSparkles,
+                eyebrow: 'Tools',
+                title: 'Open the lab instantly',
+                description: 'Jump into the reader, playground, and visualizers without hunting through the interface.',
+                metric: 'Studio utilities',
+                kind: 'route',
+                linkTo: '/tools',
+            },
+            {
+                icon: HiOutlineChartBar,
+                eyebrow: 'Articles',
+                title: 'Catch the latest signal',
+                description: 'Move straight to fresh posts and community thinking when you want ideas instead of drills.',
+                metric: 'Recent publishing',
+                kind: 'scroll',
+                targetId: 'recent-articles',
+            },
+        ],
+        []
+    );
 
     const stats = useMemo(
         () => [
@@ -84,7 +143,7 @@ export default function Home() {
                 icon: HiOutlineGlobeAmericas,
                 label: 'Countries represented',
                 value: '90+',
-                description: 'A truly global community of curious problem solvers.',
+                description: 'A global network of curious builders and practical learners.',
             },
         ],
         []
@@ -100,17 +159,35 @@ export default function Home() {
             {
                 icon: HiOutlineChartBar,
                 title: 'Progress you can measure',
-                description: 'Smart progress dashboards celebrate milestones and suggest what to learn next.',
+                description: 'Clearer feedback loops help you see momentum and choose the next skill on purpose.',
             },
             {
                 icon: HiOutlineShieldCheck,
                 title: 'Quality you can trust',
-                description: 'Every tutorial is peer reviewed to ensure clarity, accuracy, and accessibility.',
+                description: 'Every tutorial is reviewed for clarity, accuracy, and accessibility before it reaches the feed.',
             },
             {
                 icon: HiOutlineRocketLaunch,
-                title: 'Launch-ready portfolio',
-                description: 'Ship polished projects with real-world briefs and share them with employers.',
+                title: 'Portfolio-ready output',
+                description: 'Turn practice into publishable work with projects, articles, and challenge write-ups.',
+            },
+        ],
+        []
+    );
+
+    const workspacePrinciples = useMemo(
+        () => [
+            {
+                title: 'Calmer hierarchy',
+                description: 'Bigger section headers, stronger contrast, and more consistent spacing reduce scanning fatigue.',
+            },
+            {
+                title: 'Faster navigation',
+                description: 'The page surfaces the next action immediately, whether you want to learn, practice, or read.',
+            },
+            {
+                title: 'One visual system',
+                description: 'Home, reading, problem solving, and tool surfaces now feel related instead of assembled.',
             },
         ],
         []
@@ -121,36 +198,31 @@ export default function Home() {
             {
                 step: 'Discover',
                 title: 'Find what inspires you',
-                description:
-                    'Browse curated categories, trending topics, and tailored recommendations aligned with your goals.',
+                description: 'Browse curated categories, trending topics, and tailored recommendations aligned with your goals.',
                 icon: HiOutlineLightBulb,
             },
             {
                 step: 'Practice',
                 title: 'Build with confidence',
-                description:
-                    'Tackle guided projects and quizzes that apply concepts immediately in a supportive environment.',
+                description: 'Tackle guided projects and quizzes that apply concepts immediately in a supportive environment.',
                 icon: HiOutlineCodeBracket,
             },
             {
                 step: 'Collaborate',
                 title: 'Learn alongside others',
-                description:
-                    'Join study circles, request feedback, and pair-program with a global network of builders.',
+                description: 'Join study circles, request feedback, and pair-program with a global network of builders.',
                 icon: HiOutlineUsers,
             },
             {
                 step: 'Showcase',
                 title: 'Share your progress',
-                description:
-                    'Publish articles, host demos, and let your portfolio tell a story that recruiters remember.',
+                description: 'Publish articles, host demos, and let your portfolio tell a story recruiters remember.',
                 icon: HiOutlineChartBar,
             },
         ],
         []
     );
 
-    // Centralize category config
     const categories = useMemo(
         () => [
             {
@@ -199,14 +271,51 @@ export default function Home() {
         []
     );
 
-    // Fetch posts with an unmount guard
+    const challengeTracks = useMemo(
+        () => [
+            {
+                label: 'Warm-up',
+                title: 'Core patterns',
+                description: 'Start with arrays, strings, and greedy moves before stepping into heavier material.',
+            },
+            {
+                label: 'Mid sprint',
+                title: 'Hints on demand',
+                description: 'Stay moving with progressive nudges instead of getting dropped into full solutions too early.',
+            },
+            {
+                label: 'Mock mode',
+                title: 'Timed review',
+                description: 'Practice under pressure, then compare your approach against structured editorial notes.',
+            },
+        ],
+        []
+    );
+
+    const primaryCta = useMemo(
+        () =>
+            currentUser
+                ? {
+                      to: '/dashboard',
+                      label: 'Open dashboard',
+                      description: 'Pick up where you left off and continue your latest sprint.',
+                  }
+                : {
+                      to: '/sign-up',
+                      label: 'Create free account',
+                      description: 'Save progress, keep preferences, and make the workspace yours.',
+                  },
+        [currentUser]
+    );
+
     useEffect(() => {
         let active = true;
+
         (async () => {
             setLoading(true);
             setError(null);
             try {
-                const postsData = await getPosts('limit=6'); // grab a few more
+                const postsData = await getPosts('limit=6');
                 if (!active) return;
                 setLatestPosts(postsData?.posts ?? []);
             } catch (err) {
@@ -219,6 +328,7 @@ export default function Home() {
                 }
             }
         })();
+
         return () => {
             active = false;
         };
@@ -238,392 +348,498 @@ export default function Home() {
         }
     };
 
+    const scrollToSection = (targetId) => {
+        if (typeof document === 'undefined') return;
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const renderMissionCard = ({ icon: Icon, eyebrow, title, description, metric, kind, linkTo, targetId }) => {
+        const content = (
+            <>
+                <div className="flex items-start justify-between gap-4">
+                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 via-cyan-400 to-teal-400 text-white shadow-[0_18px_40px_-22px_rgba(14,165,233,0.55)]">
+                        <Icon className="h-5 w-5" aria-hidden />
+                    </span>
+                    <span className="theme-ink-muted text-[11px] font-semibold uppercase tracking-[0.28em]">
+                        {metric}
+                    </span>
+                </div>
+                <div className="mt-6 space-y-3">
+                    <p className="theme-ink-accent text-xs font-semibold uppercase tracking-[0.28em]">{eyebrow}</p>
+                    <h3 className="theme-ink-primary text-xl font-semibold">{title}</h3>
+                    <p className="theme-ink-secondary text-sm leading-7">{description}</p>
+                </div>
+                <div className="theme-ink-accent mt-6 inline-flex items-center gap-2 text-sm font-semibold">
+                    Open space
+                    <HiOutlineArrowRightCircle className="h-4 w-4" aria-hidden />
+                </div>
+            </>
+        );
+
+        if (kind === 'scroll') {
+            return (
+                <div
+                    key={title}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => scrollToSection(targetId)}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            scrollToSection(targetId);
+                        }
+                    }}
+                    className="home-launch-card block h-full w-full cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                >
+                    {content}
+                </div>
+            );
+        }
+
+        return (
+            <Link key={title} to={linkTo} className="home-launch-card block h-full">
+                {content}
+            </Link>
+        );
+    };
+
     return (
-        <main className="workspace-page liquid-app-shell relative min-h-screen">
+        <main className="workspace-page liquid-app-shell relative min-h-screen pb-16">
             <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 -top-32 -z-10 blur-3xl opacity-40 dark:opacity-25"
             >
                 <div className="mx-auto h-64 w-3/4 rounded-full bg-gradient-to-tr from-sky-400 via-cyan-400 to-teal-400" />
             </div>
-            <div aria-hidden className="pointer-events-none absolute -left-20 top-28 -z-10 h-80 w-80 rounded-full bg-cyan-300/25 blur-[90px] dark:bg-cyan-500/25" />
-            <div aria-hidden className="pointer-events-none absolute -right-16 top-[34rem] -z-10 h-72 w-72 rounded-full bg-sky-300/18 blur-[92px] dark:bg-indigo-500/22" />
+            <div
+                aria-hidden
+                className="pointer-events-none absolute -left-20 top-28 -z-10 h-80 w-80 rounded-full bg-cyan-300/25 blur-[90px] dark:bg-cyan-500/25"
+            />
+            <div
+                aria-hidden
+                className="pointer-events-none absolute -right-16 top-[34rem] -z-10 h-72 w-72 rounded-full bg-sky-300/18 blur-[92px] dark:bg-indigo-500/22"
+            />
 
-            {/* Error banner (non-blocking) */}
-            {error && (
-                <div className="px-4 pt-4 max-w-7xl mx-auto">
+            {error ? (
+                <div className="workspace-page__content workspace-page__content--xl px-4 pt-4 sm:px-6 lg:px-8">
                     <Alert color="failure" onDismiss={() => setError(null)}>
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <span>{error}</span>
-                            <Button size="sm" className="btn-aqua" onClick={retry}>
+                            <button
+                                type="button"
+                                className="inline-flex min-h-10 items-center justify-center rounded-full border border-sky-400/70 bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_16px_34px_-20px_rgba(14,116,244,0.7)] transition hover:bg-sky-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/80"
+                                style={{ background: 'linear-gradient(135deg, #0284c7, #0ea5e9)' }}
+                                onClick={retry}
+                            >
                                 Retry
-                            </Button>
+                            </button>
                         </div>
                     </Alert>
                 </div>
-            )}
+            ) : null}
 
-            {/* Hero */}
             <Suspense fallback={<div className="h-72 sm:h-80 lg:h-96" />}>
                 <Hero />
             </Suspense>
 
-            <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-20">
-                {/* Stats */}
-                <section className="relative" aria-labelledby="community-impact">
-                    <div className="macos-panel macos-panel--wide liquid-hybrid-panel">
-                        <div className="macos-panel__grid p-6 sm:p-8 lg:p-10 space-y-8">
-                            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-                                <div>
-                                    <p className="text-sm uppercase tracking-widest text-sky-500 dark:text-sky-400 font-semibold">
-                                        Community Impact
-                                    </p>
-                                    <h2
-                                        id="community-impact"
-                                        className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white"
-                                    >
-                                        Built for learners who never stop exploring
-                                    </h2>
-                                </div>
-                                <p className="text-base sm:text-lg max-w-xl text-gray-600 dark:text-gray-300">
-                                    From your first line of code to launching your startup, ScientistShield grows with you by blending
-                                    curated learning, interactive practice, and a vibrant community.
-                                </p>
+            <div className="workspace-page__content workspace-page__content--xl space-y-20 px-4 pt-4 sm:px-6 lg:px-8">
+                <section aria-labelledby="mission-control" className="scroll-mt-24">
+                    <div className="liquid-hybrid-panel liquid-hybrid-band rounded-[2rem] p-8 sm:p-10">
+                        <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+                            <SectionHeader
+                                eyebrow="Mission Control"
+                                id="mission-control"
+                                title="Pick the next action without hunting for it."
+                                description="The landing flow now acts more like a launchpad. You can start a lesson, solve a problem, open a tool, or scan new writing from clearly separated entry points."
+                            />
+                            <div className="flex flex-wrap gap-3">
+                                <span className="macos-chip macos-chip--accent">
+                                    <span className="macos-chip__dot bg-sky-500" aria-hidden />
+                                    Faster wayfinding
+                                </span>
+                                <span className="macos-chip macos-chip--ghost">
+                                    <span className="macos-chip__dot bg-emerald-500" aria-hidden />
+                                    Better section rhythm
+                                </span>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                        </div>
+                        <div className="home-launch-grid mt-10">
+                            {missionControl.map(renderMissionCard)}
+                        </div>
+                    </div>
+                </section>
+
+                <section aria-labelledby="community-impact" className="scroll-mt-24">
+                    <div className="macos-panel macos-panel--wide liquid-hybrid-panel overflow-hidden">
+                        <div className="home-metrics-stage">
+                            <div className="space-y-6">
+                                <SectionHeader
+                                    eyebrow="Community Impact"
+                                    id="community-impact"
+                                    title="Built for learners who want momentum, not clutter."
+                                    description="ScientistShield blends guided learning, practice loops, and publishing surfaces so progress feels continuous. The theme upgrade leans into that by making the hierarchy clearer and the actions easier to reach."
+                                />
+                                <div className="flex flex-wrap gap-3">
+                                    <span className="macos-chip macos-chip--accent">Desktop-grade navigation</span>
+                                    <span className="macos-chip macos-chip--ghost">Readable, calmer surfaces</span>
+                                    <span className="macos-chip macos-chip--ghost">Direct next-step cues</span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                                 {stats.map(({ icon: Icon, label, value, description }) => (
-                                    <div
-                                        key={label}
-                                        className="macos-tile liquid-hybrid-tile group p-6"
-                                    >
+                                    <article key={label} className="home-metric-card macos-tile liquid-hybrid-tile group p-6">
                                         <div className="flex items-center gap-4">
-                                            <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white text-2xl shadow-md">
+                                            <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 via-cyan-400 to-indigo-500 text-2xl text-white shadow-[0_18px_40px_-22px_rgba(14,165,233,0.6)]">
                                                 <Icon aria-hidden />
                                             </span>
                                             <div>
-                                                <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
+                                                <p className="theme-ink-muted text-xs font-semibold uppercase tracking-[0.28em]">
                                                     {label}
                                                 </p>
-                                                <p className="text-3xl font-black text-slate-900 dark:text-white">{value}</p>
+                                                <p className="theme-ink-primary text-3xl font-black">{value}</p>
                                             </div>
                                         </div>
-                                        <p className="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{description}</p>
-                                    </div>
+                                        <p className="theme-ink-secondary mt-4 text-sm leading-7">{description}</p>
+                                    </article>
                                 ))}
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Highlights */}
-                <section className="space-y-10" aria-labelledby="why-scientistshield">
-                    <div className="text-center max-w-3xl mx-auto space-y-3">
-                        <p className="text-sm uppercase tracking-[0.4em] text-sky-500 dark:text-sky-400 font-semibold">
-                            Why ScientistShield
-                        </p>
-                        <h2
-                            id="why-scientistshield"
-                            className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white"
-                        >
-                            Everything you need to learn, build, and stand out
-                        </h2>
-                        <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300">
-                            Purpose-built experiences combine human guidance with hands-on challenges, so your next breakthrough is
-                            always within reach.
-                        </p>
+                <section aria-labelledby="why-scientistshield" className="scroll-mt-24">
+                    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+                        <div className="liquid-hybrid-panel liquid-hybrid-band rounded-[2rem] p-8 sm:p-10">
+                            <SectionHeader
+                                eyebrow="Why ScientistShield"
+                                id="why-scientistshield"
+                                title="A stronger product theme needs stronger product flow."
+                                description="The UI refresh is not just brighter glass. It reorganizes the home experience so you can understand what the platform does, where to go next, and why each area matters."
+                            />
+                            <div className="mt-8 grid gap-4 md:grid-cols-2">
+                                {highlights.map(({ icon: Icon, title, description }) => (
+                                    <article key={title} className="home-feature-card macos-tile liquid-hybrid-tile p-6">
+                                        <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-sky-500 text-xl text-white shadow-[0_18px_36px_-22px_rgba(59,130,246,0.55)]">
+                                            <Icon aria-hidden />
+                                        </span>
+                                        <h3 className="theme-ink-primary mt-5 text-xl font-semibold">{title}</h3>
+                                        <p className="theme-ink-secondary mt-3 text-sm leading-7">{description}</p>
+                                    </article>
+                                ))}
+                            </div>
+                        </div>
+
+                        <aside className="home-focus-panel">
+                            <p className="theme-ink-accent text-xs font-semibold uppercase tracking-[0.32em]">
+                                Experience System
+                            </p>
+                            <h3 className="theme-ink-primary text-2xl font-bold">
+                                Long study sessions should feel calmer, not denser.
+                            </h3>
+                            <div className="space-y-3">
+                                {workspacePrinciples.map(({ title, description }) => (
+                                    <article key={title} className="home-focus-item">
+                                        <h4 className="theme-ink-primary text-base font-semibold">{title}</h4>
+                                        <p className="theme-ink-secondary mt-2 text-sm leading-6">{description}</p>
+                                    </article>
+                                ))}
+                            </div>
+                            <div className="flex flex-wrap gap-4 pt-2">
+                                <Button as={Link} to="/tools" pill className="btn-aqua">
+                                    Open tools
+                                </Button>
+                                <Button as={Link} to="/about" pill className="btn-glass-secondary">
+                                    Learn more
+                                </Button>
+                            </div>
+                        </aside>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-                        {highlights.map(({ icon: Icon, title, description }) => (
-                            <article
-                                key={title}
-                                className="macos-tile liquid-hybrid-tile group relative overflow-hidden p-8"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-br from-sky-200/0 via-sky-200/0 to-sky-200/20 dark:from-sky-500/0 dark:via-sky-500/0 dark:to-sky-500/15 transition-opacity duration-300 group-hover:opacity-100" />
-                                <div className="relative flex items-start gap-5">
-                                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xl shadow">
-                                        <Icon aria-hidden />
-                                    </span>
-                                    <div>
-                                        <h3 className="text-xl font-semibold text-slate-900 dark:text-white">{title}</h3>
-                                        <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-                                            {description}
+                </section>
+
+                <section id="learn-tech" aria-labelledby="learn-tech-heading" className="scroll-mt-24">
+                    <div className="liquid-hybrid-panel liquid-hybrid-band rounded-[2rem] p-8 sm:p-10">
+                        <SectionHeader
+                            align="center"
+                            eyebrow="Learning Library"
+                            id="learn-tech-heading"
+                            title="Choose a technology lane and get moving."
+                            description="Start with small wins or dive deep. The category grid keeps the visual language consistent while making each topic feel distinct and easy to scan."
+                        />
+
+                        <Suspense
+                            fallback={
+                                <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                                    {Array.from({ length: 6 }).map((_, index) => (
+                                        <CategoryCardSkeleton key={index} />
+                                    ))}
+                                </div>
+                            }
+                        >
+                            <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                                {categories.map((category, index) => (
+                                    <div
+                                        key={category.title}
+                                        className="animate-card-fade-in"
+                                        style={{ animationDelay: category.delay || `${0.1 + index * 0.1}s` }}
+                                    >
+                                        <CategoryCard
+                                            title={category.title}
+                                            description={category.description}
+                                            linkTo={category.linkTo}
+                                            gradient={category.gradient}
+                                            className="hover:scale-[1.02] transition-transform duration-300"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </Suspense>
+
+                        <div className="mt-10 flex justify-center">
+                            <Button as={Link} to="/tutorials" pill className="btn-aqua">
+                                Explore all categories
+                            </Button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="problem-solving" aria-labelledby="problem-solving-heading" className="scroll-mt-24">
+                    <div className="liquid-hybrid-panel liquid-hybrid-band relative overflow-hidden rounded-[2rem] p-8 sm:p-10">
+                        <div
+                            aria-hidden
+                            className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.18),transparent_58%)]"
+                        />
+                        <div className="relative grid gap-8 xl:grid-cols-[minmax(0,1.02fr)_minmax(320px,0.98fr)]">
+                            <div className="space-y-6">
+                                <SectionHeader
+                                    eyebrow="Challenge Studio"
+                                    id="problem-solving-heading"
+                                    title="Practice computer science with clearer progression."
+                                    description="The challenge area now reads more like a deliberate studio surface. It emphasizes progression, structured help, and editorial feedback instead of dropping you into a cold problem list."
+                                />
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="liquid-hybrid-tile rounded-3xl p-5">
+                                        <p className="theme-ink-accent text-xs font-semibold uppercase tracking-[0.28em]">
+                                            Progressive difficulty
+                                        </p>
+                                        <p className="theme-ink-secondary mt-3 text-sm leading-7">
+                                            Move from warm-up prompts to interview-style problems without losing the sense of progression.
+                                        </p>
+                                    </div>
+                                    <div className="liquid-hybrid-tile rounded-3xl p-5">
+                                        <p className="theme-ink-accent text-xs font-semibold uppercase tracking-[0.28em]">
+                                            Editorial support
+                                        </p>
+                                        <p className="theme-ink-secondary mt-3 text-sm leading-7">
+                                            Use hints, samples, and write-ups at the right moment instead of all at once.
                                         </p>
                                     </div>
                                 </div>
-                            </article>
-                        ))}
-                    </div>
-                </section>
-
-                {/* Categories */}
-                <section
-                    aria-labelledby="learn-tech"
-                    className="liquid-hybrid-panel liquid-hybrid-band relative overflow-hidden rounded-3xl p-8 sm:p-10"
-                >
-                    <h2
-                        id="learn-tech"
-                        className="text-3xl sm:text-4xl font-bold text-center mb-12 text-gray-800 dark:text-gray-200"
-                    >
-                        Learn Technology for Free
-                    </h2>
-                    <p className="max-w-3xl mx-auto text-center text-gray-600 dark:text-gray-300 mb-12 text-base sm:text-lg">
-                        Dive into bite-sized lessons and deep-dive guides created by industry veterans. Pick a topic to begin your
-                        personalized learning sprint.
-                    </p>
-
-                    <Suspense
-                        fallback={
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {Array.from({ length: 6 }).map((_, i) => (
-                                    <CategoryCardSkeleton key={i} />
-                                ))}
-                            </div>
-                        }
-                    >
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {categories.map((c, idx) => (
-                                <div
-                                    key={c.title}
-                                    className="animate-card-fade-in"
-                                    style={{ animationDelay: c.delay || `${0.1 + idx * 0.1}s` }}
-                                >
-                                    <CategoryCard
-                                        title={c.title}
-                                        description={c.description}
-                                        linkTo={c.linkTo}
-                                        gradient={c.gradient}
-                                        className="hover:scale-[1.02] transition-transform duration-300"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </Suspense>
-
-                    <div className="flex justify-center mt-10">
-                        <Link to="/tutorials">
-                            <Button pill className="btn-aqua">
-                                Explore All Categories
-                            </Button>
-                        </Link>
-                    </div>
-                </section>
-
-                {/* Problem Solving Feature */}
-                <section className="liquid-hybrid-panel liquid-hybrid-band relative overflow-hidden p-10" aria-labelledby="problem-solving">
-                    <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-                        <div className="space-y-4">
-                            <p className="inline-flex items-center gap-2 rounded-full bg-cyan-100 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200">
-                                Inspired by GeeksforGeeks
-                            </p>
-                            <h2 id="problem-solving" className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
-                                Master computer science problem solving
-                            </h2>
-                            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300">
-                                Tackle curated algorithmic challenges with structured hints, detailed editorials, and reference implementations. Practice in a focused environment that mirrors real interviews and competitions.
-                            </p>
-                            <ul className="grid gap-3 sm:grid-cols-2 text-sm text-gray-700 dark:text-gray-200">
-                                <li className="flex items-start gap-2">
-                                    <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-cyan-500" />
-                                    Progressive difficulty levels from warm-up to advanced puzzles.
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-cyan-500" />
-                                    Rich sample cases, constraints, and interactive hints to guide your approach.
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-cyan-500" />
-                                    Editorial write-ups and solution snippets in multiple languages.
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-cyan-500" />
-                                    Track trending topics and focus on the skills hiring managers expect.
-                                </li>
-                            </ul>
-                            <div className="flex flex-wrap gap-4 pt-4">
-                                <Link to="/problems">
-                                    <Button size="lg" className="btn-aqua">
+                                <div className="flex flex-wrap gap-4">
+                                    <Button as={Link} to="/problems" size="lg" className="btn-aqua">
                                         Start solving problems
                                     </Button>
-                                </Link>
-                                {currentUser?.isAdmin && (
-                                    <Link to="/create-problem">
-                                        <Button size="lg" className="btn-glass-secondary">
+                                    {currentUser?.isAdmin ? (
+                                        <Button as={Link} to="/create-problem" size="lg" className="btn-glass-secondary">
                                             Contribute a challenge
                                         </Button>
-                                    </Link>
-                                )}
+                                    ) : null}
+                                </div>
                             </div>
-                        </div>
-                        <div className="liquid-hybrid-tile relative overflow-hidden rounded-3xl p-6">
-                            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-indigo-500/10" />
-                            <div className="relative space-y-4">
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Daily challenge preview</h3>
-                                <div className="liquid-hybrid-tile rounded-2xl p-4">
-                                    <p className="text-sm font-semibold text-cyan-600 dark:text-cyan-300">Dynamic Programming · Medium</p>
-                                    <p className="mt-2 font-bold text-gray-900 dark:text-white">Optimize workshop scheduling</p>
-                                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                                        Given N workshops with start/end times and profit, compute the maximum profit without overlapping sessions.
+
+                            <div className="home-problem-board">
+                                <div className="liquid-hybrid-tile rounded-[1.75rem] p-5">
+                                    <p className="theme-ink-accent text-xs font-semibold uppercase tracking-[0.28em]">
+                                        Daily challenge preview
                                     </p>
-                                    <div className="mt-4 flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400">
-                                        <span className="rounded-full bg-cyan-100 px-3 py-1 font-semibold text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200">Success rate 42%</span>
-                                        <span className="rounded-full bg-gray-100 px-3 py-1 font-semibold text-gray-700 dark:bg-gray-800/70 dark:text-gray-200">1.2k submissions</span>
+                                    <h3 className="theme-ink-primary mt-3 text-2xl font-bold">
+                                        Optimize workshop scheduling
+                                    </h3>
+                                    <p className="theme-ink-secondary mt-3 text-sm leading-7">
+                                        Given N workshops with start and end times plus a profit value, compute the maximum profit
+                                        without overlapping sessions.
+                                    </p>
+                                    <div className="mt-5 flex flex-wrap gap-3 text-xs font-semibold">
+                                        <span className="rounded-full bg-cyan-100 px-3 py-1 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200">
+                                            Dynamic programming
+                                        </span>
+                                        <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200">
+                                            Medium difficulty
+                                        </span>
+                                        <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200">
+                                            1.2k submissions
+                                        </span>
                                     </div>
                                 </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">
-                                    Solve it now and compare approaches with the community&apos;s editorial breakdown.
-                                </p>
+
+                                <div className="home-problem-grid mt-4">
+                                    {challengeTracks.map(({ label, title, description }) => (
+                                        <article key={title} className="liquid-hybrid-tile rounded-[1.5rem] p-5">
+                                            <p className="theme-ink-muted text-[11px] font-semibold uppercase tracking-[0.24em]">
+                                                {label}
+                                            </p>
+                                            <h4 className="theme-ink-primary mt-3 text-lg font-semibold">{title}</h4>
+                                            <p className="theme-ink-secondary mt-3 text-sm leading-6">{description}</p>
+                                        </article>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Code Playground */}
-                <section
-                    aria-labelledby="playground"
-                    className="liquid-hybrid-panel liquid-hybrid-band relative overflow-hidden rounded-3xl p-8 sm:p-10"
-                >
-                    <h2
-                        id="playground"
-                        className="text-3xl sm:text-4xl font-bold text-center mb-12 text-gray-800 dark:text-gray-200"
-                    >
-                        Interactive Code Playground
-                    </h2>
-                    <Suspense fallback={<EditorSkeleton />}>
-                        <CodeEditor workspaceId='home-playground' />
-                    </Suspense>
+                <section id="playground" aria-labelledby="playground-heading" className="scroll-mt-24">
+                    <div className="liquid-hybrid-panel liquid-hybrid-band rounded-[2rem] p-8 sm:p-10">
+                        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+                            <SectionHeader
+                                eyebrow="Playground"
+                                id="playground-heading"
+                                title="Experiment without leaving the landing flow."
+                                description="The code playground stays on the home surface so the experience feels alive right away. You can read, decide, and test ideas in one pass."
+                            />
+                            <div className="flex flex-wrap gap-3">
+                                <span className="macos-chip macos-chip--ghost">Instant feedback</span>
+                                <span className="macos-chip macos-chip--accent">In-browser coding</span>
+                            </div>
+                        </div>
+                        <div className="mt-8">
+                            <Suspense fallback={<EditorSkeleton />}>
+                                <CodeEditor workspaceId="home-playground" />
+                            </Suspense>
+                        </div>
+                    </div>
                 </section>
 
-                {/* Learning Path */}
-                <section aria-labelledby="learning-journey" className="relative">
-                    <div className="absolute inset-0 -z-10 bg-gradient-to-r from-indigo-100/60 via-transparent to-sky-100/60 dark:from-indigo-900/40 dark:via-transparent dark:to-sky-900/40 rounded-3xl" />
-                    <div className="liquid-hybrid-panel rounded-3xl p-8 sm:p-10 space-y-10">
-                        <div className="text-center space-y-4">
-                            <p className="text-sm uppercase tracking-[0.4em] text-indigo-500 dark:text-indigo-400 font-semibold">
-                                Your Journey
-                            </p>
-                            <h2
-                                id="learning-journey"
-                                className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white"
-                            >
-                                Chart a clear path from curiosity to mastery
-                            </h2>
-                            <p className="max-w-3xl mx-auto text-base sm:text-lg text-gray-600 dark:text-gray-300">
-                                Each stage is designed to keep you motivated with achievable wins, meaningful collaboration, and
-                                visible progress.
-                            </p>
-                        </div>
-                        <ol className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <section id="learning-journey" aria-labelledby="learning-journey-heading" className="scroll-mt-24">
+                    <div className="liquid-hybrid-panel rounded-[2rem] p-8 sm:p-10">
+                        <SectionHeader
+                            align="center"
+                            eyebrow="Journey"
+                            id="learning-journey-heading"
+                            title="Move from curiosity to a repeatable learning system."
+                            description="Each step now sits inside the same UI language, which helps the whole journey read like a continuous workflow instead of a series of unrelated pages."
+                        />
+                        <ol className="mt-10 grid grid-cols-1 gap-4 lg:grid-cols-4">
                             {learningPath.map(({ step, title, description, icon: Icon }) => (
-                                <li
-                                    key={step}
-                                    className="liquid-hybrid-tile relative rounded-3xl border border-transparent p-6 shadow-lg"
-                                >
-                                    <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-widest">
-                                        <Icon aria-hidden className="text-base" />
-                                        {step}
+                                <li key={step} className="home-journey-card">
+                                    <div className="flex items-center gap-3">
+                                        <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 text-white shadow-[0_18px_36px_-22px_rgba(15,23,42,0.5)] dark:from-white dark:to-slate-200 dark:text-slate-900">
+                                            <Icon aria-hidden className="text-xl" />
+                                        </span>
+                                        <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-white dark:bg-white dark:text-slate-900">
+                                            {step}
+                                        </span>
                                     </div>
-                                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white">{title}</h3>
-                                    <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-                                        {description}
-                                    </p>
+                                    <h3 className="theme-ink-primary mt-6 text-xl font-semibold">{title}</h3>
+                                    <p className="theme-ink-secondary mt-3 text-sm leading-7">{description}</p>
                                 </li>
                             ))}
                         </ol>
                     </div>
                 </section>
 
-                {/* Recent Posts */}
-                <section
-                    aria-labelledby="recent-articles"
-                    className="liquid-hybrid-panel liquid-hybrid-band relative overflow-hidden rounded-3xl p-8 sm:p-10"
-                >
-                    <h2
-                        id="recent-articles"
-                        className="text-3xl sm:text-4xl font-bold text-center mb-12 text-gray-800 dark:text-gray-200"
-                    >
-                        Recently Published Articles
-                    </h2>
-
-                    {loading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {Array.from({ length: 6 }).map((_, i) => (
-                                <PostCardSkeleton key={i} />
-                            ))}
+                <section id="recent-articles" aria-labelledby="recent-articles-heading" className="scroll-mt-24">
+                    <div className="liquid-hybrid-panel liquid-hybrid-band rounded-[2rem] p-8 sm:p-10">
+                        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+                            <SectionHeader
+                                eyebrow="Recent Articles"
+                                id="recent-articles-heading"
+                                title="Fresh writing stays in the same visual rhythm."
+                                description="Posts are now part of the same discovery flow as tutorials and challenges, which makes the home page feel more like a working dashboard than a marketing page."
+                            />
+                            <Button as={Link} to="/search" pill className="btn-glass-secondary">
+                                View all articles
+                            </Button>
                         </div>
-                    ) : latestPosts.length > 0 ? (
-                        <Suspense
-                            fallback={
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                                    {Array.from({ length: 6 }).map((_, i) => (
-                                        <PostCardSkeleton key={i} />
+
+                        <div className="mt-10">
+                            {loading ? (
+                                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                                    {Array.from({ length: 6 }).map((_, index) => (
+                                        <PostCardSkeleton key={index} />
                                     ))}
                                 </div>
-                            }
-                        >
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {latestPosts.map((post, index) => (
-                                    <div
-                                        key={post._id || index}
-                                        className="animate-card-fade-in"
-                                        style={{ animationDelay: `${0.2 + index * 0.1}s` }}
-                                    >
-                                        <PostCard post={post} />
+                            ) : latestPosts.length > 0 ? (
+                                <Suspense
+                                    fallback={
+                                        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                                            {Array.from({ length: 6 }).map((_, index) => (
+                                                <PostCardSkeleton key={index} />
+                                            ))}
+                                        </div>
+                                    }
+                                >
+                                    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                                        {latestPosts.map((post, index) => (
+                                            <div
+                                                key={post._id || index}
+                                                className="animate-card-fade-in"
+                                                style={{ animationDelay: `${0.2 + index * 0.1}s` }}
+                                            >
+                                                <PostCard post={post} />
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                        </Suspense>
-                    ) : (
-                        <div className="text-center text-gray-500 dark:text-gray-400">
-                            No articles found yet. Check back soon!
+                                </Suspense>
+                            ) : (
+                                <div className="theme-ink-muted rounded-3xl border border-dashed border-slate-300/70 px-6 py-12 text-center dark:border-slate-700">
+                                    No articles found yet. Check back soon.
+                                </div>
+                            )}
                         </div>
-                    )}
-
-                    <div className="flex justify-center mt-10">
-                        <Link to="/search">
-                            <Button pill className="btn-glass-secondary">
-                                View All Articles
-                            </Button>
-                        </Link>
                     </div>
                 </section>
 
-                {/* CTA */}
-                <section
-                    aria-labelledby="join-community"
-                    className="liquid-hybrid-panel liquid-hybrid-band relative overflow-hidden rounded-3xl"
-                >
-                    <div className="absolute inset-0 -z-10 hidden dark:block bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-600" />
-                    <div className="relative px-6 py-12 sm:px-12 sm:py-16 flex flex-col lg:flex-row items-center lg:items-end lg:justify-between gap-8 text-slate-900 dark:text-white">
-                        <div className="space-y-4 max-w-2xl">
-                            <p className="text-sm uppercase tracking-[0.4em] text-indigo-600 dark:text-white/80 font-semibold">
-                                Join the community
+                <section id="join-community" aria-labelledby="join-community-heading" className="scroll-mt-24">
+                    <div className="home-cta-panel">
+                        <div className="space-y-5">
+                            <p className="theme-ink-accent text-xs font-semibold uppercase tracking-[0.34em]">
+                                Next Step
                             </p>
-                            <h2 id="join-community" className="text-3xl sm:text-4xl font-extrabold">
-                                Ready to craft the next chapter of your developer story?
+                            <h2 id="join-community-heading" className="theme-ink-primary text-3xl font-extrabold tracking-tight sm:text-4xl">
+                                Turn the workspace into your operating system for learning.
                             </h2>
-                            <p className="text-base sm:text-lg text-slate-600 dark:text-white/90">
-                                Create a free account, unlock personalized learning spaces, and start collaborating with mentors and peers today.
+                            <p className="theme-ink-secondary max-w-2xl text-base leading-8 sm:text-lg">
+                                {primaryCta.description} The refreshed theme is designed to keep you in flow longer, with clearer
+                                navigation, calmer surfaces, and faster access to the next meaningful action.
                             </p>
+                            <div className="flex flex-wrap gap-4">
+                                <Button as={Link} to={primaryCta.to} pill size="lg" className="btn-aqua">
+                                    {primaryCta.label}
+                                </Button>
+                                <Button as={Link} to="/community" pill size="lg" className="btn-glass-secondary">
+                                    Visit community
+                                </Button>
+                            </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-4">
-                            <Link to="/sign-up">
-                                <Button
-                                    pill
-                                    size="lg"
-                                    className="btn-aqua"
-                                >
-                                    Create free account
-                                </Button>
-                            </Link>
-                            <Link to="/about">
-                                <Button
-                                    pill
-                                    size="lg"
-                                    className="btn-glass-secondary"
-                                >
-                                    Learn more
-                                </Button>
-                            </Link>
+
+                        <div className="grid gap-3 sm:grid-cols-3">
+                            <div className="liquid-hybrid-tile rounded-[1.5rem] p-5">
+                                <p className="theme-ink-muted text-xs font-semibold uppercase tracking-[0.28em]">
+                                    Surfaces
+                                </p>
+                                <p className="theme-ink-primary mt-3 text-2xl font-black">Unified</p>
+                                <p className="theme-ink-secondary mt-2 text-sm leading-6">
+                                    Tutorials, articles, challenges, and tools now feel part of the same product family.
+                                </p>
+                            </div>
+                            <div className="liquid-hybrid-tile rounded-[1.5rem] p-5">
+                                <p className="theme-ink-muted text-xs font-semibold uppercase tracking-[0.28em]">
+                                    Navigation
+                                </p>
+                                <p className="theme-ink-primary mt-3 text-2xl font-black">Direct</p>
+                                <p className="theme-ink-secondary mt-2 text-sm leading-6">
+                                    Mission control cards and better section framing cut down on hunting for the next step.
+                                </p>
+                            </div>
+                            <div className="liquid-hybrid-tile rounded-[1.5rem] p-5">
+                                <p className="theme-ink-muted text-xs font-semibold uppercase tracking-[0.28em]">
+                                    Reading pace
+                                </p>
+                                <p className="theme-ink-primary mt-3 text-2xl font-black">Calmer</p>
+                                <p className="theme-ink-secondary mt-2 text-sm leading-6">
+                                    Bigger headings, cleaner spacing, and steadier contrast support longer sessions.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </section>

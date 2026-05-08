@@ -345,7 +345,7 @@ export default function ReadingControlCenter({ settings, onChange, onReset }) {
                         dragListener={false} // 3. Disable dragging on the whole panel
                         dragControls={dragControls} // 4. Connect controls
                         dragMomentum={false}
-                        dragConstraints={{ top: 20, left: 20, right: window.innerWidth - 340, bottom: window.innerHeight - 600 }} // Keep it in viewport
+                        dragConstraints={{ top: 20, left: 20, right: typeof window !== 'undefined' ? window.innerWidth - 300 : 20, bottom: typeof window !== 'undefined' ? window.innerHeight - 500 : 20 }} // Keep it in viewport
                         initial={{ opacity: 0, y: 20, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.9 }}
@@ -353,7 +353,7 @@ export default function ReadingControlCenter({ settings, onChange, onReset }) {
                         id="reading-control-panel"
                         role="dialog"
                         aria-label="Reading Control Center"
-                        className="w-80 max-w-sm rounded-3xl border border-slate-200 bg-white/90 p-5 text-slate-800 shadow-2xl backdrop-blur dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-100 origin-bottom-right"
+                        className="w-[min(340px,92vw)] rounded-3xl border border-slate-200 bg-white/90 p-5 text-slate-800 shadow-2xl backdrop-blur dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-100 origin-bottom-right"
                     >
                         {/* 5. Create a drag handle */}
                         <motion.div

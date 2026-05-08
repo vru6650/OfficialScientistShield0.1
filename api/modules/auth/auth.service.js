@@ -1,5 +1,6 @@
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { errorHandler } from '../../utils/error.js';
 import { createAuthUser, findAuthUserByEmail } from './auth.repository.js';
 
@@ -76,14 +77,12 @@ export const signinWithGoogleUser = async ({ email, name, googlePhotoUrl }) => {
         return { token, user: rest };
     }
 
-    const generatedPassword =
-        Math.random().toString(36).slice(-8) +
-        Math.random().toString(36).slice(-8);
+    const generatedPassword = crypto.randomBytes(16).toString('hex');
 
     const createdUser = await signupUser({
         username:
             String(name).toLowerCase().split(' ').join('') +
-            Math.random().toString(9).slice(-4),
+            crypto.randomBytes(4).toString('hex').slice(0, 4),
         email,
         password: generatedPassword,
         profilePicture: googlePhotoUrl,

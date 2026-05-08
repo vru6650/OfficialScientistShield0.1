@@ -1,10 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { RouterProvider } from 'react-router-dom';
 import { Suspense } from 'react';
 import { Spinner } from 'flowbite-react';
 import 'highlight.js/styles/atom-one-dark.css';
 
-import MainLayout from './components/MainLayout';
-import { authRoutes, buildRouteElements, mainLayoutRoutes } from './routes/mainLayoutRoutes.jsx';
+import { appRouter } from './router/appRouter.jsx';
 
 // A fallback component to show while pages are loading
 const LoadingFallback = () => (
@@ -15,18 +14,8 @@ const LoadingFallback = () => (
 
 export default function App() {
     return (
-        <BrowserRouter>
-            <Suspense fallback={<LoadingFallback />}>
-                <Routes>
-                    <Route path="/" element={<MainLayout />}>
-                        {buildRouteElements(mainLayoutRoutes)}
-                    </Route>
-
-                    {authRoutes.map((route) => (
-                        <Route key={route.path} path={route.path} element={route.element} />
-                    ))}
-                </Routes>
-            </Suspense>
-        </BrowserRouter>
+        <Suspense fallback={<LoadingFallback />}>
+            <RouterProvider router={appRouter} />
+        </Suspense>
     );
 }

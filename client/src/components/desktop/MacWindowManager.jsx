@@ -19,12 +19,11 @@ import { buildRouteElements, mainLayoutRoutes } from '../../routes/mainLayoutRou
 import MacWindow from './MacWindow';
 import { renderWindowIcon, iconComponentForType } from './windowIcons';
 import DesktopWallpaper from './DesktopWallpaper.jsx';
-import DesktopDynamicIsland from './DesktopDynamicIsland.jsx';
+import AdvancedHeader from './AdvancedHeader.jsx';
 import { queryClient } from '../../lib/queryClient.js';
-import { DEFAULT_CUSTOM_ACCENT, deriveCustomAccentPreset, resolveThemeAccent } from '../../utils/themeAccent.js';
+import { DEFAULT_CUSTOM_ACCENT } from '../../utils/themeAccent.js';
 import ControlCenter from './ControlCenter.jsx';
 import { useTheme } from '../ThemeContext.jsx';
-import { DEFAULT_THEME_MODE, sanitizeThemeMode } from '../../utils/themeMode.js';
 
 const WindowCommandPalette = lazy(() => import('./WindowCommandPalette.jsx'));
 
@@ -38,22 +37,17 @@ const WINDOW_SESSION_ID = `${Date.now().toString(36)}-${Math.random().toString(3
 const MAIN_WINDOW_ID = 'main-window';
 const MAC_STAGE_MARGIN = 48;
 const MAC_HEADER_HEIGHT = 52;
-const COMPACT_BREAKPOINT_PX = 768;
+const DESKTOP_HEADER_RESERVE_PX = 86;
+const TABLET_HEADER_RESERVE_PX = 78;
+const SHORT_HEADER_RESERVE_PX = 64;
+const DESKTOP_DOCK_RESERVE_PX = 148;
+const TABLET_DOCK_RESERVE_PX = 140;
+const SHORT_DOCK_RESERVE_PX = 118;
+const COMPACT_BREAKPOINT_PX = 900;
+const TOUCH_COMPACT_BREAKPOINT_PX = 1180;
 const TABLET_STAGE_BREAKPOINT_PX = 1100;
 const SHORT_VIEWPORT_HEIGHT_PX = 760;
 const HOT_CORNER_STORAGE_KEY = 'scientistshield.desktop.hotCorners.v1';
-const UI_EFFECTS_STORAGE_KEY = 'ui.effects.v1';
-const DEFAULT_EFFECTS = Object.freeze({
-    brightness: 1,
-    contrast: 1,
-    veil: 0,
-    reduceMotion: false,
-    themeMode: DEFAULT_THEME_MODE,
-    surfacePreset: 'liquid',
-    accentPreset: 'system',
-    customAccent: DEFAULT_CUSTOM_ACCENT,
-    wallpaperMode: 'liquid',
-});
 const WINDOW_LAYOUT_OPTIONS = Object.freeze({});
 const HOT_CORNER_THRESHOLD_PX = 44;
 const HOT_CORNER_DELAY_MS = 320;
@@ -113,83 +107,6 @@ const DRAG_MOMENTUM_FRAME_CLAMP = 32;
 const DRAG_POINTER_OFFSET_X = 28;
 const DRAG_POINTER_OFFSET_Y = -56;
 
-const ACCENT_PRESETS = Object.freeze([
-    {
-        key: 'system',
-        label: 'App accent',
-        gradient: null,
-        color: '#0A84FF',
-        strong: '#0064D1',
-        mood: 'Matches the active workspace',
-    },
-    {
-        key: 'blue',
-        label: 'macOS Blue',
-        gradient: 'linear-gradient(135deg, rgba(14,116,244,0.9), rgba(56,189,248,0.7))',
-        color: '#0A84FF',
-        strong: '#0369D4',
-        mood: 'Classic and crisp',
-    },
-    {
-        key: 'pink',
-        label: 'Pink',
-        gradient: 'linear-gradient(135deg, rgba(236,72,153,0.9), rgba(168,85,247,0.72))',
-        color: '#EC4899',
-        strong: '#DB2777',
-        mood: 'Vivid and energetic',
-    },
-    {
-        key: 'mint',
-        label: 'Mint',
-        gradient: 'linear-gradient(135deg, rgba(16,185,129,0.9), rgba(59,130,246,0.65))',
-        color: '#0FB583',
-        strong: '#0F766E',
-        mood: 'Calm and focused',
-    },
-    {
-        key: 'amber',
-        label: 'Gold',
-        gradient: 'linear-gradient(135deg, rgba(245,158,11,0.92), rgba(249,115,22,0.8))',
-        color: '#F59E0B',
-        strong: '#C2410C',
-        mood: 'Warm and luminous',
-    },
-    {
-        key: 'graphite',
-        label: 'Graphite',
-        gradient: 'linear-gradient(135deg, rgba(30,41,59,0.95), rgba(15,23,42,0.9))',
-        color: '#111827',
-        strong: '#0F172A',
-        mood: 'Low-key and professional',
-    },
-]);
-
-const ACCENT_PRESET_MAP = ACCENT_PRESETS.reduce((map, preset) => {
-    map[preset.key] = preset;
-    return map;
-}, {});
-
-const SURFACE_PRESETS = Object.freeze([
-    { key: 'liquid', label: 'Liquid Glass', helper: 'Fluid caustics and vibrant translucency' },
-    { key: 'sequoia', label: 'Sequoia Frost', helper: 'Balanced frost with subtle chroma glow' },
-    { key: 'graphite', label: 'Graphite Pro', helper: 'Neutral chrome with deeper contrast' },
-]);
-
-const SURFACE_PRESET_MAP = SURFACE_PRESETS.reduce((map, preset) => {
-    map[preset.key] = preset;
-    return map;
-}, {});
-
-const WALLPAPER_MODES = ['auto', 'sunrise', 'day', 'sunset', 'night', 'liquid'];
-const WALLPAPER_OPTIONS = Object.freeze([
-    { key: 'auto', label: 'Dynamic', helper: 'Follows the clock' },
-    { key: 'sunrise', label: 'Sunrise', helper: 'Warm gradients' },
-    { key: 'day', label: 'Daylight', helper: 'Brighter glass' },
-    { key: 'sunset', label: 'Sunset', helper: 'Golden hour' },
-    { key: 'night', label: 'Night', helper: 'Midnight blue' },
-    { key: 'liquid', label: 'Liquid Glass', helper: 'Cyan, mint, and amber caustics' },
-]);
-
 const MISSION_CONTROL_FILTERS = Object.freeze([
     { key: 'all', label: 'All Windows' },
     { key: 'visible', label: 'Visible' },
@@ -235,39 +152,6 @@ const createDefaultHotCornerState = () => ({
     enabled: true,
     corners: { ...HOT_CORNER_DEFAULTS },
 });
-
-const sanitizeEffects = (value = {}) => {
-    const source = typeof value === 'object' && value !== null ? value : {};
-    const merged = { ...DEFAULT_EFFECTS, ...source };
-
-    const brightness = clampNumber(merged.brightness, 0.4, 1.6) ?? DEFAULT_EFFECTS.brightness;
-    const contrast = clampNumber(merged.contrast, 0.6, 1.6) ?? DEFAULT_EFFECTS.contrast;
-    const veil = clampNumber(merged.veil, 0, 1) ?? DEFAULT_EFFECTS.veil;
-
-    const reduceMotion = Boolean(merged.reduceMotion);
-    const themeMode = sanitizeThemeMode(merged.themeMode);
-    const surfacePreset = SURFACE_PRESET_MAP[merged.surfacePreset]?.key ?? DEFAULT_EFFECTS.surfacePreset;
-    const accentPreset =
-        merged.accentPreset === 'custom'
-            ? 'custom'
-            : ACCENT_PRESET_MAP[merged.accentPreset]?.key ?? DEFAULT_EFFECTS.accentPreset;
-    const customAccent = resolveThemeAccent(merged.customAccent, DEFAULT_EFFECTS.customAccent);
-    const wallpaperMode = WALLPAPER_MODES.includes(merged.wallpaperMode)
-        ? merged.wallpaperMode
-        : DEFAULT_EFFECTS.wallpaperMode;
-
-    return {
-        brightness,
-        contrast,
-        veil,
-        reduceMotion,
-        themeMode,
-        surfacePreset,
-        accentPreset,
-        customAccent,
-        wallpaperMode,
-    };
-};
 
 const WINDOW_TYPES = {
     MAIN: 'main',
@@ -416,25 +300,6 @@ function iconForAppKey(key) {
     return APP_ICON_MAP[key] || APP_ICON_MAP.default;
 }
 
-const readReduceMotionPreference = () => {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-    let reduce = false;
-    try {
-        reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    } catch {
-        reduce = false;
-    }
-    try {
-        const stored = JSON.parse(localStorage.getItem(UI_EFFECTS_STORAGE_KEY) || '{}');
-        reduce = reduce || Boolean(stored.reduceMotion);
-    } catch {
-        // ignore parse issues
-    }
-    return reduce;
-};
-
 function appAccentForKey(key) {
     return APP_ACCENTS[key] || APP_ACCENTS.default;
 }
@@ -453,6 +318,14 @@ function appLabelForKey(key) {
         .split(' ')
         .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
         .join(' ');
+}
+
+function formatShortcut(usingGlyphs, ...keys) {
+    const parts = keys
+        .map((key) => String(key || '').trim())
+        .filter(Boolean);
+
+    return usingGlyphs ? parts.join('') : parts.join('+');
 }
 
 function createInstanceId() {
@@ -706,7 +579,20 @@ const DEFAULT_TODOS = [
 
 export default function MacWindowManager({ windowTitle, renderMainContent, activeLocation }) {
     const navigate = useNavigate();
-    const { resolvedTheme } = useTheme();
+    const {
+        resolvedTheme,
+        effects,
+        reduceMotion,
+        surfacePreset,
+        accentPreset,
+        customAccent,
+        wallpaperMode,
+        resolvedAccentPreset,
+        surfacePresets,
+        accentPresets,
+        wallpaperOptions,
+        updateEffects,
+    } = useTheme();
     const [activeAppId, setActiveAppId] = useState(null);
     const activeAppIdRef = useRef(null);
     const [windows, setWindows] = useState([]);
@@ -726,19 +612,6 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
     );
     const [missionControlOpen, setMissionControlOpen] = useState(false);
     const [missionControlFilter, setMissionControlFilter] = useState('all');
-    const [reduceMotion, setReduceMotion] = useState(() => readReduceMotionPreference());
-    const [effects, setEffects] = useState(() => {
-        if (typeof window === 'undefined') return sanitizeEffects(DEFAULT_EFFECTS);
-        try {
-            const stored = JSON.parse(window.localStorage.getItem(UI_EFFECTS_STORAGE_KEY) || 'null');
-            if (stored && typeof stored === 'object') {
-                return sanitizeEffects(stored);
-            }
-        } catch {
-            // ignore parse errors and fall back to defaults
-        }
-        return sanitizeEffects(DEFAULT_EFFECTS);
-    });
     const [controlCenterOpen, setControlCenterOpen] = useState(false);
     const [focusMode, setFocusMode] = useState(false);
     const [quickLookWindowId, setQuickLookWindowId] = useState(null);
@@ -802,8 +675,14 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         setCommandPaletteOpen(true);
     }, []);
 
-    const toggleControlCenter = useCallback(() => {
-        setControlCenterOpen((open) => !open);
+    const toggleMissionControl = useCallback(() => {
+        if (SINGLE_WINDOW_MODE) return;
+        setMissionControlFilter('all');
+        setMissionControlOpen((open) => !open);
+    }, []);
+
+    const toggleControlCenter = useCallback((nextOpen) => {
+        setControlCenterOpen((open) => (typeof nextOpen === 'boolean' ? nextOpen : !open));
     }, []);
 
     const closeControlCenter = useCallback(() => setControlCenterOpen(false), []);
@@ -821,6 +700,26 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             return candidate ? candidate.id : current;
         });
     }, []);
+
+    const goHomeFromHeader = useCallback(() => {
+        closeControlCenter();
+        navigate('/');
+    }, [closeControlCenter, navigate]);
+
+    const openCommandPaletteFromHeader = useCallback(() => {
+        closeControlCenter();
+        openCommandPalette();
+    }, [closeControlCenter, openCommandPalette]);
+
+    const toggleMissionControlFromHeader = useCallback(() => {
+        closeControlCenter();
+        toggleMissionControl();
+    }, [closeControlCenter, toggleMissionControl]);
+
+    const toggleQuickLookFromHeader = useCallback(() => {
+        closeControlCenter();
+        toggleQuickLook();
+    }, [closeControlCenter, toggleQuickLook]);
 
     const zRef = useRef(20);
     const dragRef = useRef(null);
@@ -1563,70 +1462,19 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         []
     );
 
-    useEffect(() => {
-        // Keep reduce motion in sync with Control Center state
-        setReduceMotion(Boolean(effects.reduceMotion));
-    }, [effects.reduceMotion]);
-
-    const persistEffects = useCallback((next) => {
-        setEffects((prev) => {
-            const merged = sanitizeEffects({ ...prev, ...next });
-            if (typeof window !== 'undefined') {
-                try {
-                    window.localStorage.setItem(UI_EFFECTS_STORAGE_KEY, JSON.stringify(merged));
-                    window.dispatchEvent(new Event('ui-effects-changed'));
-                } catch {
-                    // ignore storage errors
-                }
-            }
-            return merged;
-        });
-    }, []);
-
-    const accentPresetKey = effects?.accentPreset || DEFAULT_EFFECTS.accentPreset;
-    const surfacePresetKey = effects?.surfacePreset || DEFAULT_EFFECTS.surfacePreset;
-    const customAccent = resolveThemeAccent(effects?.customAccent, DEFAULT_EFFECTS.customAccent);
-    const accentPreset = useMemo(
-        () =>
-            accentPresetKey === 'custom'
-                ? deriveCustomAccentPreset(customAccent)
-                : ACCENT_PRESET_MAP[accentPresetKey] || ACCENT_PRESET_MAP.system,
-        [accentPresetKey, customAccent]
-    );
-    const accentPresetGradient = accentPreset?.gradient || null;
-    const wallpaperMode = effects?.wallpaperMode || DEFAULT_EFFECTS.wallpaperMode;
-    const surfacePresetLabel = SURFACE_PRESET_MAP[surfacePresetKey]?.label || 'Liquid Glass';
+    const accentPresetKey = accentPreset;
+    const surfacePresetKey = surfacePreset;
+    const accentPresetGradient = resolvedAccentPreset?.gradient || null;
+    const surfacePresetLabel =
+        surfacePresets.find((preset) => preset.key === surfacePresetKey)?.label ||
+        'Hybrid Glass';
     const wallpaperLabel =
-        WALLPAPER_OPTIONS.find((option) => option.key === wallpaperMode)?.label || 'Dynamic';
-
-    useEffect(() => {
-        if (typeof document === 'undefined') return undefined;
-        const root = document.documentElement;
-        const accentColor = accentPreset?.color || '#0A84FF';
-        const accentStrong = accentPreset?.strong || accentColor;
-        root.setAttribute('data-accent-preset', accentPresetKey);
-        if (accentPresetKey === 'custom') {
-            root.setAttribute('data-custom-accent', customAccent);
-        } else {
-            root.removeAttribute('data-custom-accent');
-        }
-
-        if (accentPresetKey === 'system') {
-            root.style.removeProperty('--color-accent');
-            root.style.removeProperty('--color-accent-strong');
-            root.style.removeProperty('--color-accent-gradient');
-        } else {
-            root.style.setProperty('--color-accent', accentColor);
-            root.style.setProperty('--color-accent-strong', accentStrong);
-            if (accentPresetGradient) {
-                root.style.setProperty('--color-accent-gradient', accentPresetGradient);
-            } else {
-                root.style.removeProperty('--color-accent-gradient');
-            }
-        }
-
-        return undefined;
-    }, [accentPreset?.color, accentPreset?.strong, accentPresetGradient, accentPresetKey, customAccent]);
+        wallpaperOptions.find((option) => option.key === wallpaperMode)?.label ||
+        'Dynamic';
+    const currentRouteMeta = useMemo(
+        () => resolveAppRouteMeta(activeLocation, windowTitle),
+        [activeLocation, windowTitle]
+    );
 
     const appWindowSummaries = useMemo(
         () =>
@@ -1783,49 +1631,6 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             });
         }, 4000);
         return () => clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return undefined;
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-        const sync = () => setReduceMotion(readReduceMotionPreference());
-        sync();
-        if (mediaQuery.addEventListener) {
-            mediaQuery.addEventListener('change', sync);
-        } else if (mediaQuery.addListener) {
-            mediaQuery.addListener(sync);
-        }
-        window.addEventListener('ui-effects-changed', sync);
-        window.addEventListener('storage', sync);
-        return () => {
-            if (mediaQuery.removeEventListener) {
-                mediaQuery.removeEventListener('change', sync);
-            } else if (mediaQuery.removeListener) {
-                mediaQuery.removeListener(sync);
-            }
-            window.removeEventListener('ui-effects-changed', sync);
-            window.removeEventListener('storage', sync);
-        };
-    }, []);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return undefined;
-        const syncEffects = () => {
-            try {
-                const parsed = JSON.parse(window.localStorage.getItem(UI_EFFECTS_STORAGE_KEY) || 'null');
-                if (parsed && typeof parsed === 'object') {
-                    setEffects((prev) => sanitizeEffects({ ...prev, ...parsed }));
-                }
-            } catch {
-                // ignore parse errors
-            }
-        };
-        window.addEventListener('ui-effects-changed', syncEffects);
-        window.addEventListener('storage', syncEffects);
-        return () => {
-            window.removeEventListener('ui-effects-changed', syncEffects);
-            window.removeEventListener('storage', syncEffects);
-        };
     }, []);
 
     useEffect(() => {
@@ -4305,396 +4110,21 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
     );
 
     const quickLookAvailable = useMemo(() => stagedWindows.length > 0, [stagedWindows]);
-
-    const nowPlayingWindow = useMemo(
-        () =>
-            windowsForUI
-                .slice()
-                .sort((a, b) => b.z - a.z)
-                .find((win) => win.type === WINDOW_TYPES.NOW_PLAYING && !win.minimized) || null,
-        [windowsForUI]
+    const usingShortcutGlyphs = metaKeyLabel === '⌘';
+    const commandPaletteShortcut = formatShortcut(usingShortcutGlyphs, metaKeyLabel, 'K');
+    const missionControlShortcut = formatShortcut(
+        usingShortcutGlyphs,
+        metaKeyLabel,
+        usingShortcutGlyphs ? '↑' : 'ArrowUp'
     );
-
-    const nowPlayingProgress = useMemo(() => {
-        const elapsed = Math.max(0, Number(currentTrackTime?.elapsed ?? 0));
-        const total = Math.max(1, Number(currentTrackTime?.total ?? 1));
-        return {
-            elapsed,
-            total,
-            ratio: Math.min(Math.max(elapsed / total, 0), 1),
-        };
-    }, [currentTrackTime]);
-
-    const islandPlaybackWindow = useMemo(() => {
-        if (quickLookTarget?.type === WINDOW_TYPES.NOW_PLAYING) {
-            return quickLookTarget;
-        }
-        if (focusedWindow?.type === WINDOW_TYPES.NOW_PLAYING && !focusedWindow.minimized) {
-            return focusedWindow;
-        }
-        return nowPlayingWindow;
-    }, [focusedWindow, nowPlayingWindow, quickLookTarget]);
-
-    const windowSwitcherHighlight = useMemo(() => {
-        if (!windowSwitcher.open || windowSwitcher.items.length === 0) {
-            return null;
-        }
-        const boundedIndex = Math.min(
-            Math.max(windowSwitcher.highlightIndex, 0),
-            windowSwitcher.items.length - 1
-        );
-        return windowSwitcher.items[boundedIndex] || null;
-    }, [windowSwitcher]);
-
-    const dynamicIslandShortcuts = useMemo(() => {
-        const usingGlyphs = metaKeyLabel === '⌘';
-        return {
-            commandPalette: usingGlyphs ? `${metaKeyLabel}K` : `${metaKeyLabel}+K`,
-            mission: usingGlyphs ? `${metaKeyLabel}↑` : `${metaKeyLabel}+ArrowUp`,
-            switcher: usingGlyphs ? `${metaKeyLabel}Tab` : `${metaKeyLabel}+Tab`,
-            preview: 'Space',
-            controls: usingGlyphs ? `${metaKeyLabel},` : `${metaKeyLabel}+,`,
-        };
-    }, [metaKeyLabel]);
-
-    const dynamicIslandSummary = useMemo(() => {
-        const baseAccent =
-            activeStageAccent ||
-            accentGradient ||
-            'linear-gradient(135deg, rgba(56,189,248,0.4), rgba(14,165,233,0.14), rgba(15,23,42,0.1))';
-
-        if (missionControlOpen) {
-            return {
-                eyebrow: 'Mission Control',
-                title: 'Window command deck',
-                detail: `${stagedWindows.length} visible · ${windowsForUI.length} total windows`,
-                badge: 'Live',
-                badgeTone: 'accent',
-                accent: baseAccent,
-                IconComponent: HiOutlineArrowsPointingOut,
-            };
-        }
-
-        if (controlCenterOpen) {
-            return {
-                eyebrow: 'Control Center',
-                title: 'Workspace and desktop tuning',
-                detail: `${focusMode ? 'Focus on' : 'Focus off'} · ${surfacePresetLabel} · ${wallpaperLabel} wallpaper`,
-                badge: 'Tuning',
-                badgeTone: 'accent',
-                accent: accentGradient || baseAccent,
-                IconComponent: HiOutlineAdjustmentsHorizontal,
-            };
-        }
-
-        if (windowSwitcherHighlight) {
-            return {
-                eyebrow: 'Window Switcher',
-                title: windowSwitcherHighlight.title || 'Cycle windows',
-                detail: `${windowSwitcher.highlightIndex + 1} of ${windowSwitcher.items.length}`,
-                badge: `${windowSwitcher.highlightIndex + 1}/${windowSwitcher.items.length}`,
-                badgeTone: 'accent',
-                accent: windowSwitcherHighlight.accent || baseAccent,
-                IconComponent: windowSwitcherHighlight.iconComponent || HiOutlineRectangleStack,
-            };
-        }
-
-        if (quickLookTarget) {
-            const appKey = quickLookTarget.appRouteKey || quickLookTarget.appIconKey || 'default';
-            return {
-                eyebrow: 'Quick Look',
-                title: quickLookTarget.title || typeToTitle(quickLookTarget.type),
-                detail: `${Math.round(quickLookTarget.width)} x ${Math.round(quickLookTarget.height)} preview`,
-                badge: 'Preview',
-                badgeTone: 'accent',
-                accent: quickLookTarget.isAppWindow
-                    ? quickLookTarget.appAccent || appAccentForKey(appKey)
-                    : stagePreviewAccent(quickLookTarget.type, true),
-                progress:
-                    quickLookTarget.type === WINDOW_TYPES.NOW_PLAYING
-                        ? nowPlayingProgress.ratio
-                        : null,
-                progressLabel:
-                    quickLookTarget.type === WINDOW_TYPES.NOW_PLAYING
-                        ? `${formatDuration(nowPlayingProgress.elapsed)} / ${formatDuration(nowPlayingProgress.total)}`
-                        : '',
-                IconComponent: quickLookTarget.isAppWindow
-                    ? iconForAppKey(appKey)
-                    : iconComponentForType(quickLookTarget.type) || HiOutlineSparkles,
-            };
-        }
-
-        if (focusHighlight) {
-            return {
-                eyebrow: 'Now Active',
-                title: focusHighlight.label,
-                detail: focusHighlight.context,
-                badge: 'Switched',
-                badgeTone: 'accent',
-                accent: focusHighlight.accent || baseAccent,
-                IconComponent: FocusHighlightIcon || HiOutlineSparkles,
-            };
-        }
-
-        if (focusedWindow) {
-            const appKey = focusedWindow.appRouteKey || focusedWindow.appIconKey || 'default';
-            const contextLabel = focusedWindow.isAppWindow
-                ? appLabelForKey(appKey)
-                : typeToTitle(focusedWindow.type);
-            return {
-                eyebrow: contextLabel,
-                title: focusedWindow.title || contextLabel,
-                detail: focusedWindow.isZoomed
-                    ? 'Expanded on stage'
-                    : `${stagedWindows.length} live · ${windowsForUI.length} total windows`,
-                badge: focusedWindow.isZoomed ? 'Expanded' : 'Active',
-                badgeTone: focusedWindow.isZoomed ? 'accent' : 'neutral',
-                accent: focusedWindow.isAppWindow
-                    ? focusedWindow.appAccent || appAccentForKey(appKey)
-                    : stagePreviewAccent(focusedWindow.type, true),
-                progress:
-                    focusedWindow.type === WINDOW_TYPES.NOW_PLAYING
-                        ? nowPlayingProgress.ratio
-                        : null,
-                progressLabel:
-                    focusedWindow.type === WINDOW_TYPES.NOW_PLAYING
-                        ? `${formatDuration(nowPlayingProgress.elapsed)} / ${formatDuration(nowPlayingProgress.total)}`
-                        : '',
-                IconComponent: focusedWindow.isAppWindow
-                    ? iconForAppKey(appKey)
-                    : iconComponentForType(focusedWindow.type) || HiOutlineSquares2X2,
-            };
-        }
-
-        return {
-            eyebrow: 'Desktop',
-            title: activeAppWindow?.title || windowTitle,
-            detail: `${stagedWindows.length} live · ${windowsForUI.length} total windows`,
-            badge: islandPlaybackWindow ? 'Audio live' : 'Ready',
-            badgeTone: islandPlaybackWindow ? 'accent' : 'neutral',
-            accent: baseAccent,
-            progress: islandPlaybackWindow ? nowPlayingProgress.ratio : null,
-            progressLabel: islandPlaybackWindow
-                ? `${formatDuration(nowPlayingProgress.elapsed)} / ${formatDuration(nowPlayingProgress.total)}`
-                : '',
-            IconComponent: HiOutlineSquares2X2,
-        };
-    }, [
-        FocusHighlightIcon,
-        accentGradient,
-        activeAppWindow?.title,
-        activeStageAccent,
-        controlCenterOpen,
-        focusHighlight,
-        focusMode,
-        focusedWindow,
-        islandPlaybackWindow,
-        missionControlOpen,
-        nowPlayingProgress.elapsed,
-        nowPlayingProgress.ratio,
-        nowPlayingProgress.total,
-        quickLookTarget,
-        surfacePresetLabel,
-        stagedWindows.length,
-        stagePreviewAccent,
-        wallpaperLabel,
-        windowSwitcher.highlightIndex,
-        windowSwitcher.items.length,
-        windowSwitcherHighlight,
-        windowsForUI.length,
-        windowTitle,
-    ]);
-
-    const dynamicIslandStats = useMemo(() => {
-        const stateLabel = missionControlOpen
-            ? 'Mission Control open'
-            : controlCenterOpen
-                ? 'Controls open'
-                : windowSwitcher.open
-                    ? 'Switcher active'
-                    : quickLookTarget
-                        ? 'Preview open'
-                        : fullscreenWindowActive
-                            ? 'Expanded stage'
-                            : 'Freeform stage';
-
-        const modeValue = missionControlOpen
-            ? 'Mission'
-            : controlCenterOpen
-                ? 'Controls'
-                : windowSwitcher.open
-                    ? 'Switcher'
-                    : quickLookTarget
-                        ? 'Preview'
-                        : fullscreenWindowActive
-                            ? 'Expanded'
-                            : 'Ready';
-
-        return [
-            {
-                key: 'live',
-                label: 'Stage',
-                value: focusMode ? 'Focus' : `${stagedWindows.length}`,
-                sub: focusMode ? 'Single-window workflow' : 'Visible windows',
-                tone: focusMode ? 'accent' : 'neutral',
-                IconComponent: HiOutlineSquares2X2,
-            },
-            {
-                key: 'mode',
-                label: 'Mode',
-                value: modeValue,
-                sub: stateLabel,
-                tone:
-                    missionControlOpen || controlCenterOpen || windowSwitcher.open || Boolean(quickLookTarget)
-                        ? 'accent'
-                        : 'neutral',
-                IconComponent: dynamicIslandSummary.IconComponent || HiOutlineSparkles,
-            },
-            {
-                key: islandPlaybackWindow ? 'audio' : 'desktop',
-                label: islandPlaybackWindow ? 'Audio' : 'Surface',
-                value: islandPlaybackWindow
-                    ? formatDuration(nowPlayingProgress.elapsed)
-                    : surfacePresetLabel,
-                sub: islandPlaybackWindow
-                    ? `-${formatDuration(nowPlayingProgress.total - nowPlayingProgress.elapsed)}`
-                    : `${wallpaperLabel} wallpaper`,
-                tone: islandPlaybackWindow ? 'accent' : 'neutral',
-                IconComponent: islandPlaybackWindow ? HiOutlinePlay : HiOutlineAdjustmentsHorizontal,
-            },
-        ];
-    }, [
-        controlCenterOpen,
-        dynamicIslandSummary.IconComponent,
-        focusMode,
-        fullscreenWindowActive,
-        islandPlaybackWindow,
-        missionControlOpen,
-        nowPlayingProgress.elapsed,
-        nowPlayingProgress.total,
-        quickLookTarget,
-        surfacePresetLabel,
-        stagedWindows.length,
-        wallpaperLabel,
-        windowSwitcher.open,
-    ]);
-
-    const dynamicIslandActions = useMemo(
-        () => [
-            {
-                key: 'mission',
-                label: missionControlOpen ? 'Hide Mission Control' : 'Open Mission Control',
-                shortLabel: missionControlOpen ? 'Close Mission' : 'Mission Control',
-                description: missionControlOpen
-                    ? 'Return to the standard stage layout.'
-                    : 'See every staged and minimized window at once.',
-                hint: dynamicIslandShortcuts.mission,
-                icon: <HiOutlineArrowsPointingOut className="h-4 w-4" />,
-                active: missionControlOpen,
-                disabled: false,
-                onClick: () => {
-                    closeControlCenter();
-                    if (missionControlOpen) {
-                        setMissionControlOpen(false);
-                    } else {
-                        openMissionControl();
-                    }
-                },
-            },
-            {
-                key: 'switcher',
-                label: windowSwitcher.open ? 'Hide Window Switcher' : 'Open Window Switcher',
-                shortLabel: 'Window Switcher',
-                description: windowSwitcher.open
-                    ? 'Close the current window cycle overlay.'
-                    : 'Cycle the active stack without reaching for the keyboard.',
-                hint: dynamicIslandShortcuts.switcher,
-                icon: <HiOutlineRectangleStack className="h-4 w-4" />,
-                active: windowSwitcher.open,
-                disabled: false,
-                onClick: () => {
-                    closeControlCenter();
-                    if (windowSwitcher.open) {
-                        closeWindowSwitcher(false);
-                    } else {
-                        openWindowSwitcher(1);
-                    }
-                },
-            },
-            {
-                key: 'preview',
-                label: quickLookTarget ? 'Close Quick Look' : 'Open Quick Look',
-                shortLabel: 'Quick Look',
-                description: quickLookTarget
-                    ? 'Dismiss the current live preview.'
-                    : 'Peek the top window instantly from the island.',
-                hint: dynamicIslandShortcuts.preview,
-                icon: <HiOutlineSparkles className="h-4 w-4" />,
-                active: Boolean(quickLookTarget),
-                disabled: !quickLookAvailable && !quickLookTarget,
-                onClick: () => {
-                    closeControlCenter();
-                    toggleQuickLook();
-                },
-            },
-            {
-                key: 'controls',
-                label: controlCenterOpen ? 'Hide Controls' : 'Show Controls',
-                shortLabel: 'Controls',
-                description: controlCenterOpen
-                    ? 'Collapse workspace tuning and return to the stage.'
-                    : 'Adjust appearance, focus, motion, and layout tools.',
-                hint: dynamicIslandShortcuts.controls,
-                icon: <HiOutlineAdjustmentsHorizontal className="h-4 w-4" />,
-                active: controlCenterOpen,
-                disabled: false,
-                onClick: () => toggleControlCenter(),
-            },
-        ],
-        [
-            closeControlCenter,
-            closeWindowSwitcher,
-            controlCenterOpen,
-            dynamicIslandShortcuts.controls,
-            dynamicIslandShortcuts.mission,
-            dynamicIslandShortcuts.preview,
-            dynamicIslandShortcuts.switcher,
-            missionControlOpen,
-            openMissionControl,
-            openWindowSwitcher,
-            quickLookAvailable,
-            quickLookTarget,
-            toggleControlCenter,
-            toggleQuickLook,
-            windowSwitcher.open,
-        ]
-    );
-
-    const openCommandPaletteFromIsland = useCallback(() => {
-        closeControlCenter();
-        openCommandPalette();
-    }, [closeControlCenter, openCommandPalette]);
-
-    const dynamicIslandForceExpanded = Boolean(
-        controlCenterOpen ||
-            missionControlOpen ||
-            quickLookTarget ||
-            windowSwitcher.open ||
-            focusHighlight
-    );
+    const controlCenterShortcut = formatShortcut(usingShortcutGlyphs, metaKeyLabel, ',');
 
     const commandPaletteItems = useMemo(() => {
         const defaultAccent =
             activeStageAccent ||
             'linear-gradient(135deg, rgba(14,116,244,0.6), rgba(56,189,248,0.45))';
-        const usingGlyphs = metaKeyLabel === '⌘';
-        const joinKeys = (...keys) =>
-            usingGlyphs
-                ? keys.filter(Boolean).join('')
-                : keys
-                      .filter(Boolean)
-                      .map((key) => key.trim())
-                      .join('+');
+        const usingGlyphs = usingShortcutGlyphs;
+        const joinKeys = (...keys) => formatShortcut(usingShortcutGlyphs, ...keys);
 
         const itemsList = [];
 
@@ -4737,7 +4167,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             id: 'action:mission-control',
             label: 'Open Mission Control',
             description: 'Overview every staged window at once',
-            shortcut: usingGlyphs ? `${metaKeyLabel}↑` : `${metaKeyLabel}+ArrowUp`,
+            shortcut: missionControlShortcut,
             icon: <HiOutlineArrowsPointingOut className="h-5 w-5" />,
             onSelect: () => openMissionControl(),
         });
@@ -4756,7 +4186,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
             id: 'action:quick-look',
             label: quickLookWindowId ? 'Close Quick Look' : 'Toggle Quick Look',
             description: 'Preview the highlighted window',
-            shortcut: usingGlyphs ? 'Space' : 'Space',
+            shortcut: 'Space',
             icon: <HiOutlineSparkles className="h-5 w-5" />,
             disabled: !quickLookAvailable && !quickLookWindowId,
             onSelect: () => toggleQuickLook(),
@@ -4842,6 +4272,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         altKeyLabel,
         bringToFront,
         focusMode,
+        missionControlShortcut,
         metaKeyLabel,
         openMissionControl,
         quickLookAvailable,
@@ -4854,6 +4285,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
         toggleControlCenter,
         toggleFocusMode,
         toggleQuickLook,
+        usingShortcutGlyphs,
         windows,
         duplicateActiveAppWindow,
         activeAppWindow,
@@ -4911,22 +4343,37 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 />
             </DesktopWallpaper>
 
+            <AdvancedHeader
+                accent={activeStageAccent || currentRouteMeta.accent || accentPresetGradient || undefined}
+                routeLabel={currentRouteMeta.label}
+                stagedWindowCount={stagedWindows.length}
+                focusMode={focusMode}
+                surfacePresetLabel={surfacePresetLabel}
+                wallpaperLabel={wallpaperLabel}
+                commandPaletteShortcut={commandPaletteShortcut}
+                missionControlOpen={missionControlOpen}
+                missionControlShortcut={missionControlShortcut}
+                controlCenterOpen={controlCenterOpen}
+                controlCenterShortcut={controlCenterShortcut}
+                quickLookAvailable={quickLookAvailable}
+                quickLookOpen={Boolean(quickLookTarget)}
+                quickLookShortcut="Space"
+                autoHide
+                autoHideDelay={2800}
+                branding={{
+                    name: 'Scientist Shield',
+                    subtitle: currentRouteMeta.label,
+                    badge: 'Workspace',
+                    LogoIcon: HiOutlineShieldCheck,
+                }}
+                onGoHome={goHomeFromHeader}
+                onOpenCommandPalette={openCommandPaletteFromHeader}
+                onToggleMissionControl={toggleMissionControlFromHeader}
+                onToggleControlCenter={toggleControlCenter}
+                onToggleQuickLook={toggleQuickLookFromHeader}
+            />
+
             <div ref={controlCenterRef} className="pointer-events-none fixed inset-x-0 top-3 z-[90]">
-                <div className="flex justify-center px-4">
-                    <DesktopDynamicIsland
-                        className="pointer-events-auto"
-                        summary={dynamicIslandSummary}
-                        actions={dynamicIslandActions}
-                        stats={dynamicIslandStats}
-                        onPrimaryAction={openCommandPaletteFromIsland}
-                        primaryActionLabel="Open Command Palette"
-                        primaryHint={dynamicIslandShortcuts.commandPalette}
-                        forceExpanded={dynamicIslandForceExpanded}
-                        reduceMotion={reduceMotion}
-                        surfacePreset="liquid-glass"
-                        pinPersistKey="desktop-dynamic-island:pinned"
-                    />
-                </div>
                 <div className="pointer-events-auto">
                     <ControlCenter
                         open={controlCenterOpen}
@@ -4936,22 +4383,34 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                         accentPreset={accentPresetKey}
                         customAccent={customAccent}
                         wallpaperMode={wallpaperMode}
-                        surfacePresets={SURFACE_PRESETS}
-                        accentPresets={ACCENT_PRESETS}
-                        wallpaperOptions={WALLPAPER_OPTIONS}
-                        onSelectSurfacePreset={(presetKey) => persistEffects({ ...effects, surfacePreset: presetKey })}
-                        onSelectAccentPreset={(presetKey) => persistEffects({ ...effects, accentPreset: presetKey })}
+                        surfacePresets={surfacePresets}
+                        accentPresets={accentPresets}
+                        wallpaperOptions={wallpaperOptions}
+                        onSelectSurfacePreset={(presetKey) =>
+                            updateEffects({ surfacePreset: presetKey })
+                        }
+                        onSelectAccentPreset={(presetKey) =>
+                            updateEffects({ accentPreset: presetKey })
+                        }
                         onApplyCustomAccent={(accentColor) => {
-                            persistEffects({ accentPreset: 'custom', customAccent: accentColor });
+                            updateEffects({
+                                accentPreset: 'custom',
+                                customAccent: accentColor,
+                            });
                             announce(`Custom accent updated to ${accentColor.toUpperCase()}`);
                         }}
                         onResetCustomAccent={() => {
-                            persistEffects({ accentPreset: 'system', customAccent: DEFAULT_CUSTOM_ACCENT });
+                            updateEffects({
+                                accentPreset: 'system',
+                                customAccent: DEFAULT_CUSTOM_ACCENT,
+                            });
                             announce('Accent reset to app accent');
                         }}
-                        onSelectWallpaperMode={(mode) => persistEffects({ ...effects, wallpaperMode: mode })}
+                        onSelectWallpaperMode={(mode) =>
+                            updateEffects({ wallpaperMode: mode })
+                        }
                         onClose={closeControlCenter}
-                        onChangeEffects={persistEffects}
+                        onChangeEffects={updateEffects}
                         onToggleFocusMode={toggleFocusMode}
                         onOpenMissionControl={() => {
                             closeControlCenter();
@@ -5356,7 +4815,7 @@ export default function MacWindowManager({ windowTitle, renderMainContent, activ
                 {focusHighlight ? (
                     <motion.div
                         key={`${focusHighlight.id}-${focusHighlight.timestamp}`}
-                        className="pointer-events-none fixed right-6 top-6 z-[64]"
+                        className="pointer-events-none fixed right-6 top-20 z-[64]"
                         initial={reduceMotion ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: -12, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: reduceMotion ? 0 : -10, scale: reduceMotion ? 1 : 0.94 }}
@@ -6013,7 +5472,15 @@ function getViewportDimensions() {
 }
 
 function isCompactViewport(viewportWidth) {
-    return viewportWidth < COMPACT_BREAKPOINT_PX;
+    const coarsePointer =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(pointer: coarse)').matches;
+
+    return (
+        viewportWidth < COMPACT_BREAKPOINT_PX ||
+        (coarsePointer && viewportWidth < TOUCH_COMPACT_BREAKPOINT_PX)
+    );
 }
 
 function getWindowViewportMetrics(viewportWidth, viewportHeight) {
@@ -6024,8 +5491,20 @@ function getWindowViewportMetrics(viewportWidth, viewportHeight) {
     const minHeight = compact ? 220 : shortViewport ? 240 : 260;
     const edgePadding = compact ? 10 : tablet ? 16 : 24;
     const stageHorizontalMargin = compact ? 10 : tablet ? 16 : 24;
-    const stageBottomMargin = compact ? 10 : shortViewport ? 16 : 24;
-    const topMargin = MAC_STAGE_MARGIN;
+    const stageBottomMargin = compact
+        ? 10
+        : shortViewport
+            ? SHORT_DOCK_RESERVE_PX
+            : tablet
+                ? TABLET_DOCK_RESERVE_PX
+                : DESKTOP_DOCK_RESERVE_PX;
+    const topMargin = compact
+        ? 10
+        : shortViewport
+            ? SHORT_HEADER_RESERVE_PX
+            : tablet
+                ? TABLET_HEADER_RESERVE_PX
+                : DESKTOP_HEADER_RESERVE_PX;
     const snapGap = tablet ? 18 : SNAP_GAP;
     const maxWidth = Math.max(viewportWidth - edgePadding * 2, minWidth);
     const maxHeight = Math.max(viewportHeight - topMargin - stageBottomMargin - 8, minHeight);
@@ -6296,16 +5775,26 @@ function createMainWindow(windowTitle, viewportWidth, viewportHeight, z = 21) {
 }
 
 function expandWindowToViewport(win, viewportWidth, viewportHeight) {
-    // Zoomed windows should occupy the full visible viewport instead of the staged inset layout.
     const visualViewport = typeof window !== 'undefined' ? window.visualViewport : null;
     const insetTop = Math.max(visualViewport?.offsetTop ?? 0, 0);
     const insetLeft = Math.max(visualViewport?.offsetLeft ?? 0, 0);
     const insetRight = Math.max(visualViewport ? viewportWidth - visualViewport.width - visualViewport.offsetLeft : 0, 0);
     const insetBottom = Math.max(visualViewport ? viewportHeight - visualViewport.height - visualViewport.offsetTop : 0, 0);
-    const x = insetLeft;
-    const y = insetTop;
-    const width = Math.max(viewportWidth - insetLeft - insetRight, 1);
-    const height = Math.max(viewportHeight - insetTop - insetBottom, 1);
+    const metrics = getWindowViewportMetrics(viewportWidth, viewportHeight);
+    const visibleWidth = Math.max(viewportWidth - insetLeft - insetRight, metrics.minWidth);
+    const visibleHeight = Math.max(viewportHeight - insetTop - insetBottom, metrics.minHeight);
+    const stage = metrics.compact
+        ? {
+              x: 0,
+              y: 0,
+              width: visibleWidth,
+              height: visibleHeight,
+          }
+        : computeStageArea(visibleWidth, visibleHeight);
+    const x = insetLeft + stage.x;
+    const y = insetTop + stage.y;
+    const width = Math.max(stage.width, 1);
+    const height = Math.max(stage.height, 1);
 
     return {
         ...win,

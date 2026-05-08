@@ -16,6 +16,8 @@ Each domain keeps its own layers:
 - `quiz` - quiz authoring, retrieval, and submissions.
 - `content` - tutorials, posts, comments, pages, and search query APIs.
 - `code` - language runner routes plus queue-worker job endpoints.
-- `problem`, `files` - currently routed through legacy adapters and ready for deeper extraction.
+- `problem` - coding problem catalog, authoring, and reader access.
+- `files` - authenticated file manager APIs for browsing and uploads.
 
-`api/modules/index.js` is the central registry used by `api/app/registerApiRoutes.js`.
+All domains now register module-local routes through `api/modules/index.js`, which is the
+central registry used by `api/app/registerApiRoutes.js`.

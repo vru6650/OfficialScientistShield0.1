@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import {
     baseDockItems,
     dashboardDockItem,
+    quickAddDockItem,
     resolveDockIcons,
     settingsDockItem,
 } from '../data/dockItems';
@@ -28,7 +29,7 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 export default function Dock() {
     const location = useLocation();
-    const { currentUser } = useSelector((state) => state.user);
+    const { currentUser } = useSelector((state) => state.user || {});
 
     const [hoverX, setHoverX] = useState(null);
     const [hoverRatio, setHoverRatio] = useState(0.5);
@@ -45,13 +46,18 @@ export default function Dock() {
     const [isHoveringDock, setIsHoveringDock] = useState(false);
     const [hasFocusWithin, setHasFocusWithin] = useState(false);
     const [isPointerNear, setIsPointerNear] = useState(true);
+    const [iconPackVersion, setIconPackVersion] = useState(0);
     const hideTimeoutRef = useRef(null);
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
     const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0 });
     const iconRefs = useRef([]);
     const [centers, setCenters] = useState([]);
+    const [viewportWidth, setViewportWidth] = useState(() =>
+        typeof window === 'undefined' ? 1280 : window.innerWidth
+    );
     const containerRef = useRef(null);
     const customizerRef = useRef(null);
+
     const cancelHide = useCallback(() => {
         if (hideTimeoutRef.current && typeof window !== 'undefined') {
             window.clearTimeout(hideTimeoutRef.current);
@@ -67,16 +73,21 @@ export default function Dock() {
 
     const items = useMemo(() => {
         const list = [...baseDockItems];
-        if (currentUser) list.push(dashboardDockItem);
+        if (currentUser) {
+            list.push(dashboardDockItem);
+        }
+        if (quickAddDockItem) {
+            list.push(quickAddDockItem);
+        }
         list.push(settingsDockItem);
         return resolveDockIcons(list);
-    }, [currentUser]);
+    }, [currentUser, iconPackVersion]);
 
     const visualItems = useMemo(() => {
         const list = [];
         let dividerPlaced = false;
         items.forEach((item) => {
-            const isUtility = item.type === 'settings';
+            const isUtility = item.type === 'settings' || item.type === 'quick-add';
             if (isUtility && !dividerPlaced && list.length > 0) {
                 list.push({ key: 'divider', type: 'divider' });
                 dividerPlaced = true;
@@ -93,6 +104,17 @@ export default function Dock() {
             return rect.left + rect.width / 2;
         });
         setCenters(mapped);
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return undefined;
+        const handleIconsChanged = () => setIconPackVersion((v) => v + 1);
+        window.addEventListener('dock:icons-changed', handleIconsChanged);
+        window.addEventListener('storage', handleIconsChanged);
+        return () => {
+            window.removeEventListener('dock:icons-changed', handleIconsChanged);
+            window.removeEventListener('storage', handleIconsChanged);
+        };
     }, []);
 
     useEffect(() => {
@@ -116,8 +138,12 @@ export default function Dock() {
     useEffect(() => {
         iconRefs.current = iconRefs.current.slice(0, visualItems.length);
         updateCenters();
-        window.addEventListener('resize', updateCenters);
-        return () => window.removeEventListener('resize', updateCenters);
+        const handleResize = () => {
+            setViewportWidth(window.innerWidth);
+            updateCenters();
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, [visualItems.length, updateCenters]);
 
     useEffect(() => {
@@ -173,9 +199,14 @@ export default function Dock() {
         window.setTimeout(() => setLaunchingKey(null), 680);
     };
 
+    const isCompactDock = viewportWidth < 900;
+    const effectiveIconSize = isCompactDock
+        ? Math.min(dockSettings.iconSize, viewportWidth < 520 ? 46 : 54)
+        : dockSettings.iconSize;
+
     const metricsFor = (idx, isActive) => {
         const center = centers[idx];
-        const iconScale = dockSettings.iconSize / ICON_SIZE;
+        const iconScale = effectiveIconSize / ICON_SIZE;
         const baseScale = isActive ? 1.06 : 0.98;
         const baseLift = (isActive ? -12 : -6) * iconScale;
         if (hoverX == null || center == null) return { scale: baseScale, lift: baseLift, proximity: 0 };
@@ -193,16 +224,18 @@ export default function Dock() {
     };
 
     const activePath = location.pathname;
-    const gap = Math.max(10, Math.round(BASE_GAP * (dockSettings.iconSize / ICON_SIZE)));
+    const gap = isCompactDock
+        ? Math.max(8, Math.round(BASE_GAP * (effectiveIconSize / ICON_SIZE) * 0.72))
+        : Math.max(10, Math.round(BASE_GAP * (effectiveIconSize / ICON_SIZE)));
     const dockWidth = useMemo(() => {
         const count = visualItems.length || 1;
-        const raw = count * dockSettings.iconSize + Math.max(0, count - 1) * gap + 32;
-        const maxWidth = Math.max(320, (typeof window !== 'undefined' ? window.innerWidth : 1280) - 32);
+        const raw = count * effectiveIconSize + Math.max(0, count - 1) * gap + (isCompactDock ? 20 : 32);
+        const maxWidth = Math.max(280, viewportWidth - (isCompactDock ? 16 : 32));
         return Math.min(raw, maxWidth);
-    }, [visualItems.length, dockSettings.iconSize, gap]);
+    }, [effectiveIconSize, gap, isCompactDock, viewportWidth, visualItems.length]);
     const isDockVisible = !dockSettings.autoHide || customizerOpen || isHoveringDock || isPointerNear || hasFocusWithin;
     const dockOpacity = dockSettings.dockOpacity ?? DEFAULT_SETTINGS.dockOpacity;
-    const hideOffset = Math.max(dockSettings.iconSize + 36, 72);
+    const hideOffset = Math.max(effectiveIconSize + 36, 72);
 
     useEffect(() => {
         try {
@@ -220,6 +253,7 @@ export default function Dock() {
             aria-hidden={dockSettings.autoHide && !isDockVisible}
             data-visible={isDockVisible}
             className="macos-dock pointer-events-none fixed bottom-6 left-1/2 z-[70] w-full max-w-5xl -translate-x-1/2 px-4"
+            data-compact={isCompactDock}
             onFocusCapture={() => {
                 setHasFocusWithin(true);
                 setIsPointerNear(true);
@@ -297,20 +331,20 @@ export default function Dock() {
                         : false;
                     const { scale, lift } = metricsFor(idx, isActive);
                     const isLaunching = launchingKey === item.key;
-                    const indicatorOffset = Math.max(10, Math.round(dockSettings.iconSize * 0.18 * scale));
+                    const indicatorOffset = Math.max(8, Math.round(effectiveIconSize * 0.13));
 
                     const tile = (
                         <motion.span
                             aria-hidden
                             className="macos-dock__tile relative flex items-center justify-center overflow-hidden rounded-2xl ring-1 ring-white/35 bg-gradient-to-br from-white/40 via-white/12 to-white/6 shadow-[0_18px_36px_-26px_rgba(15,23,42,0.75)] backdrop-blur-[22px] dark:ring-white/12 dark:from-slate-900/70 dark:via-slate-900/55 dark:to-slate-950/70"
                             whileHover={prefersReducedMotion ? { scale: 1.01 } : { scale: 1.05 }}
-                            style={{ width: dockSettings.iconSize, height: dockSettings.iconSize }}
+                            style={{ width: effectiveIconSize, height: effectiveIconSize }}
                         >
                             <motion.img
                                 src={item.iconSrc}
                                 alt={item.iconAlt ?? item.label}
                                 className="macos-dock__icon select-none object-contain"
-                                style={{ width: Math.round(dockSettings.iconSize * 0.72), height: Math.round(dockSettings.iconSize * 0.72) }}
+                                style={{ width: Math.round(effectiveIconSize * 0.72), height: Math.round(effectiveIconSize * 0.72) }}
                                 draggable={false}
                                 animate={{
                                     scale: isActive ? 1.05 : 1,

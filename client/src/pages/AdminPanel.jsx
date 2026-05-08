@@ -158,11 +158,9 @@ export default function AdminPanel() {
                         </div>
                     </div>
                     <div className='flex flex-wrap items-center gap-3'>
-                        <Link to='/dashboard?tab=dash'>
-                            <Button color='light' className='w-full sm:w-auto'>
-                                Open dashboard overview
-                            </Button>
-                        </Link>
+                        <Button as={Link} to='/dashboard?tab=dash' color='light' className='w-full sm:w-auto'>
+                            Open dashboard overview
+                        </Button>
                         <Button gradientDuoTone='purpleToBlue' onClick={refetch} disabled={loading}>
                             <HiRefresh className={`mr-2 h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
                             Refresh data

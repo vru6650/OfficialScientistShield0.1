@@ -228,7 +228,7 @@ export default function SingleProblemPage() {
             </header>
 
             <main className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:px-8">
-                <div className="grid gap-10 lg:grid-cols-[1.12fr,0.88fr] xl:gap-12">
+                <div className="grid gap-10 lg:grid-cols-[1.12fr_0.88fr] xl:gap-12">
                     <div className="space-y-10">
                         <section className="rounded-3xl border border-slate-200 bg-white/70 p-8 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-none dark:ring-slate-800">
                             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">

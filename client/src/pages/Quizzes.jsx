@@ -189,7 +189,7 @@ export default function Quizzes() {
                                         moving forward.
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex flex-wrap items-center gap-3 lg:justify-end">
                                     <span className="macos-chip text-[11px] font-semibold uppercase tracking-widest">
                                         Timed checks
                                     </span>

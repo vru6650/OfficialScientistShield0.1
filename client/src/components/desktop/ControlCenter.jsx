@@ -65,7 +65,7 @@ export default function ControlCenter({
         () => wallpaperOptions.find((option) => option.key === wallpaperMode) || wallpaperOptions[0] || null,
         [wallpaperMode, wallpaperOptions]
     );
-    const appearanceSummary = selectedSurfacePreset?.label || 'Liquid Glass';
+    const appearanceSummary = selectedSurfacePreset?.label || 'Hybrid Glass';
     const appearanceBadgeLabel = `${appearanceSummary} surface`;
     const themeSummary = useMemo(() => {
         if (themeMode === 'system') {
@@ -828,7 +828,7 @@ export default function ControlCenter({
                             <span className="macos-control-center__status-dot" aria-hidden />
                             <span className="macos-control-center__footer-text">Workspace synced</span>
                         </div>
-                        <span className="macos-control-center__footer-text">Designed to echo macOS Sonoma</span>
+                        <span className="macos-control-center__footer-text">Designed to echo macOS Sequoia</span>
                     </div>
                 </div>
             </div>

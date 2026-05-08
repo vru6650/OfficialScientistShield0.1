@@ -63,7 +63,7 @@ const ProjectsFallback = () => (
         <div className="mx-auto flex max-w-6xl flex-col gap-14 px-4 py-16 sm:px-6 lg:px-8">
             <section className="relative overflow-hidden rounded-3xl border border-slate-200/70 bg-white/85 p-8 shadow-2xl backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/75">
                 <div className="absolute inset-0 bg-gradient-to-br from-sky-50 via-white to-indigo-50 opacity-80 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950" />
-                <div className="relative grid gap-10 lg:grid-cols-[1.1fr,0.9fr] lg:items-center">
+                <div className="relative grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
                     <div className="space-y-6">
                         <div className="inline-flex items-center gap-3 rounded-full bg-slate-900 text-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.22em] dark:bg-white dark:text-slate-900">
                             <HiOutlineArrowUpRight className="h-4 w-4" aria-hidden />
@@ -79,16 +79,12 @@ const ProjectsFallback = () => (
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-4">
-                            <Link to="/sign-up">
-                                <Button size="lg" className="btn-aqua px-6 py-3">
-                                    Start a new brief
-                                </Button>
-                            </Link>
-                            <Link to="/search">
-                                <Button size="lg" color="light" className="border border-slate-300 text-slate-900 hover:bg-slate-100 dark:border-slate-600 dark:text-white dark:hover:bg-slate-800">
-                                    View inspiration
-                                </Button>
-                            </Link>
+                            <Button as={Link} to="/sign-up" size="lg" className="btn-aqua px-6 py-3">
+                                Start a new brief
+                            </Button>
+                            <Button as={Link} to="/search" size="lg" color="light" className="border border-slate-300 text-slate-900 hover:bg-slate-100 dark:border-slate-600 dark:text-white dark:hover:bg-slate-800">
+                                View inspiration
+                            </Button>
                         </div>
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                             <div className="rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 text-left shadow-sm dark:border-slate-800/80 dark:bg-slate-900/80">

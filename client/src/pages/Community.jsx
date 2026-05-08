@@ -123,7 +123,7 @@ export default function Community() {
         <div className='workspace-page relative min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white'>
             <div className='pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.18),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(99,102,241,0.22),transparent_30%),radial-gradient(circle_at_50%_70%,rgba(16,185,129,0.16),transparent_32%)]' aria-hidden />
             <div className='relative mx-auto flex max-w-6xl flex-col gap-10 px-4 py-14 sm:px-6 lg:px-8'>
-                <header className='grid gap-10 rounded-3xl border border-white/10 bg-white/5 p-8 shadow-[0_30px_120px_-60px_rgba(14,165,233,0.35)] backdrop-blur lg:grid-cols-[1.05fr,0.95fr] lg:items-center'>
+                <header className='grid gap-10 rounded-3xl border border-white/10 bg-white/5 p-8 shadow-[0_30px_120px_-60px_rgba(14,165,233,0.35)] backdrop-blur lg:grid-cols-[1.05fr_0.95fr] lg:items-center'>
                     <div className='space-y-5'>
                         <div className='inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]'>
                             <HiOutlineSparkles className='h-4 w-4' aria-hidden />
@@ -164,7 +164,7 @@ export default function Community() {
                     </div>
                 </header>
 
-                <section className='grid gap-8 lg:grid-cols-[1.1fr,0.9fr]'>
+                <section className='grid gap-8 lg:grid-cols-[1.1fr_0.9fr]'>
                     <form
                         onSubmit={handleSubmit}
                         className='space-y-6 rounded-3xl border border-white/10 bg-white/5 p-8 shadow-xl backdrop-blur'

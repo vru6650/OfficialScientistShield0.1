@@ -1,10 +1,11 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo } from 'react';
 
 import ScrollToTop from './ScrollToTop';
 import RouteProgressBar from './RouteProgressBar.jsx';
 import PageAnnouncer from './PageAnnouncer.jsx';
 import RestOverlay from './RestOverlay';
+import { useTheme } from './ThemeContext.jsx';
 
 const MacWindowManager = lazy(() => import('./desktop/MacWindowManager.jsx'));
 const Dock = lazy(() => import('./Dock.jsx'));
@@ -38,20 +39,7 @@ const Stage = ({ effects, children }) => {
 
 export default function MainLayout() {
     const location = useLocation();
-    // Global UI effects (from Control Center)
-    const readEffects = () => {
-        try { return JSON.parse(localStorage.getItem('ui.effects.v1') || 'null') || { brightness: 1, contrast: 1, veil: 0, reduceMotion: false }; } catch { return { brightness: 1, contrast: 1, veil: 0, reduceMotion: false }; }
-    };
-    const [effects, setEffects] = useState(readEffects);
-    useEffect(() => {
-        const onChange = () => setEffects(readEffects());
-        window.addEventListener('ui-effects-changed', onChange);
-        window.addEventListener('storage', onChange);
-        return () => {
-            window.removeEventListener('ui-effects-changed', onChange);
-            window.removeEventListener('storage', onChange);
-        };
-    }, []);
+    const { effects } = useTheme();
 
     const windowTitle = useMemo(() => {
         const pathname = location.pathname;

@@ -34,7 +34,7 @@ const sidebarLinks = [
 export default function DashSidebar() {
   const location = useLocation();
   const dispatch = useDispatch();
-  const { currentUser } = useSelector((state) => state.user);
+  const { currentUser } = useSelector((state) => state.user || {});
   const [tab, setTab] = useState('');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -61,45 +61,54 @@ export default function DashSidebar() {
   };
 
   return (
-      <Sidebar className='w-full md:w-56'>
+      <Sidebar aria-label='Dashboard navigation' className='dashboard-sidebar w-full md:w-64'>
         <Sidebar.Items>
-          <Sidebar.ItemGroup className='flex flex-col gap-1'>
+          <div className='dashboard-sidebar__header'>
+            <span className='dashboard-sidebar__eyebrow'>Workspace</span>
+            <span className='dashboard-sidebar__title'>
+              {currentUser?.isAdmin ? 'Admin Console' : 'Profile'}
+            </span>
+          </div>
+
+          <Sidebar.ItemGroup className='dashboard-sidebar__items'>
             {/* Profile link - handled separately due to its dynamic label */}
-            <Link to='/dashboard?tab=profile'>
+            <Link to='/dashboard?tab=profile' className='dashboard-sidebar__link'>
               <Sidebar.Item
                   active={tab === 'profile'}
                   icon={HiUser}
-                  label={currentUser.isAdmin ? 'Admin' : 'User'}
+                  label={currentUser?.isAdmin ? 'Admin' : 'User'}
                   labelColor='dark'
                   as='div'
               >
-                Profile
+                <span className='md:inline'>Profile</span>
               </Sidebar.Item>
             </Link>
 
             {/* Render links dynamically from the configuration array */}
             {sidebarLinks
-                .filter(link => currentUser.isAdmin || !link.adminOnly)
+                .filter(link => currentUser?.isAdmin || !link.adminOnly)
                 .map(link => (
-                    <Link to={`/dashboard?tab=${link.tab}`} key={link.tab}>
+                    <Link to={`/dashboard?tab=${link.tab}`} key={link.tab} className='dashboard-sidebar__link'>
                       <Sidebar.Item
                           active={tab === link.tab || (link.tab === 'dash' && !tab)}
                           icon={link.icon}
                           as='div'
                       >
-                        {link.label}
+                        <span className='md:inline'>{link.label}</span>
                       </Sidebar.Item>
                     </Link>
                 ))}
 
             {/* Sign Out button */}
-            <Sidebar.Item
-                icon={HiArrowSmRight}
-                className='cursor-pointer'
-                onClick={() => setShowLogoutModal(true)}
-            >
-              Sign Out
-            </Sidebar.Item>
+            <div className='dashboard-sidebar__link dashboard-sidebar__link--action'>
+              <Sidebar.Item
+                  icon={HiArrowSmRight}
+                  className='cursor-pointer'
+                  onClick={() => setShowLogoutModal(true)}
+              >
+                <span className='md:inline'>Sign Out</span>
+              </Sidebar.Item>
+            </div>
           </Sidebar.ItemGroup>
         </Sidebar.Items>
         <LogoutConfirmationModal

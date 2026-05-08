@@ -26,7 +26,7 @@ export default function ProblemFilters({
     return (
         <form
             onSubmit={onSubmit}
-            className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white/70 p-6 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/60"
+            className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/60 sm:p-6"
         >
             <div className="flex flex-col gap-3 md:flex-row md:items-center">
                 <div className="flex-1">
@@ -82,8 +82,8 @@ export default function ProblemFilters({
                     </div>
                 )}
             </div>
-            <div className="flex justify-end">
-                <Button type="submit" gradientDuoTone="cyanToBlue">
+            <div className="flex justify-stretch sm:justify-end">
+                <Button type="submit" gradientDuoTone="cyanToBlue" className="w-full sm:w-auto">
                     Apply filters
                 </Button>
             </div>

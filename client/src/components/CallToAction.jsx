@@ -22,7 +22,7 @@ export default function CallToAction() {
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.14),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(14,116,244,0.28),transparent_30%)]" />
             </div>
 
-            <div className="relative grid gap-10 lg:grid-cols-[1.05fr,0.95fr] lg:items-center">
+            <div className="relative grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
                 <div className="space-y-6">
                     <div className="flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-[0.2em]">
                         <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2">
@@ -46,25 +46,28 @@ export default function CallToAction() {
                     </div>
 
                     <div className="flex flex-wrap gap-4">
-                        <a
+                        <Button
+                            as="a"
                             href="https://www.100jsprojects.com/"
                             target="_blank"
                             rel="noopener noreferrer"
+                            size="lg"
+                            className="btn-aqua px-6 py-3"
                         >
-                            <Button size="lg" className="btn-aqua px-6 py-3">
-                                Launch the 100 JS project lab
-                            </Button>
-                        </a>
-                        <a
+                            Launch the 100 JS project lab
+                        </Button>
+                        <Button
+                            as="a"
                             href="https://www.100jsprojects.com/"
                             target="_blank"
                             rel="noopener noreferrer"
+                            size="lg"
+                            color="light"
+                            className="border border-white/50 text-white hover:bg-white/10"
                         >
-                            <Button size="lg" color="light" className="border border-white/50 text-white hover:bg-white/10">
-                                View the full library
-                                <HiOutlineArrowRightCircle className="ml-2 h-5 w-5" aria-hidden />
-                            </Button>
-                        </a>
+                            View the full library
+                            <HiOutlineArrowRightCircle className="ml-2 h-5 w-5" aria-hidden />
+                        </Button>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

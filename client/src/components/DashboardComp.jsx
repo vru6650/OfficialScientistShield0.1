@@ -12,7 +12,7 @@ export default function DashboardComp() {
 
     if (!currentUser?.isAdmin) {
         return (
-            <div className='p-3 md:mx-auto'>
+            <div className='dashboard-page-shell'>
                 <Alert color='warning'>Administrator access required.</Alert>
             </div>
         );
@@ -20,24 +20,37 @@ export default function DashboardComp() {
 
     if (loading) {
         return (
-            <div className='flex justify-center items-center min-h-screen'>
+            <div className='dashboard-loading-state'>
                 <Spinner size='xl' />
+                <span>Loading dashboard metrics</span>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className='p-3 md:mx-auto'>
+            <div className='dashboard-page-shell'>
                 <Alert color='failure'>Error: {error}</Alert>
             </div>
         );
     }
 
     return (
-        <div className='p-3 md:mx-auto'>
+        <div className='dashboard-page-shell'>
+            <header className='dashboard-overview-hero'>
+                <div>
+                    <p className='dashboard-overview-hero__eyebrow'>Admin Overview</p>
+                    <h1>Control center for content, users, and learning assets.</h1>
+                </div>
+                <div className='dashboard-overview-hero__meta'>
+                    <span>{dashboardData.totalUsers?.toLocaleString?.() ?? dashboardData.totalUsers} users</span>
+                    <span>{dashboardData.totalPosts?.toLocaleString?.() ?? dashboardData.totalPosts} posts</span>
+                    <span>{dashboardData.totalProblems?.toLocaleString?.() ?? dashboardData.totalProblems} problems</span>
+                </div>
+            </header>
+
             {/* Reusable Stat Cards */}
-            <div className='flex-wrap flex gap-4 justify-center'>
+            <div className='dashboard-stat-grid'>
                 <StatCard
                     title='Total Users'
                     count={dashboardData.totalUsers}
@@ -76,7 +89,7 @@ export default function DashboardComp() {
             </div>
 
             {/* Reusable Data Tables */}
-            <div className='flex flex-wrap gap-4 py-3 mx-auto justify-center'>
+            <div className='dashboard-table-grid'>
                 <RecentDataTable
                     title='Recent users'
                     linkTo='/dashboard?tab=users'

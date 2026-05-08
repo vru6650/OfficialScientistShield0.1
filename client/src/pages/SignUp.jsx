@@ -85,7 +85,7 @@ export default function SignUp() {
     const isBusy = loading || isSubmitting;
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-slate-950 px-4 py-10 sm:px-6 lg:px-8">
+        <div className="auth-page relative min-h-screen overflow-hidden bg-slate-950 px-4 py-10 sm:px-6 lg:px-8">
             <div className="pointer-events-none absolute inset-0" aria-hidden>
                 <div className="absolute -left-20 top-6 h-[24rem] w-[24rem] rounded-full bg-sky-500/20 blur-[120px]" />
                 <div className="absolute right-0 top-20 h-[28rem] w-[28rem] rounded-full bg-indigo-500/20 blur-[140px]" />
@@ -96,9 +96,9 @@ export default function SignUp() {
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, ease: 'easeOut' }}
-                className="relative mx-auto grid w-full max-w-6xl overflow-hidden rounded-[32px] border border-white/15 bg-slate-900/55 shadow-[0_48px_120px_-56px_rgba(2,132,199,0.6)] backdrop-blur-2xl lg:grid-cols-[1.1fr_0.9fr]"
+                className="auth-card relative mx-auto grid w-full max-w-6xl overflow-hidden rounded-[32px] border border-white/15 bg-slate-900/55 shadow-[0_48px_120px_-56px_rgba(2,132,199,0.6)] backdrop-blur-2xl lg:grid-cols-[1.1fr_0.9fr]"
             >
-                <section className="relative border-b border-white/10 p-7 sm:p-10 lg:border-b-0 lg:border-r">
+                <section className="relative min-w-0 border-b border-white/10 p-7 sm:p-10 lg:border-b-0 lg:border-r">
                     <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/15 via-transparent to-indigo-400/10" aria-hidden />
                     <div className="relative space-y-8">
                         <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-100">
@@ -137,7 +137,7 @@ export default function SignUp() {
                     </div>
                 </section>
 
-                <section className="p-7 sm:p-10">
+                <section className="min-w-0 p-7 sm:p-10">
                     <div className="space-y-2">
                         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-300">Create account</p>
                         <h2 className="text-2xl font-bold text-white sm:text-3xl">

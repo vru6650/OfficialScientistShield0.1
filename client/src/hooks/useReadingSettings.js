@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 const STORAGE_KEY = 'reading-preferences';
 
 export const marginStyleMap = {
-    narrow: '0.75rem',
-    medium: '1.5rem',
-    wide: '2.25rem',
+    narrow: 'clamp(0.5rem, 2vw, 0.85rem)',
+    medium: 'clamp(0.75rem, 4vw, 1.75rem)',
+    wide: 'clamp(1rem, 6vw, 3rem)',
 };
 
 export const defaultSettings = {
@@ -42,9 +42,9 @@ const fontFamilyMap = {
 };
 
 const widthStyleMap = {
-    cozy: '640px',
-    comfortable: '720px',
-    spacious: '860px',
+    cozy: 'min(640px, 95vw)',
+    comfortable: 'min(720px, 95vw)',
+    spacious: 'min(860px, 95vw)',
 };
 const READER_SURFACE_KEYS = new Set(['day', 'sepia', 'mint']);
 

@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 const WALLPAPER_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
-const WALLPAPER_MODES = ['auto', 'sunrise', 'day', 'sunset', 'night', 'liquid'];
+const WALLPAPER_MODES = ['auto', 'sunrise', 'day', 'sunset', 'night', 'nebula', 'liquid', 'prism', 'sequoia'];
 
 const WALLPAPER_PRESETS = {
     liquid: {
@@ -29,6 +29,58 @@ const WALLPAPER_PRESETS = {
             horizon:
                 'radial-gradient(150% 200% at 48% 94%, rgba(15, 185, 219, 0.18), transparent 64%), radial-gradient(140% 180% at 14% 94%, rgba(20, 83, 136, 0.32), transparent 72%)',
             noise: 0.14,
+        },
+    },
+    prism: {
+        light: {
+            wallpaper:
+                'radial-gradient(1500px 920px at 8% -22%, rgba(126, 224, 255, 0.46), transparent 54%), radial-gradient(1280px 760px at 92% -16%, rgba(196, 178, 255, 0.28), transparent 60%), radial-gradient(1180px 760px at 24% 112%, rgba(118, 236, 214, 0.3), transparent 70%), radial-gradient(980px 620px at 78% 120%, rgba(255, 190, 132, 0.22), transparent 72%), linear-gradient(180deg, rgba(248, 252, 255, 0.98), rgba(232, 241, 255, 0.92))',
+            auroraPrimary: 'radial-gradient(900px 560px at 12% 2%, rgba(96, 214, 255, 0.34), transparent 72%)',
+            auroraSecondary: 'radial-gradient(940px 580px at 88% 16%, rgba(142, 169, 255, 0.26), transparent 74%)',
+            orbTop: 'rgba(255, 255, 255, 0.74)',
+            orbBottom: 'rgba(112, 212, 255, 0.34)',
+            grid: 'rgba(144, 192, 245, 0.12)',
+            horizon:
+                'radial-gradient(150% 200% at 48% 92%, rgba(104, 214, 255, 0.28), transparent 62%), radial-gradient(140% 180% at 14% 94%, rgba(255, 255, 255, 0.24), transparent 72%)',
+            noise: 0.06,
+        },
+        dark: {
+            wallpaper:
+                'radial-gradient(1460px 920px at 10% -24%, rgba(72, 186, 255, 0.34), transparent 56%), radial-gradient(1260px 800px at 92% -14%, rgba(136, 124, 255, 0.26), transparent 64%), radial-gradient(1140px 740px at 24% 114%, rgba(48, 214, 195, 0.22), transparent 72%), radial-gradient(980px 620px at 80% 122%, rgba(255, 176, 108, 0.16), transparent 72%), linear-gradient(180deg, rgba(4, 9, 20, 0.97), rgba(8, 14, 28, 0.94))',
+            auroraPrimary: 'radial-gradient(860px 540px at 12% -2%, rgba(72, 198, 255, 0.28), transparent 72%)',
+            auroraSecondary: 'radial-gradient(900px 560px at 88% 14%, rgba(118, 114, 255, 0.24), transparent 74%)',
+            orbTop: 'rgba(188, 232, 255, 0.24)',
+            orbBottom: 'rgba(48, 214, 195, 0.2)',
+            grid: 'rgba(80, 132, 232, 0.14)',
+            horizon:
+                'radial-gradient(150% 200% at 48% 94%, rgba(72, 186, 255, 0.18), transparent 64%), radial-gradient(140% 180% at 18% 94%, rgba(56, 94, 182, 0.24), transparent 72%)',
+            noise: 0.16,
+        },
+    },
+    sequoia: {
+        light: {
+            wallpaper:
+                'radial-gradient(1420px 860px at 10% -18%, rgba(108, 208, 255, 0.48), transparent 55%), radial-gradient(1220px 720px at 92% -12%, rgba(255, 198, 152, 0.3), transparent 62%), radial-gradient(1080px 640px at 18% 112%, rgba(104, 220, 190, 0.34), transparent 70%), radial-gradient(960px 600px at 74% 116%, rgba(255, 255, 255, 0.3), transparent 72%), linear-gradient(180deg, rgba(249, 252, 255, 0.98), rgba(235, 242, 252, 0.9))',
+            auroraPrimary: 'radial-gradient(820px 540px at 12% 2%, rgba(98, 198, 255, 0.3), transparent 72%)',
+            auroraSecondary: 'radial-gradient(820px 540px at 88% 18%, rgba(255, 184, 138, 0.24), transparent 70%)',
+            orbTop: 'rgba(255, 255, 255, 0.62)',
+            orbBottom: 'rgba(70, 168, 255, 0.45)',
+            grid: 'rgba(148, 163, 184, 0.14)',
+            horizon:
+                'radial-gradient(150% 200% at 46% 92%, rgba(138, 210, 255, 0.3), transparent 62%), radial-gradient(120% 140% at 18% 92%, rgba(248, 252, 255, 0.28), transparent 74%)',
+            noise: 0.1,
+        },
+        dark: {
+            wallpaper:
+                'radial-gradient(1360px 820px at 10% -20%, rgba(78, 163, 255, 0.36), transparent 55%), radial-gradient(1180px 700px at 88% -14%, rgba(197, 127, 255, 0.35), transparent 68%), radial-gradient(1040px 620px at 24% 116%, rgba(66, 192, 183, 0.32), transparent 76%), radial-gradient(960px 600px at 72% 120%, rgba(255, 168, 122, 0.22), transparent 74%), linear-gradient(180deg, rgba(4, 8, 18, 0.97), rgba(8, 14, 28, 0.93))',
+            auroraPrimary: 'radial-gradient(740px 520px at 10% -4%, rgba(104, 188, 255, 0.3), transparent 76%)',
+            auroraSecondary: 'radial-gradient(760px 520px at 88% 12%, rgba(200, 140, 255, 0.3), transparent 74%)',
+            orbTop: 'rgba(154, 184, 255, 0.32)',
+            orbBottom: 'rgba(74, 158, 255, 0.32)',
+            grid: 'rgba(148, 163, 184, 0.22)',
+            horizon:
+                'radial-gradient(150% 200% at 46% 94%, rgba(96, 174, 255, 0.3), transparent 64%), radial-gradient(120% 140% at 18% 94%, rgba(56, 108, 182, 0.32), transparent 74%)',
+            noise: 0.22,
         },
     },
     sunrise: {
@@ -135,6 +187,32 @@ const WALLPAPER_PRESETS = {
             noise: 0.18,
         },
     },
+    nebula: {
+        light: {
+            wallpaper:
+                'radial-gradient(1500px 940px at 10% -18%, rgba(180, 164, 255, 0.44), transparent 56%), radial-gradient(1240px 760px at 90% -12%, rgba(116, 226, 255, 0.28), transparent 62%), radial-gradient(1080px 700px at 22% 112%, rgba(255, 184, 150, 0.24), transparent 70%), radial-gradient(980px 620px at 76% 122%, rgba(126, 152, 255, 0.2), transparent 74%), linear-gradient(180deg, rgba(250, 248, 255, 0.98), rgba(236, 240, 255, 0.93))',
+            auroraPrimary: 'radial-gradient(860px 540px at 12% 2%, rgba(146, 120, 255, 0.3), transparent 74%)',
+            auroraSecondary: 'radial-gradient(920px 560px at 88% 16%, rgba(96, 214, 255, 0.24), transparent 76%)',
+            orbTop: 'rgba(255, 255, 255, 0.68)',
+            orbBottom: 'rgba(156, 140, 255, 0.28)',
+            grid: 'rgba(160, 170, 240, 0.12)',
+            horizon:
+                'radial-gradient(150% 200% at 48% 92%, rgba(142, 124, 255, 0.24), transparent 62%), radial-gradient(140% 180% at 16% 94%, rgba(255, 210, 196, 0.18), transparent 74%)',
+            noise: 0.08,
+        },
+        dark: {
+            wallpaper:
+                'radial-gradient(1460px 920px at 12% -20%, rgba(102, 86, 255, 0.34), transparent 56%), radial-gradient(1260px 820px at 90% -14%, rgba(60, 214, 255, 0.18), transparent 62%), radial-gradient(1120px 720px at 22% 116%, rgba(236, 112, 172, 0.16), transparent 72%), radial-gradient(980px 640px at 80% 124%, rgba(255, 168, 102, 0.1), transparent 74%), linear-gradient(180deg, rgba(5, 7, 18, 0.98), rgba(9, 12, 28, 0.95))',
+            auroraPrimary: 'radial-gradient(820px 540px at 12% -2%, rgba(118, 96, 255, 0.28), transparent 74%)',
+            auroraSecondary: 'radial-gradient(880px 560px at 88% 14%, rgba(58, 196, 255, 0.2), transparent 76%)',
+            orbTop: 'rgba(198, 188, 255, 0.2)',
+            orbBottom: 'rgba(118, 96, 255, 0.22)',
+            grid: 'rgba(102, 116, 220, 0.16)',
+            horizon:
+                'radial-gradient(150% 200% at 48% 96%, rgba(104, 92, 255, 0.24), transparent 62%), radial-gradient(140% 180% at 18% 94%, rgba(40, 112, 220, 0.18), transparent 74%)',
+            noise: 0.17,
+        },
+    },
 };
 
 function resolvePhase(hourFraction) {
@@ -150,6 +228,9 @@ function buildWallpaperStyle(phase, theme) {
     const active = palette[effectiveTheme];
     const light = palette.light;
     const dark = palette.dark;
+    const isDark = effectiveTheme === 'dark';
+    const isPrism = phase === 'prism';
+    const isNebula = phase === 'nebula';
 
     const toNoise = (value) => (typeof value === 'number' ? value.toString() : value);
 
@@ -182,6 +263,61 @@ function buildWallpaperStyle(phase, theme) {
         '--macos-tilt-y': '0px',
         '--macos-highlight-x': '52%',
         '--macos-highlight-y': '48%',
+        '--macos-caustics-opacity': isPrism
+            ? isDark
+                ? '0.62'
+                : '0.74'
+            : isNebula
+                ? isDark
+                    ? '0.36'
+                    : '0.42'
+                : isDark
+                    ? '0.45'
+                    : '0.55',
+        '--macos-prism-opacity': isPrism
+            ? isDark
+                ? '0.58'
+                : '0.7'
+            : isNebula
+                ? isDark
+                    ? '0.5'
+                    : '0.56'
+                : isDark
+                    ? '0.42'
+                    : '0.56',
+        '--macos-sheen-opacity': isPrism
+            ? isDark
+                ? '0.5'
+                : '0.62'
+            : isNebula
+                ? isDark
+                    ? '0.48'
+                    : '0.54'
+                : isDark
+                    ? '0.4'
+                    : '0.5',
+        '--macos-mesh-opacity': isPrism
+            ? isDark
+                ? '0.42'
+                : '0.56'
+            : isNebula
+                ? isDark
+                    ? '0.4'
+                    : '0.46'
+                : isDark
+                    ? '0.26'
+                    : '0.34',
+        '--macos-lens-opacity': isPrism
+            ? isDark
+                ? '0.36'
+                : '0.48'
+            : isNebula
+                ? isDark
+                    ? '0.28'
+                    : '0.34'
+                : isDark
+                    ? '0.18'
+                    : '0.24',
     };
 }
 
@@ -305,6 +441,8 @@ export default function DesktopWallpaper({
                 <div className="macos-wallpaper__horizon" />
                 <div className="macos-wallpaper__caustics" />
                 <div className="macos-wallpaper__prism" />
+                <div className="macos-wallpaper__mesh" />
+                <div className="macos-wallpaper__lens" />
                 <div className="macos-wallpaper__sheen" />
                 <div className="macos-wallpaper__grid macos-wallpaper__grid--light" />
                 <div className="macos-wallpaper__grid macos-wallpaper__grid--dark" />

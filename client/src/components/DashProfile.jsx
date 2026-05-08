@@ -191,23 +191,17 @@ export default function DashProfile() {
 
           {currentUser.isAdmin && (
               <>
-                <Link to={'/create-post'}>
-                  <Button type='button' gradientDuoTone='purpleToPink' className='w-full'>
-                    Create a post
-                  </Button>
-                </Link>
+                <Button as={Link} to={'/create-post'} type='button' gradientDuoTone='purpleToPink' className='w-full'>
+                  Create a post
+                </Button>
                 {/* Link to Create Tutorial page */}
-                <Link to={'/create-tutorial'}>
-                  <Button type='button' gradientDuoTone='tealToLime' className='w-full'>
-                    Create a tutorial
-                  </Button>
-                </Link>
+                <Button as={Link} to={'/create-tutorial'} type='button' gradientDuoTone='tealToLime' className='w-full'>
+                  Create a tutorial
+                </Button>
                 {/* NEW: Link to Create Quiz page */}
-                <Link to={'/create-quiz'}>
-                  <Button type='button' gradientDuoTone='cyanToBlue' className='w-full'>
-                    Create a quiz
-                  </Button>
-                </Link>
+                <Button as={Link} to={'/create-quiz'} type='button' gradientDuoTone='cyanToBlue' className='w-full'>
+                  Create a quiz
+                </Button>
               </>
           )}
         </form>

@@ -59,8 +59,14 @@ export default function MacDock({ entries, focusedId, onActivate, autoHide }) {
     const [labelsAlways, setLabelsAlways] = useState(false);
     const [focusHalo, setFocusHalo] = useState(true);
     const [isInteracting, setIsInteracting] = useState(false);
+    const isInteractingRef = useRef(false);
     const [isRevealed, setIsRevealed] = useState(!autoHide);
     const hideTimerRef = useRef(null);
+
+    const setIsInteractingWithRef = useCallback((value) => {
+        setIsInteracting(value);
+        isInteractingRef.current = value;
+    }, []);
 
     const orderedEntries = useMemo(
         () =>
@@ -136,14 +142,14 @@ export default function MacDock({ entries, focusedId, onActivate, autoHide }) {
             clearHideTimer();
             if (typeof window === 'undefined') return;
             hideTimerRef.current = window.setTimeout(() => {
-                if (!isInteracting) {
+                if (!isInteractingRef.current) {
                     setIsRevealed(false);
                     setHoveredIndex(null);
                     setHoveredEntry(null);
                 }
             }, delay);
         },
-        [autoHide, clearHideTimer, isInteracting]
+        [autoHide, clearHideTimer]
     );
 
     useEffect(() => {
@@ -207,13 +213,13 @@ export default function MacDock({ entries, focusedId, onActivate, autoHide }) {
             if (event.clientY >= viewportHeight - edgeThreshold) {
                 setIsRevealed(true);
                 clearHideTimer();
-            } else if (!isInteracting) {
+            } else if (!isInteractingRef.current) {
                 scheduleHide(1000);
             }
         };
         window.addEventListener('pointermove', handleEdgeReveal);
         return () => window.removeEventListener('pointermove', handleEdgeReveal);
-    }, [autoHide, clearHideTimer, isInteracting, scheduleHide]);
+    }, [autoHide, clearHideTimer, scheduleHide]);
 
     useEffect(() => {
         if (!autoHide) return undefined;
@@ -310,7 +316,7 @@ export default function MacDock({ entries, focusedId, onActivate, autoHide }) {
     }, []);
 
     const handleEnter = useCallback((entry, index, event) => {
-        setIsInteracting(true);
+        setIsInteractingWithRef(true);
         setIsRevealed(true);
         clearHideTimer();
         setHoveredIndex(index);
@@ -330,9 +336,9 @@ export default function MacDock({ entries, focusedId, onActivate, autoHide }) {
         setSpotlightX('50%');
         setCursorX(null);
         setHoverGeometry({ left: null, width: null });
-        setIsInteracting(false);
+        setIsInteractingWithRef(false);
         scheduleHide(900);
-    }, [scheduleHide]);
+    }, [scheduleHide, setIsInteractingWithRef]);
 
     const handleActivate = useCallback(
         (entry) => {
@@ -347,7 +353,7 @@ export default function MacDock({ entries, focusedId, onActivate, autoHide }) {
 
     const handlePointerMove = useCallback(
         (event) => {
-            setIsInteracting(true);
+            setIsInteractingWithRef(true);
             setIsRevealed(true);
             clearHideTimer();
             if (prefersReducedMotion) return;

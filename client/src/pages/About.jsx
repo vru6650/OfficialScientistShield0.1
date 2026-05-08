@@ -85,7 +85,7 @@ const AboutFallback = () => (
             {/* Hero */}
             <section className="relative overflow-hidden rounded-[32px] border border-white/40 bg-white/80 shadow-[0_30px_120px_-80px_rgba(14,116,244,0.55)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-100/40 via-white/70 to-indigo-50/40 dark:from-slate-900/40 dark:via-slate-900/70 dark:to-indigo-900/30" />
-                <div className="relative grid gap-10 p-10 lg:grid-cols-[1.05fr,0.95fr] lg:items-center">
+                <div className="relative grid gap-10 p-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
                     <div className="space-y-7">
                         <div className="inline-flex items-center gap-3 rounded-full bg-slate-900 text-white px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] shadow-md shadow-cyan-500/15 dark:bg-white dark:text-slate-900">
                             <HiOutlineRocketLaunch className="h-4 w-4" aria-hidden />
@@ -101,20 +101,18 @@ const AboutFallback = () => (
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-3">
-                            <Link to="/sign-up">
-                                <Button size="lg" className="btn-aqua px-6 py-3">
-                                    Start building
-                                </Button>
-                            </Link>
-                            <Link to="/projects">
-                                <Button
-                                    size="lg"
-                                    color="light"
-                                    className="border border-slate-300 px-5 py-3 text-slate-900 hover:bg-slate-100 dark:border-slate-600 dark:text-white dark:hover:bg-slate-800"
-                                >
-                                    View roadmap
-                                </Button>
-                            </Link>
+                            <Button as={Link} to="/sign-up" size="lg" className="btn-aqua px-6 py-3">
+                                Start building
+                            </Button>
+                            <Button
+                                as={Link}
+                                to="/projects"
+                                size="lg"
+                                color="light"
+                                className="border border-slate-300 px-5 py-3 text-slate-900 hover:bg-slate-100 dark:border-slate-600 dark:text-white dark:hover:bg-slate-800"
+                            >
+                                View roadmap
+                            </Button>
                         </div>
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                             {signals.map(({ label, value, helper }) => (

@@ -69,11 +69,9 @@ export default function NotFound() {
             <Button color="light" onClick={goBack} pill>
               <HiOutlineArrowLeft className="mr-2" /> Go back
             </Button>
-            <Link to="/">
-              <Button gradientDuoTone="purpleToBlue" pill>
-                <HiOutlineHome className="mr-2" /> Go home
-              </Button>
-            </Link>
+            <Button as={Link} to="/" gradientDuoTone="purpleToBlue" pill>
+              <HiOutlineHome className="mr-2" /> Go home
+            </Button>
           </div>
 
           {/* Suggestions */}

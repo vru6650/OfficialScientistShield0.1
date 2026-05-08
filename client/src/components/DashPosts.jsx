@@ -121,9 +121,7 @@ export default function DashPosts() {
             <Button color='light' onClick={() => refetch()} size='sm' pill>
               <HiArrowPath className='mr-2 h-4 w-4' /> Refresh
             </Button>
-            <Link to='/create-post'>
-              <Button gradientDuoTone='cyanToBlue' size='sm'>New post</Button>
-            </Link>
+            <Button as={Link} to='/create-post' gradientDuoTone='cyanToBlue' size='sm'>New post</Button>
           </div>
         </div>
 

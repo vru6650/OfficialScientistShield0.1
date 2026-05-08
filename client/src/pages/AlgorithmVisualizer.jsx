@@ -325,7 +325,7 @@ const AlgorithmVisualizer = () => {
                 </div>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
+            <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
                 <div className="space-y-6 rounded-2xl border border-slate-800/60 bg-slate-900/70 p-6 shadow-[0_0_32px_rgba(15,23,42,0.45)]">
                     <div className="space-y-3">
                         <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">Algorithm</label>

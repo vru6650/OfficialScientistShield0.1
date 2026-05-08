@@ -618,22 +618,29 @@ export default function SingleTutorialPage() {
 
                     <div className="flex justify-between max-w-3xl mx-auto mt-12 py-6 border-t border-gray-200 dark:border-gray-700">
                         {prevChapter ? (
-                            <Link to={`/tutorials/${tutorial.slug}/${prevChapter.chapterSlug}`} className="flex-1 mr-4">
-                                <Button outline gradientDuoTone="purpleToBlue" className="w-full flex flex-col items-start px-4 py-2">
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">Previous Chapter</span>
-                                    <span className="text-base font-semibold text-left">{prevChapter.chapterTitle}</span>
-                                </Button>
-                            </Link>
+                            <Button
+                                as={Link}
+                                to={`/tutorials/${tutorial.slug}/${prevChapter.chapterSlug}`}
+                                outline
+                                gradientDuoTone="purpleToBlue"
+                                className="mr-4 flex w-full flex-1 flex-col items-start px-4 py-2"
+                            >
+                                <span className="mb-1 text-xs text-gray-500 dark:text-gray-400">Previous Chapter</span>
+                                <span className="text-left text-base font-semibold">{prevChapter.chapterTitle}</span>
+                            </Button>
                         ) : (
                             <div className="flex-1 mr-4"></div>
                         )}
                         {nextChapter ? (
-                            <Link to={`/tutorials/${tutorial.slug}/${nextChapter.chapterSlug}`} className="flex-1 ml-4">
-                                <Button gradientDuoTone="purpleToPink" className="w-full flex flex-col items-end px-4 py-2">
-                                    <span className="text-xs text-gray-200 mb-1">Next Chapter</span>
-                                    <span className="text-base font-semibold text-right">{nextChapter.chapterTitle}</span>
-                                </Button>
-                            </Link>
+                            <Button
+                                as={Link}
+                                to={`/tutorials/${tutorial.slug}/${nextChapter.chapterSlug}`}
+                                gradientDuoTone="purpleToPink"
+                                className="ml-4 flex w-full flex-1 flex-col items-end px-4 py-2"
+                            >
+                                <span className="mb-1 text-xs text-gray-200">Next Chapter</span>
+                                <span className="text-right text-base font-semibold">{nextChapter.chapterTitle}</span>
+                            </Button>
                         ) : (
                             <div className="flex-1 ml-4"></div>
                         )}

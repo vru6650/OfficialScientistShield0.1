@@ -5,19 +5,32 @@ import { Flowbite } from 'flowbite-react';
 import { CssBaseline, ThemeProvider as MuiThemeProvider } from '@mui/material';
 import { customFlowbiteTheme } from '../theme/flowbiteTheme.js';
 import { createMuiHybridTheme } from '../theme/muiHybridTheme.js';
+import {
+    ACCENT_PRESETS,
+    SURFACE_CLASS_MAP,
+    SURFACE_CLASS_NAMES,
+    SURFACE_PRESETS,
+    WALLPAPER_OPTIONS,
+    resolveAccentPresetDefinition,
+    resolveWallpaperMode,
+} from '../theme/themePresets.js';
+import {
+    UI_EFFECTS_CHANGED_EVENT,
+    mergeUiEffects,
+    readUiEffects,
+    saveUiEffects,
+} from '../theme/uiEffects.js';
 import SkipToContent from './SkipToContent.jsx';
 import DesktopWallpaper from './desktop/DesktopWallpaper.jsx';
-import { DEFAULT_CUSTOM_ACCENT, deriveCustomAccentPreset, resolveThemeAccent } from '../utils/themeAccent.js';
+import { DEFAULT_CUSTOM_ACCENT } from '../utils/themeAccent.js';
 import { ThemeContext } from './ThemeContext.jsx';
 import {
-    DEFAULT_THEME_MODE,
     THEME_MEDIA_QUERY,
     readSystemTheme,
     resolveThemeMode,
     sanitizeThemeMode,
 } from '../utils/themeMode.js';
 
-const UI_EFFECTS_STORAGE_KEY = 'ui.effects.v1';
 const THEME_COLOR_META_SELECTOR = 'meta[name="theme-color"][data-dynamic-theme-color="true"]';
 const STATUS_BAR_META_SELECTOR =
     'meta[name="apple-mobile-web-app-status-bar-style"][data-dynamic-status-bar="true"]';
@@ -30,67 +43,6 @@ const THEME_COLOR_FALLBACKS = Object.freeze({
     light: '#eef6ff',
     dark: '#0b1120',
 });
-const SURFACE_CLASS_MAP = Object.freeze({
-    liquid: 'macos-liquid',
-    sequoia: 'macos-sequoia',
-    graphite: 'macos-graphite',
-});
-
-const ACCENT_FALLBACK_MAP = Object.freeze({
-    system: { color: '#1677FF', strong: '#0D59D8', gradient: null },
-    blue: {
-        color: '#1677FF',
-        strong: '#0D59D8',
-        gradient: 'linear-gradient(135deg, rgba(22,119,255,0.94), rgba(102,198,255,0.72), rgba(13,89,216,0.88))',
-    },
-    pink: {
-        color: '#F06292',
-        strong: '#D63C74',
-        gradient: 'linear-gradient(135deg, rgba(240,98,146,0.92), rgba(255,184,107,0.68), rgba(214,60,116,0.88))',
-    },
-    mint: {
-        color: '#10B98A',
-        strong: '#0B8A68',
-        gradient: 'linear-gradient(135deg, rgba(16,185,138,0.92), rgba(92,227,218,0.64), rgba(11,138,104,0.86))',
-    },
-    amber: {
-        color: '#F3A33C',
-        strong: '#D66A10',
-        gradient: 'linear-gradient(135deg, rgba(243,163,60,0.94), rgba(255,210,144,0.7), rgba(214,106,16,0.86))',
-    },
-    graphite: {
-        color: '#1E2E46',
-        strong: '#0F172A',
-        gradient: 'linear-gradient(135deg, rgba(30,46,70,0.94), rgba(76,99,140,0.56), rgba(15,23,42,0.9))',
-    },
-});
-
-const resolveUiEffects = () => {
-    if (typeof window === 'undefined') {
-        return {
-            themeMode: DEFAULT_THEME_MODE,
-            surfacePreset: 'liquid',
-            accentPreset: 'system',
-            customAccent: DEFAULT_CUSTOM_ACCENT,
-        };
-    }
-    try {
-        const parsed = JSON.parse(window.localStorage?.getItem(UI_EFFECTS_STORAGE_KEY) || '{}');
-        return {
-            themeMode: sanitizeThemeMode(parsed?.themeMode),
-            surfacePreset: SURFACE_CLASS_MAP[parsed?.surfacePreset] ? parsed.surfacePreset : 'liquid',
-            accentPreset: typeof parsed?.accentPreset === 'string' ? parsed.accentPreset : 'system',
-            customAccent: resolveThemeAccent(parsed?.customAccent, DEFAULT_CUSTOM_ACCENT),
-        };
-    } catch {
-        return {
-            themeMode: DEFAULT_THEME_MODE,
-            surfacePreset: 'liquid',
-            accentPreset: 'system',
-            customAccent: DEFAULT_CUSTOM_ACCENT,
-        };
-    }
-};
 
 const ensureThemeColorMeta = () => {
     if (typeof document === 'undefined') return null;
@@ -179,33 +131,41 @@ const subscribeToMediaQuery = (query, callback) => {
 };
 
 export default function ThemeProvider({ children }) {
-    const [uiEffects, setUiEffects] = useState(resolveUiEffects);
+    const [uiEffects, setUiEffects] = useState(readUiEffects);
     const [systemTheme, setSystemTheme] = useState(readSystemTheme);
+    const [accessibilityPreferences, setAccessibilityPreferences] = useState(
+        readAccessibilityPreferences
+    );
     const themeMode = sanitizeThemeMode(uiEffects.themeMode);
     const resolvedTheme = resolveThemeMode(themeMode, systemTheme);
     const surfacePreset = uiEffects.surfacePreset;
     const accentPreset = uiEffects.accentPreset;
     const customAccent = uiEffects.customAccent;
-    const resolvedAccentPreset = useMemo(() => {
-        if (accentPreset === 'custom') {
-            return deriveCustomAccentPreset(customAccent);
-        }
-        return ACCENT_FALLBACK_MAP[accentPreset] || ACCENT_FALLBACK_MAP.system;
-    }, [accentPreset, customAccent]);
+    const wallpaperMode = resolveWallpaperMode(uiEffects.wallpaperMode);
+    const effectiveReduceMotion =
+        accessibilityPreferences.reducedMotion || uiEffects.reduceMotion;
+    const resolvedAccentPreset = useMemo(
+        () =>
+            resolveAccentPresetDefinition({
+                accentPreset,
+                customAccent,
+            }),
+        [accentPreset, customAccent]
+    );
 
     useEffect(() => {
         if (typeof window === 'undefined') return undefined;
 
         const syncUiEffects = () => {
-            setUiEffects(resolveUiEffects());
+            setUiEffects(readUiEffects());
         };
 
         syncUiEffects();
-        window.addEventListener('ui-effects-changed', syncUiEffects);
+        window.addEventListener(UI_EFFECTS_CHANGED_EVENT, syncUiEffects);
         window.addEventListener('storage', syncUiEffects);
 
         return () => {
-            window.removeEventListener('ui-effects-changed', syncUiEffects);
+            window.removeEventListener(UI_EFFECTS_CHANGED_EVENT, syncUiEffects);
             window.removeEventListener('storage', syncUiEffects);
         };
     }, []);
@@ -214,29 +174,45 @@ export default function ThemeProvider({ children }) {
         setSystemTheme(matches ? 'dark' : 'light');
     }), []);
 
-    const setThemeMode = useCallback((nextMode) => {
-        const sanitizedThemeMode = sanitizeThemeMode(nextMode);
-
-        if (typeof window !== 'undefined') {
-            try {
-                const parsed = JSON.parse(window.localStorage.getItem(UI_EFFECTS_STORAGE_KEY) || '{}');
-                const merged = typeof parsed === 'object' && parsed !== null ? parsed : {};
-                window.localStorage.setItem(
-                    UI_EFFECTS_STORAGE_KEY,
-                    JSON.stringify({ ...merged, themeMode: sanitizedThemeMode })
-                );
-                window.dispatchEvent(new Event('ui-effects-changed'));
-            } catch {
-                window.localStorage.setItem(
-                    UI_EFFECTS_STORAGE_KEY,
-                    JSON.stringify({ themeMode: sanitizedThemeMode })
-                );
-                window.dispatchEvent(new Event('ui-effects-changed'));
-            }
-        }
-
-        setUiEffects((prev) => ({ ...prev, themeMode: sanitizedThemeMode }));
+    const updateEffects = useCallback((nextEffects) => {
+        setUiEffects((previousEffects) => {
+            const patch =
+                typeof nextEffects === 'function'
+                    ? nextEffects(previousEffects)
+                    : nextEffects;
+            return saveUiEffects(mergeUiEffects(previousEffects, patch));
+        });
     }, []);
+
+    const setThemeMode = useCallback((nextMode) => {
+        updateEffects({ themeMode: sanitizeThemeMode(nextMode) });
+    }, [updateEffects]);
+
+    const setSurfacePreset = useCallback((nextPreset) => {
+        updateEffects({ surfacePreset: nextPreset });
+    }, [updateEffects]);
+
+    const setAccentPreset = useCallback((nextPreset) => {
+        updateEffects({ accentPreset: nextPreset });
+    }, [updateEffects]);
+
+    const applyCustomAccent = useCallback((accentColor) => {
+        updateEffects({
+            accentPreset: 'custom',
+            customAccent: accentColor,
+        });
+    }, [updateEffects]);
+
+    const resetCustomAccent = useCallback(() => {
+        updateEffects({
+            accentPreset: 'system',
+            customAccent: DEFAULT_CUSTOM_ACCENT,
+        });
+    }, [updateEffects]);
+
+    const setWallpaperMode = useCallback((nextWallpaperMode) => {
+        updateEffects({ wallpaperMode: nextWallpaperMode });
+    }, [updateEffects]);
 
     const toggleTheme = useCallback(() => {
         setThemeMode(resolvedTheme === 'dark' ? 'light' : 'dark');
@@ -280,7 +256,9 @@ export default function ThemeProvider({ children }) {
 
         const root = document.documentElement;
         const sync = () => {
-            syncDocumentAccessibilityPreferences(root, readAccessibilityPreferences());
+            const nextPreferences = readAccessibilityPreferences();
+            setAccessibilityPreferences(nextPreferences);
+            syncDocumentAccessibilityPreferences(root, nextPreferences);
         };
 
         sync();
@@ -297,8 +275,8 @@ export default function ThemeProvider({ children }) {
     useEffect(() => {
         if (typeof window === 'undefined' || typeof document === 'undefined') return;
         const root = window.document.documentElement;
-        const surfaceClass = SURFACE_CLASS_MAP[surfacePreset] || SURFACE_CLASS_MAP.liquid;
-        root.classList.remove('light', 'dark', 'macos-sequoia', 'macos-liquid', 'macos-graphite', 'liquid-glass');
+        const surfaceClass = SURFACE_CLASS_MAP[surfacePreset] || SURFACE_CLASS_MAP.hybrid;
+        root.classList.remove('light', 'dark', 'liquid-glass', ...SURFACE_CLASS_NAMES);
         root.classList.add(resolvedTheme);
         root.classList.add('bigsur');
         root.classList.add(surfaceClass);
@@ -346,13 +324,54 @@ export default function ThemeProvider({ children }) {
         'radial-gradient(1320px 820px at 10% 6%, rgba(255,255,255,0.28), rgba(255,255,255,0)), radial-gradient(1180px 840px at 84% 2%, rgba(102,198,255,0.34), rgba(102,198,255,0)), radial-gradient(980px 680px at 76% 88%, rgba(243,163,60,0.2), rgba(243,163,60,0)), conic-gradient(from 126deg at 50% 50%, rgba(126,152,255,0.28), rgba(59,184,255,0.26), rgba(96,225,212,0.18), rgba(243,163,60,0.18), rgba(126,152,255,0.28))';
     const themeContextValue = useMemo(
         () => ({
+            effects: uiEffects,
             themeMode,
             resolvedTheme,
             systemTheme,
+            brightness: uiEffects.brightness,
+            contrast: uiEffects.contrast,
+            veil: uiEffects.veil,
+            reduceMotion: effectiveReduceMotion,
+            prefersContrast: accessibilityPreferences.prefersContrast,
+            forcedColors: accessibilityPreferences.forcedColors,
+            surfacePreset,
+            accentPreset,
+            customAccent,
+            wallpaperMode,
+            resolvedAccentPreset,
+            surfacePresets: SURFACE_PRESETS,
+            accentPresets: ACCENT_PRESETS,
+            wallpaperOptions: WALLPAPER_OPTIONS,
+            updateEffects,
             setThemeMode,
+            setSurfacePreset,
+            setAccentPreset,
+            applyCustomAccent,
+            resetCustomAccent,
+            setWallpaperMode,
             toggleTheme,
         }),
-        [resolvedTheme, setThemeMode, systemTheme, themeMode, toggleTheme]
+        [
+            accentPreset,
+            applyCustomAccent,
+            accessibilityPreferences,
+            customAccent,
+            effectiveReduceMotion,
+            resolvedAccentPreset,
+            resolvedTheme,
+            resetCustomAccent,
+            setAccentPreset,
+            setSurfacePreset,
+            setThemeMode,
+            setWallpaperMode,
+            surfacePreset,
+            systemTheme,
+            themeMode,
+            toggleTheme,
+            uiEffects,
+            updateEffects,
+            wallpaperMode,
+        ]
     );
 
     return (
@@ -373,6 +392,7 @@ export default function ThemeProvider({ children }) {
                                 accentGradient={liquidAccent}
                                 focusMode={false}
                                 theme={resolvedTheme}
+                                wallpaperMode={wallpaperMode}
                             />
 
                             {/* Content layer */}

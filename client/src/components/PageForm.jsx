@@ -379,7 +379,7 @@ const PageForm = ({ initialValues, onSubmit, isSubmitting = false, submitLabel =
                 </Alert>
             )}
 
-            <div className='grid gap-6 lg:grid-cols-[minmax(0,2fr),minmax(0,1fr)]'>
+            <div className='grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]'>
                 <div className='space-y-6'>
                     <Card className='space-y-5'>
                         <div className='flex flex-col gap-4'>

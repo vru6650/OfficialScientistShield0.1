@@ -7,6 +7,11 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import {
+    createContentSecurityPolicyDirectives,
+    readInlineScriptHashes,
+} from './contentSecurityPolicy.js';
+import { normalizeHttpError } from './normalizeHttpError.js';
+import {
     API_PREFIX,
     LEGACY_API_PREFIX,
     registerApiNotFound,
@@ -17,6 +22,7 @@ export const createApp = ({ corsOrigin }) => {
     const app = express();
     const __dirname = path.resolve();
     const clientDistDir = path.join(__dirname, 'client', 'dist');
+    const inlineScriptHashes = readInlineScriptHashes(clientDistDir);
 
     app.disable('x-powered-by');
     app.set('trust proxy', 1);
@@ -29,6 +35,10 @@ export const createApp = ({ corsOrigin }) => {
     });
 
     app.use(helmet({
+        contentSecurityPolicy: {
+            useDefaults: false,
+            directives: createContentSecurityPolicyDirectives({ inlineScriptHashes }),
+        },
         crossOriginResourcePolicy: { policy: 'cross-origin' },
     }));
     app.use(compression());
@@ -62,10 +72,11 @@ export const createApp = ({ corsOrigin }) => {
     });
 
     app.use((err, req, res, next) => {
-        console.error('SERVER ERROR:', err.stack);
+        const { statusCode, message } = normalizeHttpError(err);
 
-        const statusCode = err.statusCode || 500;
-        const message = err.message || 'Internal Server Error';
+        if (statusCode >= 500) {
+            console.error('SERVER ERROR:', err?.stack || err);
+        }
 
         res.status(statusCode).json({
             success: false,

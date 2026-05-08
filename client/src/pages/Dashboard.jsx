@@ -63,16 +63,17 @@ export default function Dashboard() {
     const ActiveComponent = componentMap[tab];
 
     return (
-        <div className='min-h-screen flex flex-col md:flex-row'>
-            <div className='md:w-56'>
+        <div className='dashboard-shell workspace-page min-h-screen'>
+            <aside className='dashboard-sidebar-shell'>
                 <DashSidebar />
-            </div>
+            </aside>
 
-            <main className='w-full'>
+            <main className='dashboard-content'>
                 <Suspense
                     fallback={
-                        <div className='flex justify-center items-center min-h-screen w-full'>
+                        <div className='dashboard-loading-state'>
                             <Spinner size='xl' />
+                            <span>Loading workspace</span>
                         </div>
                     }
                 >

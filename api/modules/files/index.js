@@ -1,4 +1,4 @@
-import fileManagerRouter from '../../routes/fileManager.route.js';
+import fileManagerRouter from './files.route.js';
 
 export const fileModule = {
     name: 'files',

@@ -1,4 +1,4 @@
-import problemRouter from '../../routes/problem.route.js';
+import problemRouter from './problem.route.js';
 
 export const problemModule = {
     name: 'problem',

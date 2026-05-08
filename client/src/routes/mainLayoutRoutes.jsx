@@ -92,6 +92,27 @@ export const mainLayoutRoutes = Object.freeze([
     { path: '*', element: <NotFound /> },
 ]);
 
+export function buildRouteObjects(routes) {
+    return routes.map((route) => {
+        const children = Array.isArray(route.children) ? buildRouteObjects(route.children) : undefined;
+        const routeObject = {
+            element: route.element,
+        };
+
+        if (route.index) {
+            routeObject.index = true;
+        } else {
+            routeObject.path = route.path;
+        }
+
+        if (children?.length) {
+            routeObject.children = children;
+        }
+
+        return routeObject;
+    });
+}
+
 export function buildRouteElements(routes, parentKey = 'route') {
     return routes.map((route, index) => {
         const keyBase = route.path || (route.index ? 'index' : `branch-${index}`);
