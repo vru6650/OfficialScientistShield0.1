@@ -561,7 +561,7 @@ export default function MacDock({ entries, focusedId, onActivate, autoHide }) {
     });
 
     return (
-        <div className="pointer-events-none fixed inset-x-0 bottom-5 z-[70] flex justify-center">
+        <div className="desktop-dock-wrap pointer-events-none fixed inset-x-0 bottom-5 z-[70] flex justify-center">
             <motion.div
                 ref={dockRef}
                 className="desktop-dock pointer-events-auto relative px-6 py-4"
@@ -584,7 +584,7 @@ export default function MacDock({ entries, focusedId, onActivate, autoHide }) {
                 onPointerLeave={handleLeave}
                 aria-hidden={autoHide && !isRevealed}
             >
-                <div className="pointer-events-auto absolute -top-24 right-3 z-[5] flex items-center gap-2">
+                <div className="desktop-dock__top-controls pointer-events-auto absolute -top-24 right-3 z-[5] flex items-center gap-2">
                     <button
                         type="button"
                         onClick={() => setShowControls((open) => !open)}
@@ -606,7 +606,7 @@ export default function MacDock({ entries, focusedId, onActivate, autoHide }) {
                             dragMomentum={false}
                             dragElastic={0.12}
                             dragConstraints={{ top: -260, bottom: 40, left: -220, right: 220 }}
-                            className="pointer-events-auto absolute -top-64 right-3 z-[6] w-72 max-h-[360px] overflow-y-auto rounded-2xl border border-white/40 bg-white/90 p-4 text-xs text-slate-700 shadow-2xl backdrop-blur dark:border-white/12 dark:bg-slate-900/90 dark:text-slate-200"
+                            className="desktop-dock__controls-panel pointer-events-auto absolute -top-64 right-3 z-[6] w-72 max-h-[360px] overflow-y-auto rounded-2xl border border-white/40 bg-white/90 p-4 text-xs text-slate-700 shadow-2xl backdrop-blur dark:border-white/12 dark:bg-slate-900/90 dark:text-slate-200"
                             initial={{ opacity: 0, y: 10, scale: 0.98 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -920,7 +920,7 @@ export default function MacDock({ entries, focusedId, onActivate, autoHide }) {
                         No apps match your filter. Clear it to show all shortcuts.
                     </div>
                 ) : (
-                    <div className="relative z-[2] flex items-end gap-3 px-2" style={{ gap: `${iconSpacing}px` }}>
+                    <div className="desktop-dock__items relative z-[2] flex items-end gap-3 px-2" style={{ gap: `${iconSpacing}px` }}>
                         {dockItems}
                     </div>
                 )}

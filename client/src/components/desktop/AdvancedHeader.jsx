@@ -967,17 +967,17 @@ export default function AdvancedHeader({
                 scale: headerIsHidden ? 0.98 : 1,
             }}
             transition={{ type: 'spring', damping: 28, stiffness: 250 }}
-            className="pointer-events-none fixed inset-x-0 top-0 z-[84] px-2 sm:px-3"
+            className="advanced-header pointer-events-none fixed inset-x-0 top-0 z-[84] px-2 sm:px-3"
             style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.44rem)' }}
         >
             <motion.div
                 onPointerEnter={handleHeaderPointerEnter}
                 onPointerLeave={handleHeaderPointerLeave}
                 layout
-                className="pointer-events-auto mx-auto flex w-full max-w-[84rem] items-center gap-2 rounded-[1.4rem] border border-white/35 bg-white/55 p-2 shadow-[0_22px_44px_-18px_rgba(15,23,42,0.25),inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-[40px] transition-all duration-300 dark:border-white/10 dark:bg-slate-950/50 dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.05)]"
+                className="advanced-header__bar pointer-events-auto mx-auto flex w-full max-w-[84rem] items-center gap-2 rounded-[1.4rem] border border-white/35 bg-white/55 p-2 shadow-[0_22px_44px_-18px_rgba(15,23,42,0.25),inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-[40px] transition-all duration-300 dark:border-white/10 dark:bg-slate-950/50 dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.05)]"
                 style={{ '--advanced-header-accent': resolvedAccent }}
             >
-                <div className="flex min-w-0 items-center gap-2">
+                <div className="advanced-header__brand-group flex min-w-0 items-center gap-2">
                     <div className="hidden items-center gap-1.5 rounded-full border border-white/40 bg-white/50 px-2 py-1 dark:border-white/10 dark:bg-slate-900/60 md:flex">
                         <motion.button
                             whileHover={{ scale: 1.2 }}
@@ -1029,7 +1029,7 @@ export default function AdvancedHeader({
                             onGoHome();
                         }}
                         aria-label={brand.title}
-                        className="group flex min-w-0 items-center gap-2 rounded-2xl border border-white/45 bg-white/75 px-3 py-1.5 text-left shadow-sm transition-colors hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:hover:bg-slate-900"
+                        className="advanced-header__brand group flex min-w-0 items-center gap-2 rounded-2xl border border-white/45 bg-white/75 px-3 py-1.5 text-left shadow-sm transition-colors hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:hover:bg-slate-900"
                         title={brand.title}
                     >
                         <span
@@ -1071,7 +1071,7 @@ export default function AdvancedHeader({
                     disabled={!canGoBack}
                     aria-label={backButtonTitle}
                     title={backButtonTitle}
-                    className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-white/45 bg-white/80 text-slate-700 shadow-sm transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-900 dark:disabled:hover:bg-slate-900"
+                    className="advanced-header__icon-button inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-white/45 bg-white/80 text-slate-700 shadow-sm transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-900 dark:disabled:hover:bg-slate-900"
                 >
                     <HiOutlineArrowLeft className="h-5 w-5" aria-hidden="true" />
                     <span className="sr-only">Back</span>
@@ -1084,7 +1084,7 @@ export default function AdvancedHeader({
                     onClick={onOpenCommandPalette}
                     aria-label={shortcutHintTitle}
                     title={shortcutHintTitle}
-                    className="hidden min-w-0 flex-1 items-center gap-3 rounded-[1.1rem] border border-white/45 bg-white/80 px-4 py-2 text-left shadow-sm transition-colors hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:hover:bg-slate-900 sm:flex"
+                    className="advanced-header__search hidden min-w-0 flex-1 items-center gap-3 rounded-[1.1rem] border border-white/45 bg-white/80 px-4 py-2 text-left shadow-sm transition-colors hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:hover:bg-slate-900 sm:flex"
                 >
                     <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border border-white/50 bg-white/80 text-slate-500 shadow-sm dark:border-white/10 dark:bg-slate-800 dark:text-slate-400">
                         <HiOutlineMagnifyingGlass className="h-4 w-4" />
@@ -1111,12 +1111,12 @@ export default function AdvancedHeader({
                     onClick={onOpenCommandPalette}
                     aria-label={shortcutHintTitle}
                     title={shortcutHintTitle}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/45 bg-white/80 text-slate-700 shadow-sm transition-colors hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-900 sm:hidden"
+                    className="advanced-header__icon-button inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/45 bg-white/80 text-slate-700 shadow-sm transition-colors hover:bg-white dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:bg-slate-900 sm:hidden"
                 >
                     <HiOutlineMagnifyingGlass className="h-5 w-5" />
                 </motion.button>
 
-                <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+                <div className="advanced-header__actions flex min-w-0 items-center gap-1.5 sm:gap-2">
                     <div className="hidden min-w-0 items-center gap-1.5 2xl:flex">
                         <span className="rounded-lg border border-white/45 bg-white/78 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 dark:border-white/15 dark:bg-slate-900/78 dark:text-slate-300">
                             {stagedWindowCount} live
@@ -1133,14 +1133,14 @@ export default function AdvancedHeader({
                         ) : null}
                     </div>
 
-                    <div className="inline-flex items-center gap-1 rounded-xl border border-white/55 bg-white/78 px-2.5 py-1.5 text-slate-700 dark:border-white/15 dark:bg-slate-900/78 dark:text-slate-200">
+                    <div className="advanced-header__clock inline-flex items-center gap-1 rounded-xl border border-white/55 bg-white/78 px-2.5 py-1.5 text-slate-700 dark:border-white/15 dark:bg-slate-900/78 dark:text-slate-200">
                         <span className="hidden text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 sm:inline">
                             {dayLabel}
                         </span>
                         <span className="text-xs font-semibold">{timeLabel}</span>
                     </div>
 
-                    <div className="hidden items-center rounded-2xl border border-white/45 bg-white/70 p-1 dark:border-white/10 dark:bg-slate-900/80 min-[430px]:inline-flex">
+                    <div className="advanced-header__workspace-controls hidden items-center rounded-2xl border border-white/45 bg-white/70 p-1 dark:border-white/10 dark:bg-slate-900/80 min-[430px]:inline-flex">
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
@@ -1187,7 +1187,7 @@ export default function AdvancedHeader({
                         </motion.button>
                     </div>
 
-                    <div className="relative" ref={notificationsRef}>
+                    <div className="advanced-header__notification relative" ref={notificationsRef}>
                         <motion.button
                             whileHover={{ y: -2, scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -1307,7 +1307,7 @@ export default function AdvancedHeader({
                         </AnimatePresence>
                     </div>
 
-                    <div className="relative" ref={profileRef}>
+                    <div className="advanced-header__profile relative" ref={profileRef}>
                         <motion.button
                             whileHover={{ y: -2, scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}

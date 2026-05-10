@@ -20,6 +20,7 @@ const Hero = lazy(() => import('../components/Hero'));
 const CategoryCard = lazy(() => import('../components/CategoryCard'));
 const CodeEditor = lazy(() => import('../components/CodeEditor'));
 const PostCard = lazy(() => import('../components/PostCard'));
+const SPRINT_STORAGE_KEY = 'scientistshield.homeSprintGoal';
 
 function SectionHeader({ eyebrow, title, description, id, align = 'left', action = null }) {
     const alignmentClass = align === 'center' ? 'mx-auto max-w-3xl text-center' : 'max-w-3xl';
@@ -76,6 +77,14 @@ export default function Home() {
     const [latestPosts, setLatestPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [activeSprintKey, setActiveSprintKey] = useState(() => {
+        if (typeof window === 'undefined') return 'frontend';
+        try {
+            return window.localStorage.getItem(SPRINT_STORAGE_KEY) || 'frontend';
+        } catch {
+            return 'frontend';
+        }
+    });
 
     const missionControl = useMemo(
         () => [
@@ -147,6 +156,68 @@ export default function Home() {
             },
         ],
         []
+    );
+
+    const sprintPlans = useMemo(
+        () => [
+            {
+                key: 'frontend',
+                label: 'Frontend',
+                icon: HiOutlineSparkles,
+                title: 'Ship a polished UI sprint',
+                description: 'Start with React patterns, practice component state, then use the lab to test a production-ready interaction.',
+                time: '45 min',
+                route: '/tutorials?category=reactjs',
+                routeLabel: 'Open React path',
+                accent: 'from-sky-500 via-cyan-400 to-teal-400',
+                progress: '64%',
+                steps: [
+                    'Review component composition and reusable state patterns.',
+                    'Solve one UI-focused challenge with deliberate edge cases.',
+                    'Prototype the interaction in the playground before publishing notes.',
+                ],
+            },
+            {
+                key: 'interview',
+                label: 'Interview',
+                icon: HiOutlineCodeBracket,
+                title: 'Practice for technical interviews',
+                description: 'Warm up with patterns, move into a timed problem, and finish by comparing tradeoffs in the editorial.',
+                time: '60 min',
+                route: '/problems',
+                routeLabel: 'Open problems',
+                accent: 'from-indigo-500 via-blue-500 to-cyan-400',
+                progress: '72%',
+                steps: [
+                    'Run through arrays, strings, or dynamic programming fundamentals.',
+                    'Complete one medium problem with notes on constraints.',
+                    'Write the final complexity and alternate approach while it is fresh.',
+                ],
+            },
+            {
+                key: 'fullstack',
+                label: 'Full-stack',
+                icon: HiOutlineRocketLaunch,
+                title: 'Build a full-stack learning loop',
+                description: 'Connect tutorials, implementation practice, and publishing so the session ends with reusable proof of work.',
+                time: '90 min',
+                route: '/tools',
+                routeLabel: 'Open tools',
+                accent: 'from-emerald-500 via-teal-400 to-sky-500',
+                progress: '86%',
+                steps: [
+                    'Pick one backend or API concept and skim the related tutorial.',
+                    'Test the request, schema, or snippet in the workspace tools.',
+                    'Publish a short article or project note with the final takeaway.',
+                ],
+            },
+        ],
+        []
+    );
+
+    const selectedSprint = useMemo(
+        () => sprintPlans.find((plan) => plan.key === activeSprintKey) || sprintPlans[0],
+        [activeSprintKey, sprintPlans]
     );
 
     const highlights = useMemo(
@@ -309,6 +380,15 @@ export default function Home() {
     );
 
     useEffect(() => {
+        if (typeof window === 'undefined') return;
+        try {
+            window.localStorage.setItem(SPRINT_STORAGE_KEY, selectedSprint.key);
+        } catch {
+            // Local storage is optional; the planner still works for the current session.
+        }
+    }, [selectedSprint.key]);
+
+    useEffect(() => {
         let active = true;
 
         (async () => {
@@ -403,6 +483,8 @@ export default function Home() {
         );
     };
 
+    const SelectedSprintIcon = selectedSprint.icon;
+
     return (
         <main className="workspace-page liquid-app-shell relative min-h-screen pb-16">
             {error ? (
@@ -451,6 +533,82 @@ export default function Home() {
                         <div className="home-launch-grid mt-10">
                             {missionControl.map(renderMissionCard)}
                         </div>
+                    </div>
+                </section>
+
+                <section id="smart-sprint" aria-labelledby="smart-sprint-heading" className="scroll-mt-24">
+                    <div className="home-sprint-shell">
+                        <div className="home-sprint-copy">
+                            <SectionHeader
+                                eyebrow="Smart Sprint"
+                                id="smart-sprint-heading"
+                                title="Choose a goal and get the next useful path instantly."
+                                description="The planner turns the homepage into a launch point for focused sessions instead of another place to browse."
+                            />
+
+                            <div className="home-sprint-tabs" role="tablist" aria-label="Learning sprint goal">
+                                {sprintPlans.map(({ key, label, icon: Icon }) => {
+                                    const isActive = selectedSprint.key === key;
+                                    return (
+                                        <button
+                                            key={key}
+                                            type="button"
+                                            role="tab"
+                                            aria-selected={isActive}
+                                            aria-controls="smart-sprint-panel"
+                                            className={`home-sprint-tab ${isActive ? 'home-sprint-tab--active' : ''}`}
+                                            onClick={() => setActiveSprintKey(key)}
+                                        >
+                                            <Icon className="h-4 w-4" aria-hidden />
+                                            <span>{label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="home-sprint-insight">
+                                <span className="home-sprint-insight__dot" aria-hidden />
+                                <p>
+                                    Saved locally, so returning learners land on the same sprint goal without account setup.
+                                </p>
+                            </div>
+                        </div>
+
+                        <article id="smart-sprint-panel" className="home-sprint-card" role="tabpanel">
+                            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="flex min-w-0 items-start gap-4">
+                                    <span className={`home-sprint-icon bg-gradient-to-br ${selectedSprint.accent}`}>
+                                        <SelectedSprintIcon className="h-6 w-6" aria-hidden />
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="theme-ink-muted text-xs font-semibold uppercase tracking-[0.28em]">
+                                            {selectedSprint.time} focus block
+                                        </p>
+                                        <h3 className="theme-ink-primary mt-2 text-2xl font-bold">{selectedSprint.title}</h3>
+                                        <p className="theme-ink-secondary mt-3 text-sm leading-7">{selectedSprint.description}</p>
+                                    </div>
+                                </div>
+                                <span className="home-sprint-score">Ready</span>
+                            </div>
+
+                            <ol className="home-sprint-steps">
+                                {selectedSprint.steps.map((step, index) => (
+                                    <li key={step} className="home-sprint-step">
+                                        <span className="home-sprint-step__index">{index + 1}</span>
+                                        <p>{step}</p>
+                                    </li>
+                                ))}
+                            </ol>
+
+                            <div className="home-sprint-footer">
+                                <div className="home-sprint-progress" aria-label="Sprint readiness">
+                                    <span style={{ width: selectedSprint.progress }} />
+                                </div>
+                                <Button as={Link} to={selectedSprint.route} pill className="btn-aqua">
+                                    {selectedSprint.routeLabel}
+                                </Button>
+                            </div>
+                        </article>
                     </div>
                 </section>
 
