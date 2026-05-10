@@ -14,6 +14,7 @@ import {
 } from 'react-icons/hi2';
 import PostCard from '../components/PostCard';
 import PostCardSkeleton from '../components/skeletons/PostCardSkeleton';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 import { ARTICLE_POST_CATEGORY_OPTIONS } from '../constants/postCategories.js';
 import useDebounce from '../hooks/useDebounce';
 import { getPosts } from '../services/postService';
@@ -163,7 +164,7 @@ export default function PostListPage() {
         <div className='workspace-page relative min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950'>
             <div className='pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.12),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.12),transparent_28%)] dark:bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.14),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.14),transparent_28%)]' aria-hidden />
 
-            <div className='relative mx-auto max-w-6xl px-4 py-10 lg:px-6'>
+            <ResponsiveContainer width='wide' spacing='page' className='relative'>
                 <section className='relative overflow-hidden rounded-3xl border border-white/60 bg-white/90 px-6 py-8 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.9)] backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/85'>
                     <div className='absolute -left-24 top-10 h-48 w-48 rounded-full bg-gradient-to-br from-sky-400/30 via-cyan-300/25 to-emerald-300/25 blur-3xl' aria-hidden />
                     <div className='absolute -right-16 -bottom-10 h-64 w-64 rounded-full bg-gradient-to-br from-indigo-500/25 via-fuchsia-400/25 to-amber-300/25 blur-3xl' aria-hidden />
@@ -453,7 +454,7 @@ export default function PostListPage() {
                         </div>
                     )}
                 </section>
-            </div>
+            </ResponsiveContainer>
         </div>
     );
 }

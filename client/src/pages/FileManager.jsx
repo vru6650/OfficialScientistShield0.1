@@ -34,6 +34,7 @@ import {
     updateFileNode,
     uploadFile,
 } from '../services/fileManagerService.js';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 import folderIcon from '../assets/finder/folder.svg';
 import imageIcon from '../assets/finder/image.svg';
 import videoIcon from '../assets/finder/video.svg';
@@ -645,7 +646,7 @@ export default function FileManager() {
     const activeFilter = FINDER_QUICK_FILTERS.find((option) => option.value === filterCategory) ?? FINDER_QUICK_FILTERS[0];
 
     return (
-        <section className="relative mx-auto flex max-w-7xl flex-col gap-6 px-6 py-10 lg:px-4">
+        <ResponsiveContainer as="section" width="xl" spacing="page" className="relative flex flex-col gap-6">
             <div
                 aria-hidden
                 className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[40px] bg-gradient-to-br from-sky-200/30 via-white/40 to-indigo-200/25 blur-[2px]"
@@ -730,7 +731,7 @@ export default function FileManager() {
                 />
                 <QuickLookModal item={quickLookItem} onClose={closeQuickLook} />
             </DndProvider>
-        </section>
+        </ResponsiveContainer>
     );
 }
 

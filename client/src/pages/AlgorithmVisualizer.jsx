@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import SortingCanvas from '../components/visualizer/SortingCanvas';
 import StructureCanvas from '../components/visualizer/StructureCanvas';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 import { algorithmGroups, findAlgorithmById } from '../data/visualizerCatalog';
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
@@ -305,7 +306,7 @@ const AlgorithmVisualizer = () => {
     };
 
     return (
-        <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8">
+        <ResponsiveContainer width="wide" spacing="page" className="flex flex-col gap-8">
             <div className="space-y-3">
                 <h1 className="text-3xl font-bold text-white">Algorithm Visualizer Studio</h1>
                 <p className="max-w-3xl text-sm text-slate-300">
@@ -495,7 +496,7 @@ const AlgorithmVisualizer = () => {
                     spellCheck={false}
                 />
             </div>
-        </div>
+        </ResponsiveContainer>
     );
 };
 

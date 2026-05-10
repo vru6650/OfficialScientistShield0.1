@@ -48,7 +48,7 @@ export default function ControlCenter({
     onDuplicateWindow,
     onApplyWindowLayout,
 }) {
-    const { themeMode, resolvedTheme, systemTheme } = useTheme();
+    const { themeMode, resolvedTheme, systemTheme, reduceMotion: effectiveReduceMotion } = useTheme();
     const [settingsIconChoice, setSettingsIconChoice] = useState('default');
     const [settingsIconInput, setSettingsIconInput] = useState('');
     const [settingsIconPreview, setSettingsIconPreview] = useState(settingsIcon);
@@ -109,10 +109,10 @@ export default function ControlCenter({
 
     const statusLabel = useMemo(() => {
         const focus = focusMode ? 'Focus on' : 'Focus off';
-        const motion = reduceMotion ? 'Motion reduced' : 'Motion fluid';
+        const motion = effectiveReduceMotion ? 'Motion reduced' : 'Motion fluid';
         const wallpaper = selectedWallpaperOption?.label || 'Dynamic';
         return `${focus} • ${motion} • ${themeSummary} • ${appearanceSummary} • ${wallpaper} wallpaper`;
-    }, [appearanceSummary, focusMode, reduceMotion, selectedWallpaperOption?.label, themeSummary]);
+    }, [appearanceSummary, effectiveReduceMotion, focusMode, selectedWallpaperOption?.label, themeSummary]);
 
     useEffect(() => {
         setCustomAccentInput(customAccent);
@@ -131,13 +131,13 @@ export default function ControlCenter({
             {
                 key: 'motion',
                 label: 'Motion',
-                sub: reduceMotion ? 'Reduced' : 'Fluid',
+                sub: effectiveReduceMotion ? 'Reduced' : 'Fluid',
                 icon: HiOutlineBolt,
-                active: reduceMotion,
+                active: effectiveReduceMotion,
                 onClick: () => onChangeEffects({ ...effects, reduceMotion: !reduceMotion }),
             },
         ],
-        [effects, focusMode, onChangeEffects, onToggleFocusMode, reduceMotion]
+        [effectiveReduceMotion, effects, focusMode, onChangeEffects, onToggleFocusMode, reduceMotion]
     );
 
     const syncSettingsIcon = useCallback(() => {
@@ -477,7 +477,7 @@ export default function ControlCenter({
                                     themeMode={themeMode}
                                     resolvedTheme={resolvedTheme}
                                     systemTheme={systemTheme}
-                                    reduceMotion={reduceMotion}
+                                    reduceMotion={effectiveReduceMotion}
                                     onChange={(mode) => onChangeEffects({ themeMode: mode })}
                                 />
                             </div>

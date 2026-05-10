@@ -15,6 +15,7 @@ import {
 } from 'react-icons/hi2';
 import CallToAction from '../components/CallToAction';
 import PageView from '../components/PageView.jsx';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 const pillars = [
     {
@@ -79,9 +80,9 @@ const experiences = [
 ];
 
 const AboutFallback = () => (
-    <main className="relative min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white">
+    <main className="workspace-page relative min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(56,189,248,0.16),transparent_36%),radial-gradient(circle_at_82%_10%,rgba(167,139,250,0.18),transparent_34%),radial-gradient(circle_at_46%_48%,rgba(16,185,129,0.12),transparent_42%)]" />
-        <div className="relative mx-auto flex max-w-6xl flex-col gap-14 px-4 py-16 sm:px-6 lg:px-8">
+        <ResponsiveContainer width="wide" spacing="page" className="relative flex flex-col gap-10 sm:gap-12 lg:gap-14">
             {/* Hero */}
             <section className="relative overflow-hidden rounded-[32px] border border-white/40 bg-white/80 shadow-[0_30px_120px_-80px_rgba(14,116,244,0.55)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-100/40 via-white/70 to-indigo-50/40 dark:from-slate-900/40 dark:via-slate-900/70 dark:to-indigo-900/30" />
@@ -279,7 +280,7 @@ const AboutFallback = () => (
             </section>
 
             <CallToAction />
-        </div>
+        </ResponsiveContainer>
     </main>
 );
 

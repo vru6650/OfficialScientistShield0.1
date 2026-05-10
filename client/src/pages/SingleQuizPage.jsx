@@ -10,6 +10,7 @@ import { getSingleQuizBySlug } from '../services/quizService';
 
 // Import the existing component we already built
 import QuizComponent from '../components/QuizComponent';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 export default function SingleQuizPage() {
     // Get the quiz slug from the URL
@@ -62,7 +63,8 @@ export default function SingleQuizPage() {
                 <meta property="og:description" content={quiz.description} />
             </Helmet>
 
-            <div className="p-3 max-w-7xl mx-auto min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+            <div className="workspace-page min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
+                <ResponsiveContainer width="xl" spacing="page">
                 <h1 className="text-4xl lg:text-5xl font-extrabold text-center my-10 leading-tight text-gray-900 dark:text-white">
                     {quiz.title}
                 </h1>
@@ -74,6 +76,7 @@ export default function SingleQuizPage() {
                 <div className="max-w-4xl mx-auto mt-8">
                     <QuizComponent quizId={quiz._id} />
                 </div>
+                </ResponsiveContainer>
             </div>
         </>
     );

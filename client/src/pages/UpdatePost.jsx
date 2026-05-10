@@ -24,6 +24,7 @@ import PostIllustrationStudio from '../components/PostIllustrationStudio';
 import PostMediaStudio from '../components/PostMediaStudio';
 import PostLivePreview from '../components/PostLivePreview';
 import TiptapEditor from '../components/TiptapEditor';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 import { ARTICLE_POST_CATEGORY_OPTIONS } from '../constants/postCategories.js';
 import '../Tiptap.css';
 import { getPost, updatePost } from '../services/postService';
@@ -238,7 +239,7 @@ export default function UpdatePost() {
         <div className='relative min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950'>
             <div className='pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(56,189,248,0.14),transparent_28%),radial-gradient(circle_at_80%_0%,rgba(129,140,248,0.14),transparent_28%)]' aria-hidden />
 
-            <div className='relative mx-auto max-w-6xl px-4 py-10 lg:px-6'>
+            <ResponsiveContainer width='wide' spacing='page' className='relative'>
                 <header className='overflow-hidden rounded-3xl border border-white/60 bg-white/90 px-6 py-5 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.8)] backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/85'>
                     <div className='relative flex flex-wrap items-center justify-between gap-3'>
                         <div className='space-y-1'>
@@ -544,7 +545,7 @@ export default function UpdatePost() {
                         />
                     </aside>
                 </div>
-            </div>
+            </ResponsiveContainer>
         </div>
     );
 }

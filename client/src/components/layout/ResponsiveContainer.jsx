@@ -7,19 +7,21 @@ const widthClasses = {
     wide: 'workspace-page__content workspace-page__content--wide',
     xl: 'workspace-page__content workspace-page__content--xl',
     post: 'workspace-page__content workspace-page__content--post',
+    full: 'workspace-page__content workspace-page__content--full',
 };
 
 const gutterClasses = {
     none: '',
-    page: 'px-4 sm:px-6 lg:px-8',
-    article: 'px-4 sm:px-6 lg:px-10',
-    compact: 'px-3 sm:px-4',
+    page: 'responsive-gutters',
+    article: 'responsive-gutters responsive-gutters--article',
+    compact: 'responsive-gutters responsive-gutters--compact',
 };
 
 const spacingClasses = {
     none: '',
-    page: 'py-8 sm:py-10 lg:py-12',
-    article: 'py-8 sm:py-10',
+    page: 'responsive-section',
+    article: 'responsive-section responsive-section--article',
+    compact: 'responsive-section responsive-section--compact',
 };
 
 export default function ResponsiveContainer({
@@ -32,6 +34,7 @@ export default function ResponsiveContainer({
     ...props
 }) {
     const classes = [
+        'responsive-container',
         widthClasses[width] || widthClasses.default,
         gutterClasses[gutters] || '',
         spacingClasses[spacing] || '',
@@ -47,9 +50,9 @@ export default function ResponsiveContainer({
 
 ResponsiveContainer.propTypes = {
     as: PropTypes.elementType,
-    width: PropTypes.oneOf(['default', 'tight', 'story', 'wide', 'xl', 'post']),
+    width: PropTypes.oneOf(['default', 'tight', 'story', 'wide', 'xl', 'post', 'full']),
     gutters: PropTypes.oneOf(['none', 'page', 'article', 'compact']),
-    spacing: PropTypes.oneOf(['none', 'page', 'article']),
+    spacing: PropTypes.oneOf(['none', 'page', 'article', 'compact']),
     className: PropTypes.string,
     children: PropTypes.node,
 };

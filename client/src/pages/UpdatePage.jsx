@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Spinner } from 'flowbite-react';
 import PageForm from '../components/PageForm.jsx';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 import { getPageById, updatePage } from '../services/pageService.js';
 
 const UpdatePage = () => {
@@ -50,16 +51,16 @@ const UpdatePage = () => {
 
     if (isError) {
         return (
-            <div className='mx-auto max-w-4xl px-4 py-10'>
+            <ResponsiveContainer width='tight' spacing='page'>
                 <Alert color='failure'>
                     {error?.response?.data?.message || error?.message || 'Unable to load this page.'}
                 </Alert>
-            </div>
+            </ResponsiveContainer>
         );
     }
 
     return (
-        <div className='mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8'>
+        <ResponsiveContainer width='wide' spacing='page'>
             <div className='mb-6 flex flex-col gap-2'>
                 <h1 className='text-3xl font-semibold text-gray-900 dark:text-white'>Edit page</h1>
                 <p className='text-sm text-gray-500 dark:text-gray-400'>
@@ -85,7 +86,7 @@ const UpdatePage = () => {
                 isSubmitting={mutation.isPending}
                 submitLabel='Save changes'
             />
-        </div>
+        </ResponsiveContainer>
     );
 };
 

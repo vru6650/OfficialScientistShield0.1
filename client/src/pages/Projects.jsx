@@ -11,6 +11,7 @@ import {
 } from 'react-icons/hi2';
 import CallToAction from '../components/CallToAction';
 import PageView from '../components/PageView.jsx';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 const tracks = [
     {
@@ -58,9 +59,9 @@ const highlightCards = [
 ];
 
 const ProjectsFallback = () => (
-    <main className="relative min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-white">
+    <main className="workspace-page relative min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-white">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_8%,rgba(14,116,244,0.12),transparent_28%),radial-gradient(circle_at_86%_10%,rgba(52,211,153,0.12),transparent_26%),radial-gradient(circle_at_50%_18%,rgba(99,102,241,0.1),transparent_30%)]" />
-        <div className="mx-auto flex max-w-6xl flex-col gap-14 px-4 py-16 sm:px-6 lg:px-8">
+        <ResponsiveContainer width="wide" spacing="page" className="relative flex flex-col gap-10 sm:gap-12 lg:gap-14">
             <section className="relative overflow-hidden rounded-3xl border border-slate-200/70 bg-white/85 p-8 shadow-2xl backdrop-blur dark:border-slate-800/70 dark:bg-slate-900/75">
                 <div className="absolute inset-0 bg-gradient-to-br from-sky-50 via-white to-indigo-50 opacity-80 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950" />
                 <div className="relative grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
@@ -188,7 +189,7 @@ const ProjectsFallback = () => (
             </section>
 
             <CallToAction />
-        </div>
+        </ResponsiveContainer>
     </main>
 );
 

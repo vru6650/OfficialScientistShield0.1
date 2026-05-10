@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { HiOutlineExclamationCircle } from 'react-icons/hi';
 import { useCloudinaryUpload } from '../hooks/useCloudinaryUpload'; //
 import { createTutorial as createTutorialService } from '../services/tutorialService'; // NEW: Import tutorial service for creation
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 const DRAFT_KEY_TUTORIAL = 'tutorialDraft'; // Separate draft key for tutorials
 
@@ -184,7 +185,7 @@ export default function CreateTutorial() {
     };
 
     return (
-        <div className='p-3 max-w-4xl mx-auto min-h-screen'>
+        <ResponsiveContainer width='tight' spacing='page' className='min-h-screen'>
             <h1 className='text-center text-3xl my-7 font-semibold'>Create a New Tutorial</h1>
             <form className='flex flex-col gap-6' onSubmit={handleSubmit}>
                 {/* Main Tutorial Details */}
@@ -334,6 +335,6 @@ export default function CreateTutorial() {
                     </div >
                 </Modal.Body >
             </Modal >
-        </div >
+        </ResponsiveContainer >
     );
 }

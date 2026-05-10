@@ -95,15 +95,15 @@ export default function QuizComponent({ quizId }) {
         const FeedbackIcon = submitted ? (isCorrect ? HiCheckCircle : HiXCircle) : null;
 
         return (
-            <div key={question._id} className="mb-6 p-4 border rounded-lg bg-gray-100 dark:bg-gray-700 shadow-sm">
-                <p className="text-lg font-semibold mb-3 flex items-center">
+            <div key={question._id} className="mb-6 min-w-0 rounded-lg border bg-gray-100 p-4 shadow-sm dark:bg-gray-700">
+                <p className="mb-3 flex min-w-0 flex-wrap items-center gap-1 text-lg font-semibold">
                     {index + 1}. {question.questionText} {FeedbackIcon && <FeedbackIcon className="ml-2 text-xl" />}
                 </p>
 
                 {question.questionType === 'mcq' && (
                     <div className="space-y-2">
                         {question.options.map((option, optIndex) => (
-                            <div key={optIndex} className="flex items-center">
+                            <div key={optIndex} className="flex min-w-0 items-start gap-2">
                                 {Array.isArray(question.options.filter(o => o.isCorrect)) && question.options.filter(o => o.isCorrect).length > 1 ? (
                                     // Render checkboxes if multiple correct answers are possible
                                     <Checkbox
@@ -136,7 +136,7 @@ export default function QuizComponent({ quizId }) {
                                         className={submitted && option.isCorrect ? 'checked:bg-green-500' : ''}
                                     />
                                 )}
-                                <Label htmlFor={`mcq-${question._id}-${optIndex}`} className={`ml-2 cursor-pointer ${submitted && option.isCorrect ? 'font-bold text-green-600 dark:text-green-400' : ''}`}>
+                                <Label htmlFor={`mcq-${question._id}-${optIndex}`} className={`min-w-0 cursor-pointer break-words ${submitted && option.isCorrect ? 'font-bold text-green-600 dark:text-green-400' : ''}`}>
                                     {option.text}
                                 </Label>
                             </div>
@@ -187,7 +187,7 @@ export default function QuizComponent({ quizId }) {
     };
 
     return (
-        <div className="quiz-container p-5 bg-white dark:bg-gray-800 rounded-lg shadow-xl">
+        <div className="quiz-container min-w-0 rounded-lg bg-white p-4 shadow-xl dark:bg-gray-800 sm:p-5">
             <h2 className="text-3xl font-extrabold text-center mb-6 text-gray-900 dark:text-white">
                 {quiz.title}
             </h2>

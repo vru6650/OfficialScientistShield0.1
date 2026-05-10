@@ -6,6 +6,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { createQuiz as createQuizService } from '../services/quizService';
 import { getTutorials as getTutorialsService } from '../services/tutorialService'; // To link quizzes to tutorials
 import { FaTrash, FaPlus } from 'react-icons/fa';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 const QUIZ_DRAFT_KEY = 'quizDraft';
 
@@ -250,7 +251,7 @@ export default function CreateQuiz() {
     };
 
     return (
-        <div className='p-3 max-w-4xl mx-auto min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200'>
+        <ResponsiveContainer width='tight' spacing='page' className='min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200'>
             <h1 className='text-center text-4xl my-8 font-extrabold text-gray-900 dark:text-white'>Create a New Quiz</h1>
             <form className='flex flex-col gap-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg' onSubmit={handleSubmit}>
                 {/* Main Quiz Details */}
@@ -449,6 +450,6 @@ export default function CreateQuiz() {
                 </Button>
                 {state.publishError && <Alert className='mt-5' color='failure'>{state.publishError}</Alert>}
             </form>
-        </div>
+        </ResponsiveContainer>
     );
 }

@@ -7,6 +7,7 @@ import { FaPlus, FaTrash } from 'react-icons/fa';
 import { getProblemById, updateProblem } from '../services/problemService';
 import { useSelector } from 'react-redux';
 import { STARTER_CODE_LIBRARY, getStarterTemplateById } from '../data/starterCodeLibrary';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 const initialSample = { label: '', input: '', output: '', explanation: '' };
 const initialHint = { title: '', body: '' };
@@ -213,14 +214,14 @@ export default function UpdateProblem() {
 
     if (isError) {
         return (
-            <div className="mx-auto max-w-3xl px-4 py-20">
+            <ResponsiveContainer width="tight" spacing="page">
                 <Alert color="failure">{error?.message || 'Unable to load the problem for editing.'}</Alert>
-            </div>
+            </ResponsiveContainer>
         );
     }
 
     return (
-        <div className="mx-auto max-w-5xl space-y-10 px-4 py-12">
+        <ResponsiveContainer width="story" spacing="page" className="space-y-8 sm:space-y-10">
             <div className="space-y-2 text-center">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Update challenge</h1>
                 <p className="text-gray-600 dark:text-gray-300">Refresh constraints, add new hints, or improve the editorial for this problem.</p>
@@ -535,6 +536,6 @@ export default function UpdateProblem() {
                     </Button>
                 </div>
             </form>
-        </div>
+        </ResponsiveContainer>
     );
 }

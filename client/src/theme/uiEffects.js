@@ -39,6 +39,8 @@ const clampNumber = (value, min, max) => {
     return Math.min(Math.max(numericValue, min), max);
 };
 
+const sanitizeBoolean = (value) => value === true;
+
 export const sanitizeUiEffects = (value = {}) => {
     const source = typeof value === 'object' && value !== null ? value : {};
     const merged = { ...DEFAULT_EFFECTS, ...source };
@@ -49,7 +51,7 @@ export const sanitizeUiEffects = (value = {}) => {
         contrast:
             clampNumber(merged.contrast, 0.6, 1.6) ?? DEFAULT_EFFECTS.contrast,
         veil: clampNumber(merged.veil, 0, 1) ?? DEFAULT_EFFECTS.veil,
-        reduceMotion: Boolean(merged.reduceMotion),
+        reduceMotion: sanitizeBoolean(merged.reduceMotion),
         themeMode: sanitizeThemeMode(merged.themeMode),
         surfacePreset: resolveSurfacePresetKey(merged.surfacePreset),
         accentPreset: resolveAccentPresetKey(merged.accentPreset),

@@ -6,6 +6,7 @@ import { FaPlus, FaTrash } from 'react-icons/fa';
 
 import { createProblem } from '../services/problemService';
 import { STARTER_CODE_LIBRARY, getStarterTemplateById } from '../data/starterCodeLibrary';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 const initialSample = { label: '', input: '', output: '', explanation: '' };
 const initialHint = { title: '', body: '' };
@@ -177,7 +178,7 @@ export default function CreateProblem() {
     };
 
     return (
-        <div className="mx-auto max-w-5xl space-y-10 px-4 py-12">
+        <ResponsiveContainer width="story" spacing="page" className="space-y-8 sm:space-y-10">
             <div className="space-y-2 text-center">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Create a coding challenge</h1>
                 <p className="text-gray-600 dark:text-gray-300">
@@ -496,6 +497,6 @@ export default function CreateProblem() {
                     </Button>
                 </div>
             </form>
-        </div>
+        </ResponsiveContainer>
     );
 }

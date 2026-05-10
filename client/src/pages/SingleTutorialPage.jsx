@@ -21,6 +21,7 @@ import InteractiveReadingSurface from '../components/InteractiveReadingSurface.j
 import ReadingControlCenter from '../components/ReadingControlCenter';
 import useReadingSettings from '../hooks/useReadingSettings';
 import EmbeddedSnippetPreview from '../components/EmbeddedSnippetPreview.jsx';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 import { apiFetch } from '../utils/apiFetch';
 import { includesId } from '../utils/id.js';
 
@@ -47,7 +48,7 @@ const getTextFromNode = (node) => {
 };
 
 const TutorialPageSkeleton = () => (
-    <main className='p-3 flex flex-col max-w-6xl mx-auto min-h-screen animate-pulse'>
+    <ResponsiveContainer as='main' width='wide' spacing='page' className='flex min-h-screen flex-col animate-pulse'>
         <div className='bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 p-8 rounded-lg shadow-xl mb-12'>
             <div className='h-12 bg-gray-300 dark:bg-gray-600 rounded-md max-w-xl mx-auto mb-4'></div>
             <div className='h-8 bg-gray-300 dark:bg-gray-600 rounded-md max-w-3xl mx-auto mb-6'></div>
@@ -66,7 +67,7 @@ const TutorialPageSkeleton = () => (
                 <div className='h-4 w-5/6 bg-gray-300 dark:bg-gray-600 rounded-full'></div>
             </div>
         </div>
-    </main>
+    </ResponsiveContainer>
 );
 
 // Map tutorial categories to code languages for syntax highlighting.
@@ -527,7 +528,7 @@ export default function SingleTutorialPage() {
             />
 
             <ReadingProgressBar />
-            <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+            <div className="workspace-page flex min-h-screen min-w-0 flex-col bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 md:flex-row">
 
                 <SidebarNavigation
                     tutorial={tutorial}
@@ -535,7 +536,7 @@ export default function SingleTutorialPage() {
                     currentUser={currentUser}
                 />
 
-                <main className="flex-1 p-8 overflow-x-hidden">
+                <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-6 sm:px-6 lg:p-8">
                     <h1
                         className='text-4xl lg:text-5xl font-extrabold text-center my-8 leading-tight text-gray-900 dark:text-white'
                         style={centeredContentStyle}
@@ -570,8 +571,8 @@ export default function SingleTutorialPage() {
                         </div>
                     )}
 
-                    <div className="flex flex-col lg:flex-row gap-8 max-w-6xl mx-auto">
-                        <div className="lg:w-3/4 w-full" style={sharedContentStyle}>
+                    <div className="mx-auto flex max-w-6xl flex-col gap-6 lg:flex-row lg:gap-8">
+                        <div className="min-w-0 w-full lg:w-3/4" style={sharedContentStyle}>
                             <h2 className='text-3xl lg:text-4xl font-bold my-6 text-gray-900 dark:text-white leading-tight'>{activeChapter.chapterTitle}</h2>
                             <ChapterContent
                                 activeChapter={activeChapter}
@@ -583,7 +584,7 @@ export default function SingleTutorialPage() {
                             />
                         </div>
 
-                        <div className="lg:w-1/4 w-full sticky top-8 h-fit self-start hidden lg:block">
+                        <div className="hidden h-fit w-full self-start lg:sticky lg:top-8 lg:block lg:w-1/4">
                             <TableOfContents headings={headings} />
                         </div>
                     </div>
@@ -616,33 +617,33 @@ export default function SingleTutorialPage() {
                         <CommentSection tutorialId={tutorial._id} />
                     </div>
 
-                    <div className="flex justify-between max-w-3xl mx-auto mt-12 py-6 border-t border-gray-200 dark:border-gray-700">
+                    <div className="mx-auto mt-12 flex max-w-3xl flex-col justify-between gap-4 border-t border-gray-200 py-6 dark:border-gray-700 sm:flex-row">
                         {prevChapter ? (
                             <Button
                                 as={Link}
                                 to={`/tutorials/${tutorial.slug}/${prevChapter.chapterSlug}`}
                                 outline
                                 gradientDuoTone="purpleToBlue"
-                                className="mr-4 flex w-full flex-1 flex-col items-start px-4 py-2"
+                                className="flex w-full flex-1 flex-col items-start px-4 py-2 sm:mr-4"
                             >
                                 <span className="mb-1 text-xs text-gray-500 dark:text-gray-400">Previous Chapter</span>
                                 <span className="text-left text-base font-semibold">{prevChapter.chapterTitle}</span>
                             </Button>
                         ) : (
-                            <div className="flex-1 mr-4"></div>
+                            <div className="hidden flex-1 sm:mr-4 sm:block"></div>
                         )}
                         {nextChapter ? (
                             <Button
                                 as={Link}
                                 to={`/tutorials/${tutorial.slug}/${nextChapter.chapterSlug}`}
                                 gradientDuoTone="purpleToPink"
-                                className="ml-4 flex w-full flex-1 flex-col items-end px-4 py-2"
+                                className="flex w-full flex-1 flex-col items-end px-4 py-2 sm:ml-4"
                             >
                                 <span className="mb-1 text-xs text-gray-200">Next Chapter</span>
                                 <span className="text-right text-base font-semibold">{nextChapter.chapterTitle}</span>
                             </Button>
                         ) : (
-                            <div className="flex-1 ml-4"></div>
+                            <div className="hidden flex-1 sm:ml-4 sm:block"></div>
                         )}
                     </div>
                 </main>

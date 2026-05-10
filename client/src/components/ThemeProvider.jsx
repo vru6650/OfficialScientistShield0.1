@@ -43,6 +43,32 @@ const THEME_COLOR_FALLBACKS = Object.freeze({
     light: '#eef6ff',
     dark: '#0b1120',
 });
+const SYSTEM_SURFACE_ACCENTS = Object.freeze({
+    hybrid: {
+        light: { color: '#1694ff', strong: '#0b63da' },
+        dark: { color: '#7fd4ff', strong: '#3b82f6' },
+    },
+    liquid: {
+        light: { color: '#0a84ff', strong: '#005ecb' },
+        dark: { color: '#7fd4ff', strong: '#2563eb' },
+    },
+    sequoia: {
+        light: { color: '#0a84ff', strong: '#005ecb' },
+        dark: { color: '#0A84FF', strong: '#0b6bd6' },
+    },
+    graphite: {
+        light: { color: '#3b82f6', strong: '#1d4ed8' },
+        dark: { color: '#60a5fa', strong: '#2563eb' },
+    },
+    aurora: {
+        light: { color: '#6d7cff', strong: '#4858f2' },
+        dark: { color: '#95a3ff', strong: '#5b72ff' },
+    },
+    eclipse: {
+        light: { color: '#7c5cff', strong: '#5b3df2' },
+        dark: { color: '#9a8cff', strong: '#6f5dff' },
+    },
+});
 
 const ensureThemeColorMeta = () => {
     if (typeof document === 'undefined') return null;
@@ -99,14 +125,18 @@ const readAccessibilityPreferences = () => ({
     reducedMotion: readMediaQueryMatch(ACCESSIBILITY_MEDIA_QUERIES.reducedMotion),
 });
 
-const syncDocumentAccessibilityPreferences = (root, preferences) => {
+const syncDocumentAccessibilityPreferences = (
+    root,
+    preferences,
+    effectiveReduceMotion = preferences.reducedMotion
+) => {
     if (!root) return;
     root.setAttribute(
         'data-contrast-preference',
         preferences.prefersContrast ? 'more' : 'no-preference'
     );
     root.setAttribute('data-forced-colors', preferences.forcedColors ? 'active' : 'none');
-    root.setAttribute('data-reduced-motion', preferences.reducedMotion ? 'reduce' : 'no-preference');
+    root.setAttribute('data-reduced-motion', effectiveReduceMotion ? 'reduce' : 'no-preference');
 };
 
 const subscribeToMediaQuery = (query, callback) => {
@@ -219,21 +249,17 @@ export default function ThemeProvider({ children }) {
     }, [resolvedTheme, setThemeMode]);
 
     const muiTheme = useMemo(() => {
-        const fallbackAccent = resolvedAccentPreset;
-        let accentColor = fallbackAccent.color;
-        let accentStrong = fallbackAccent.strong;
-
-        if (
-            typeof window !== 'undefined' &&
-            typeof document !== 'undefined' &&
-            typeof window.getComputedStyle === 'function'
-        ) {
-            const styles = window.getComputedStyle(document.documentElement);
-            const cssAccent = styles.getPropertyValue('--color-accent').trim();
-            const cssAccentStrong = styles.getPropertyValue('--color-accent-strong').trim();
-            if (cssAccent) accentColor = cssAccent;
-            if (cssAccentStrong) accentStrong = cssAccentStrong;
-        }
+        const systemSurfaceAccent =
+            SYSTEM_SURFACE_ACCENTS[surfacePreset]?.[resolvedTheme] ||
+            SYSTEM_SURFACE_ACCENTS.hybrid[resolvedTheme];
+        const accentColor =
+            accentPreset === 'system'
+                ? systemSurfaceAccent.color
+                : resolvedAccentPreset.color;
+        const accentStrong =
+            accentPreset === 'system'
+                ? systemSurfaceAccent.strong
+                : resolvedAccentPreset.strong;
 
         return createMuiHybridTheme({
             mode: resolvedTheme,
@@ -241,7 +267,7 @@ export default function ThemeProvider({ children }) {
             accentColor,
             accentStrong,
         });
-    }, [resolvedAccentPreset, resolvedTheme, surfacePreset]);
+    }, [accentPreset, resolvedAccentPreset, resolvedTheme, surfacePreset]);
 
     useEffect(() => {
         if (typeof document === 'undefined') return undefined;
@@ -258,7 +284,11 @@ export default function ThemeProvider({ children }) {
         const sync = () => {
             const nextPreferences = readAccessibilityPreferences();
             setAccessibilityPreferences(nextPreferences);
-            syncDocumentAccessibilityPreferences(root, nextPreferences);
+            syncDocumentAccessibilityPreferences(
+                root,
+                nextPreferences,
+                nextPreferences.reducedMotion || readUiEffects().reduceMotion
+            );
         };
 
         sync();
@@ -292,15 +322,23 @@ export default function ThemeProvider({ children }) {
             root.removeAttribute('data-custom-accent');
         }
         root.style.setProperty('color-scheme', resolvedTheme);
-        syncDocumentAccessibilityPreferences(root, readAccessibilityPreferences());
+        syncDocumentAccessibilityPreferences(
+            root,
+            readAccessibilityPreferences(),
+            effectiveReduceMotion
+        );
 
         if (accentPreset === 'system') {
             root.style.removeProperty('--color-accent');
             root.style.removeProperty('--color-accent-strong');
             root.style.removeProperty('--color-accent-gradient');
+            root.style.removeProperty('--liquid-accent');
+            root.style.removeProperty('--liquid-accent-secondary');
         } else {
             root.style.setProperty('--color-accent', resolvedAccentPreset.color);
             root.style.setProperty('--color-accent-strong', resolvedAccentPreset.strong);
+            root.style.setProperty('--liquid-accent', resolvedAccentPreset.color);
+            root.style.setProperty('--liquid-accent-secondary', resolvedAccentPreset.strong);
             if (resolvedAccentPreset.gradient) {
                 root.style.setProperty('--color-accent-gradient', resolvedAccentPreset.gradient);
             } else {
@@ -318,7 +356,14 @@ export default function ThemeProvider({ children }) {
         if (statusBarMeta) {
             statusBarMeta.setAttribute('content', resolvedTheme === 'dark' ? 'black-translucent' : 'default');
         }
-    }, [accentPreset, resolvedAccentPreset, resolvedTheme, surfacePreset, themeMode]);
+    }, [
+        accentPreset,
+        effectiveReduceMotion,
+        resolvedAccentPreset,
+        resolvedTheme,
+        surfacePreset,
+        themeMode,
+    ]);
 
     const liquidAccent =
         'radial-gradient(1320px 820px at 10% 6%, rgba(255,255,255,0.28), rgba(255,255,255,0)), radial-gradient(1180px 840px at 84% 2%, rgba(102,198,255,0.34), rgba(102,198,255,0)), radial-gradient(980px 680px at 76% 88%, rgba(243,163,60,0.2), rgba(243,163,60,0)), conic-gradient(from 126deg at 50% 50%, rgba(126,152,255,0.28), rgba(59,184,255,0.26), rgba(96,225,212,0.18), rgba(243,163,60,0.18), rgba(126,152,255,0.28))';

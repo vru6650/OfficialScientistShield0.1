@@ -14,9 +14,10 @@ import {
 } from 'react-icons/hi';
 import StatCard from '../components/StatCard';
 import RecentDataTable from '../components/RecentDataTable';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 import useAdminDashboardData from '../hooks/useAdminDashboardData';
 import { motion } from 'framer-motion';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer as RechartsResponsiveContainer } from 'recharts';
 import { getPostPreviewImage } from '../utils/postMedia.js';
 
 const quickActions = [
@@ -108,10 +109,10 @@ export default function AdminPanel() {
 
     if (!currentUser?.isAdmin) {
         return (
-            <div className='min-h-screen px-4 py-10'>
-                <div className='mx-auto max-w-3xl'>
+            <div className='workspace-page min-h-screen'>
+                <ResponsiveContainer width='tight' spacing='page'>
                     <Alert color='warning'>Administrator access required.</Alert>
-                </div>
+                </ResponsiveContainer>
             </div>
         );
     }
@@ -131,8 +132,8 @@ export default function AdminPanel() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className='min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 py-10'>
-            <div className='mx-auto max-w-7xl space-y-12 px-4 sm:px-6 lg:px-8'>
+            className='workspace-page min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950'>
+            <ResponsiveContainer width='xl' spacing='page' className='space-y-8 sm:space-y-10 lg:space-y-12'>
                 <header className='flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between'>
                     <div className='space-y-4'>
                         <span className='inline-flex items-center gap-2 rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200'>
@@ -268,7 +269,7 @@ export default function AdminPanel() {
                     <div className='space-y-4'>
                         <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>User Registrations</h2>
                         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg">
-                            <ResponsiveContainer width="100%" height={300}>
+                            <RechartsResponsiveContainer width="100%" height={300}>
                                 <AreaChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" />
@@ -276,7 +277,7 @@ export default function AdminPanel() {
                                     <Tooltip />
                                     <Area type="monotone" dataKey="users" stroke="#8884d8" fill="#8884d8" />
                                 </AreaChart>
-                            </ResponsiveContainer>
+                            </RechartsResponsiveContainer>
                         </div>
                     </div>
                 </section>
@@ -464,7 +465,7 @@ export default function AdminPanel() {
                         ))}
                     </div>
                 </section>
-            </div>
+            </ResponsiveContainer>
         </motion.div>
     );
 }

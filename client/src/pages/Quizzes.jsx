@@ -12,6 +12,7 @@ import {
 import { getQuizzes } from '../services/quizService.js';
 import QuizCard from '../components/QuizCard';
 import QuizCardSkeleton from '../components/QuizCardSkeleton';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 const formatCategoryLabel = (value) =>
     value
@@ -168,12 +169,12 @@ export default function Quizzes() {
 
     return (
         <div className="workspace-page min-h-screen">
-            <section className="relative overflow-hidden px-4 pt-10 pb-12 sm:px-6 lg:px-8">
+            <section className="relative overflow-hidden pt-10 pb-12">
                 <div
                     aria-hidden
                     className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-100/50 via-transparent to-sky-100/60 opacity-80 dark:from-emerald-900/20 dark:to-sky-900/25"
                 />
-                <div className="relative mx-auto flex max-w-6xl flex-col gap-10">
+                <ResponsiveContainer width="wide" className="relative flex flex-col gap-8 sm:gap-10">
                     <div className="macos-panel macos-panel--wide">
                         <div className="macos-panel__grid space-y-10 p-6 sm:p-8 lg:p-10">
                             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -346,11 +347,11 @@ export default function Quizzes() {
                             )}
                         </div>
                     </div>
-                </div>
+                </ResponsiveContainer>
             </section>
 
-            <section className="px-4 pb-16 sm:px-6 lg:px-8">
-                <div className="mx-auto max-w-6xl">
+            <section className="pb-16">
+                <ResponsiveContainer width="wide">
                     {isLoading && (
                         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                             {Array.from({ length: 6 }).map((_, index) => (
@@ -390,7 +391,7 @@ export default function Quizzes() {
                             ))}
                         </div>
                     )}
-                </div>
+                </ResponsiveContainer>
             </section>
         </div>
     );

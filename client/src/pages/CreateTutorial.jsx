@@ -14,6 +14,7 @@ import TiptapEditor from '../components/TiptapEditor';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import DraggableChapter from '../components/DraggableChapter';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 const DRAFT_KEY_TUTORIAL = 'tutorialDraft';
 
@@ -497,7 +498,7 @@ export default function CreateTutorial() {
     };
 
     return (
-        <div className='p-3 max-w-4xl mx-auto min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200'>
+        <ResponsiveContainer width='tight' spacing='page' className='min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200'>
             <h1 className='text-center text-4xl my-8 font-extrabold text-gray-900 dark:text-white'>Create a New Tutorial</h1>
             <div className='mb-8'>
                 <Progress
@@ -685,6 +686,6 @@ export default function CreateTutorial() {
                     </div >
                 </Modal.Body >
             </Modal >
-        </div>
+        </ResponsiveContainer>
     );
 }

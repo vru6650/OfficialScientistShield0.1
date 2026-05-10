@@ -10,6 +10,7 @@ import ProblemFilters from '../components/problems/ProblemFilters';
 import ProblemCard from '../components/problems/ProblemCard';
 import ProblemSkeleton from '../components/problems/ProblemSkeleton';
 import ProblemEmptyState from '../components/problems/ProblemEmptyState';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 const buildQueryString = (params) => {
     const query = new URLSearchParams();
@@ -106,7 +107,7 @@ export default function ProblemSolving() {
     return (
         <div className="workspace-page min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 pb-20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
             <section className="bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 py-16 text-white">
-                <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-8">
+                <ResponsiveContainer width="wide" className="flex flex-col gap-8 sm:gap-10">
                     <div className="max-w-3xl space-y-6">
                         <span className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-white/90">
                             <HiSparkles className="h-4 w-4" />
@@ -139,10 +140,10 @@ export default function ProblemSolving() {
                             </div>
                         ))}
                     </div>
-                </div>
+                </ResponsiveContainer>
             </section>
 
-            <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <ResponsiveContainer width="wide">
                 <div className="-mt-16 space-y-10">
                     <ProblemFilters
                         searchValue={filters.searchTerm}
@@ -261,7 +262,7 @@ export default function ProblemSolving() {
                         </aside>
                     </div>
                 </div>
-            </div>
+            </ResponsiveContainer>
         </div>
     );
 }

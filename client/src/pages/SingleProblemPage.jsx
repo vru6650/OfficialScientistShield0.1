@@ -17,6 +17,7 @@ import ProblemResourceLinks from '../components/problems/ProblemResourceLinks';
 import ProblemMetaSummary from '../components/problems/ProblemMetaSummary';
 import ProblemWorkspace from '../components/problems/ProblemWorkspace';
 import ProblemDifficultyBadge from '../components/problems/ProblemDifficultyBadge';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 const CodeEditor = lazy(() => import('../components/CodeEditor'));
 
@@ -127,13 +128,13 @@ export default function SingleProblemPage() {
     }
 
     return (
-        <div className="relative min-h-screen bg-slate-50 pb-24 dark:bg-slate-950">
+        <div className="workspace-page relative min-h-screen bg-slate-50 pb-24 dark:bg-slate-950">
             <div className="absolute inset-x-0 top-0 -z-10 flex justify-center overflow-hidden">
                 <div className="pointer-events-none h-[420px] w-full max-w-5xl -translate-y-24 rounded-full bg-gradient-to-b from-cyan-200/60 via-transparent to-transparent blur-3xl dark:from-cyan-500/20" />
             </div>
 
             <header className="border-b border-slate-200/60 bg-white/80 shadow-sm backdrop-blur-lg dark:border-slate-800/60 dark:bg-slate-900/80">
-                <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
+                <ResponsiveContainer width="wide" spacing="page" className="flex flex-col gap-8">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <Breadcrumb aria-label="Problem breadcrumb" className="text-sm text-slate-500 dark:text-slate-400">
                             <Breadcrumb.Item href="/" icon={HiHome}>
@@ -224,10 +225,10 @@ export default function SingleProblemPage() {
                             </Link>
                         </div>
                     </div>
-                </div>
+                </ResponsiveContainer>
             </header>
 
-            <main className="mx-auto mt-12 max-w-6xl px-4 sm:px-6 lg:px-8">
+            <ResponsiveContainer as="main" width="wide" className="mt-10 sm:mt-12">
                 <div className="grid gap-10 lg:grid-cols-[1.12fr_0.88fr] xl:gap-12">
                     <div className="space-y-10">
                         <section className="rounded-3xl border border-slate-200 bg-white/70 p-8 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-none dark:ring-slate-800">
@@ -330,7 +331,7 @@ export default function SingleProblemPage() {
                         </div>
                     </aside>
                 </div>
-            </main>
+            </ResponsiveContainer>
         </div>
     );
 }

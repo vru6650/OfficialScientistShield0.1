@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { Alert } from 'flowbite-react';
 import PageForm from '../components/PageForm.jsx';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 import { createPage } from '../services/pageService.js';
 
 const CreatePage = () => {
@@ -17,7 +18,7 @@ const CreatePage = () => {
     };
 
     return (
-        <div className='mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8'>
+        <ResponsiveContainer width='wide' spacing='page'>
             <div className='mb-6 flex flex-col gap-2'>
                 <h1 className='text-3xl font-semibold text-gray-900 dark:text-white'>Create a custom page</h1>
                 <p className='text-sm text-gray-500 dark:text-gray-400'>
@@ -36,7 +37,7 @@ const CreatePage = () => {
                 isSubmitting={mutation.isPending}
                 submitLabel='Create page'
             />
-        </div>
+        </ResponsiveContainer>
     );
 };
 

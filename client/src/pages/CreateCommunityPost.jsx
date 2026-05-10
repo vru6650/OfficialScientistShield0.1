@@ -3,6 +3,7 @@ import { Alert, Button, Select, Spinner, TextInput, Textarea } from 'flowbite-re
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { createCommunityPost } from '../services/communityPostService.js';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 const categories = [
     { value: 'community', label: 'Community' },
@@ -55,9 +56,9 @@ export default function CreateCommunityPost() {
     };
 
     return (
-        <div className='relative min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 px-4 py-10 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950'>
+        <div className='workspace-page relative min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950'>
             <div className='pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.12),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.12),transparent_28%)] dark:bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.14),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.14),transparent_28%)]' aria-hidden />
-            <div className='relative mx-auto max-w-4xl space-y-8'>
+            <ResponsiveContainer width='tight' spacing='page' className='relative space-y-8'>
                 <header className='space-y-3'>
                     <p className='text-xs font-semibold uppercase tracking-[0.24em] text-cyan-600 dark:text-cyan-300'>Community post</p>
                     <h1 className='text-3xl font-bold text-gray-900 dark:text-white'>Share with the community</h1>
@@ -134,7 +135,7 @@ export default function CreateCommunityPost() {
                         </Button>
                     </div>
                 </form>
-            </div>
+            </ResponsiveContainer>
         </div>
     );
 }

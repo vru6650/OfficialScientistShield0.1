@@ -492,7 +492,7 @@ export default function Dock() {
                     ref={quickAddRef}
                     role="menu"
                     aria-label="Quick add actions"
-                    className="pointer-events-auto absolute bottom-28 right-24 z-[80] w-[340px] max-w-[calc(100vw-32px)] rounded-2xl border border-white/45 bg-white/94 p-3 shadow-[0_32px_90px_-52px_rgba(15,23,42,0.8)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/94"
+                    className="macos-dock-popover macos-dock-popover--quick-add pointer-events-auto absolute bottom-28 right-24 z-[80] w-[340px] max-w-[calc(100vw-32px)] rounded-2xl border border-white/45 bg-white/94 p-3 shadow-[0_32px_90px_-52px_rgba(15,23,42,0.8)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/94"
                     initial={{ opacity: 0, y: 12, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -540,7 +540,7 @@ export default function Dock() {
             {customizerOpen ? (
                 <motion.div
                     ref={customizerRef}
-                    className="pointer-events-auto absolute bottom-28 right-6 z-[80] w-[320px] max-w-[calc(100vw-32px)] rounded-2xl border border-white/40 bg-white/92 p-4 shadow-[0_32px_90px_-52px_rgba(15,23,42,0.8)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/92"
+                    className="macos-dock-popover macos-dock-popover--settings pointer-events-auto absolute bottom-28 right-6 z-[80] w-[320px] max-w-[calc(100vw-32px)] rounded-2xl border border-white/40 bg-white/92 p-4 shadow-[0_32px_90px_-52px_rgba(15,23,42,0.8)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/92"
                     initial={{ opacity: 0, y: 12, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.98 }}

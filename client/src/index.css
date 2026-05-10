@@ -13849,7 +13849,8 @@ html.liquid-glass.dark .macos-desktop::after {
 .workspace-page__content {
   position: relative;
   z-index: 1;
-  width: min(100%, var(--workspace-content-width, 1120px));
+  width: min(100%, calc(var(--workspace-content-width, 1120px) + (var(--responsive-container-gutter, 0px) * 2)));
+  max-width: 100%;
   margin-inline: auto;
 }
 
@@ -24510,6 +24511,20 @@ html.dark body.reading-contrast-active .post-content {
   --device-panel-padding: clamp(0.9rem, 2.8vw, 1.5rem);
   --device-control-min-height: 2.75rem;
   --device-dock-reserve: calc(env(safe-area-inset-bottom, 0px) + 5.35rem);
+  --responsive-gutter: clamp(0.875rem, 3.2vw, 2rem);
+  --responsive-gutter-compact: clamp(0.75rem, 2.4vw, 1.25rem);
+  --responsive-gutter-article: clamp(1rem, 4vw, 2.5rem);
+  --responsive-container-gutter: 0px;
+  --responsive-readable-width: 68ch;
+  --responsive-action-gap: 0.75rem;
+  --responsive-section-gap: clamp(2rem, 5vw, 4.5rem);
+  --responsive-card-padding: clamp(1rem, 3vw, 2rem);
+  --responsive-radius-lg: clamp(1rem, 2.6vw, 2rem);
+  --responsive-text-base: clamp(0.95rem, 0.9rem + 0.22vw, 1.05rem);
+  --responsive-text-sm: clamp(0.84rem, 0.82rem + 0.16vw, 0.93rem);
+  --responsive-display: clamp(2rem, 1.45rem + 2.2vw, 4rem);
+  --responsive-heading: clamp(1.55rem, 1.22rem + 1.25vw, 2.55rem);
+  --responsive-subheading: clamp(1.18rem, 1.03rem + 0.7vw, 1.7rem);
 }
 
 *,
@@ -24549,7 +24564,96 @@ body {
 }
 
 .workspace-page__content {
-  max-width: min(var(--workspace-content-width, 1120px), calc(100vw - (var(--device-content-gutter) * 2)));
+  width: min(100%, calc(var(--workspace-content-width, 1120px) + (var(--responsive-container-gutter, 0px) * 2)));
+  max-width: 100%;
+}
+
+.workspace-page__content--full { --workspace-content-width: 100%; }
+
+.responsive-container {
+  --responsive-container-gutter: 0px;
+  width: min(100%, calc(var(--workspace-content-width, 1120px) + (var(--responsive-container-gutter) * 2)));
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.responsive-gutters {
+  --responsive-container-gutter: var(--responsive-gutter);
+  padding-left: max(var(--responsive-container-gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--responsive-container-gutter), env(safe-area-inset-right, 0px));
+}
+
+.responsive-gutters--compact {
+  --responsive-container-gutter: var(--responsive-gutter-compact);
+}
+
+.responsive-gutters--article {
+  --responsive-container-gutter: var(--responsive-gutter-article);
+}
+
+.responsive-section {
+  padding-block: clamp(2rem, 4vw, 3.25rem);
+}
+
+.responsive-section--compact {
+  padding-block: clamp(1.25rem, 3vw, 2.25rem);
+}
+
+.responsive-section--article {
+  padding-block: clamp(2rem, 4.5vw, 3.75rem);
+}
+
+.responsive-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--responsive-section-gap);
+}
+
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.responsive-card {
+  border-radius: var(--responsive-radius-lg);
+  padding: var(--responsive-card-padding);
+}
+
+.responsive-readable {
+  max-width: var(--responsive-readable-width);
+}
+
+.responsive-action-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--responsive-action-gap);
+}
+
+.responsive-action-row > :is(a, button, [role='button']) {
+  width: 100%;
+  justify-content: center;
+}
+
+.responsive-scroll-shell {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: var(--responsive-container-gutter, var(--device-content-gutter));
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 640px) {
+  .responsive-action-row {
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .responsive-action-row > :is(a, button, [role='button']) {
+    width: auto;
+  }
 }
 
 .workspace-window-surface :is(.workspace-page__content, .container, [class*='max-w-']) {
@@ -24627,7 +24731,9 @@ body {
   --compact-top-reserve: max(env(safe-area-inset-top, 0px), 0.65rem);
   --compact-inline-gutter: clamp(0.45rem, 2.4vw, 1rem);
   --compact-bottom-reserve: var(--device-dock-reserve);
+  width: 100%;
   max-width: min(100vw, 80rem);
+  margin-inline: auto;
   padding:
     var(--compact-top-reserve)
     var(--compact-inline-gutter)
@@ -24638,6 +24744,7 @@ body {
   height: calc(100svh - var(--compact-top-reserve) - var(--compact-bottom-reserve));
   min-height: min(42rem, calc(100svh - var(--compact-top-reserve) - var(--compact-bottom-reserve)));
   max-height: calc(100svh - var(--compact-top-reserve) - var(--compact-bottom-reserve));
+  margin: 0 auto;
 }
 
 .macos-window--compact-shell .macos-window__body {
@@ -24676,6 +24783,11 @@ body {
 
 .macos-dock[data-compact="true"] .macos-dock__label {
   display: none;
+}
+
+.macos-dock-popover {
+  min-width: 0;
+  overflow: hidden;
 }
 
 @media (hover: none), (pointer: coarse) {
@@ -24799,6 +24911,19 @@ body {
   .macos-window__titlebar-center {
     max-width: calc(100% - 5rem);
   }
+
+  .macos-dock-popover {
+    position: fixed !important;
+    left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+    right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 5.35rem) !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: min(64svh, 28rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 @media (max-width: 420px) {
@@ -24846,6 +24971,12 @@ body {
   .auth-page :is(.rounded-3xl, .rounded-\[32px\], .rounded-\[30px\], .rounded-\[28px\]) {
     border-radius: 1.05rem;
   }
+
+  .macos-dock-popover {
+    left: max(0.5rem, env(safe-area-inset-left, 0px)) !important;
+    right: max(0.5rem, env(safe-area-inset-right, 0px)) !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 4.9rem) !important;
+  }
 }
 
 @media (max-height: 620px) and (orientation: landscape) {
@@ -24869,6 +25000,10 @@ body {
   .macos-window__titlebar {
     min-height: 36px;
     padding-block: 0.36rem;
+  }
+
+  .macos-dock-popover {
+    max-height: min(58svh, 22rem);
   }
 }
 
@@ -25085,6 +25220,22 @@ body {
   .home-journey-card {
     padding: 1rem;
   }
+
+  .macos-hero-window :is(.btn-aqua, .btn-glass-secondary),
+  .workspace-page :is(.btn-aqua, .btn-glass-secondary) {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .macos-hero-window :is(.flex.flex-wrap, .macos-chip-row),
+  .workspace-page :is(.flex.flex-wrap, .macos-chip-row) {
+    align-items: stretch;
+  }
+
+  .macos-hero-window .macos-chip,
+  .workspace-page .macos-chip {
+    justify-content: center;
+  }
 }
 
 /*
@@ -25240,6 +25391,9 @@ body {
 @media (max-width: 380px) {
   :root {
     --device-content-gutter: 0.625rem;
+    --responsive-gutter: 0.75rem;
+    --responsive-gutter-compact: 0.625rem;
+    --responsive-gutter-article: 0.875rem;
   }
 
   .workspace-page__content {
@@ -25264,6 +25418,102 @@ body {
 
   .macos-command__input {
     font-size: 0.86rem;
+  }
+}
+
+/*
+ * Production responsive system
+ * Mobile-first tokens and overflow handling shared by page shells, cards, forms,
+ * rich content, and dense admin/tool surfaces.
+ */
+body {
+  font-size: var(--responsive-text-base);
+}
+
+.workspace-page :is(h1, .responsive-title),
+.auth-page :is(h1, .responsive-title) {
+  font-size: var(--responsive-display);
+  line-height: 1.05;
+}
+
+.workspace-page .responsive-heading,
+.auth-page .responsive-heading {
+  font-size: var(--responsive-heading);
+  line-height: 1.15;
+}
+
+.workspace-page .responsive-subheading,
+.auth-page .responsive-subheading {
+  font-size: var(--responsive-subheading);
+  line-height: 1.2;
+}
+
+.workspace-page :is(p, li, label, input, select, textarea),
+.workspace-window-surface :is(p, li, label, input, select, textarea),
+.auth-page :is(p, li, label, input, select, textarea) {
+  font-size: min(1em, var(--responsive-text-base));
+}
+
+.workspace-page :is(button, [type='button'], [type='submit'], [role='button']),
+.workspace-window-surface :is(button, [type='button'], [type='submit'], [role='button']),
+.auth-page :is(button, [type='button'], [type='submit'], [role='button']) {
+  min-height: var(--device-control-min-height);
+}
+
+.workspace-page :is(img, video, canvas, svg),
+.workspace-window-surface :is(img, video, canvas, svg),
+.auth-page :is(img, video, canvas, svg) {
+  height: auto;
+}
+
+.workspace-page :is(iframe, embed, object),
+.workspace-window-surface :is(iframe, embed, object),
+.auth-page :is(iframe, embed, object) {
+  width: 100%;
+}
+
+.workspace-page :is(table),
+.workspace-window-surface :is(table),
+.auth-page :is(table) {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+}
+
+.workspace-page :is(th, td),
+.workspace-window-surface :is(th, td),
+.auth-page :is(th, td) {
+  overflow-wrap: anywhere;
+}
+
+.workspace-page :is(pre),
+.workspace-window-surface :is(pre),
+.auth-page :is(pre) {
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.workspace-page :is(.line-clamp-1, .line-clamp-2, .line-clamp-3, .truncate),
+.workspace-window-surface :is(.line-clamp-1, .line-clamp-2, .line-clamp-3, .truncate),
+.auth-page :is(.line-clamp-1, .line-clamp-2, .line-clamp-3, .truncate) {
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .responsive-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-page :is(.responsive-card, .macos-panel__grid, .macos-tile),
+  .workspace-window-surface :is(.responsive-card, .macos-panel__grid, .macos-tile),
+  .auth-page :is(.responsive-card, .macos-panel__grid, .macos-tile) {
+    padding: var(--responsive-card-padding);
+  }
+
+  .workspace-page :is(.sm\:w-\[360px\], .w-\[360px\], .w-\[420px\], .w-\[520px\]),
+  .workspace-window-surface :is(.sm\:w-\[360px\], .w-\[360px\], .w-\[420px\], .w-\[520px\]),
+  .auth-page :is(.sm\:w-\[360px\], .w-\[360px\], .w-\[420px\], .w-\[520px\]) {
+    width: 100% !important;
   }
 }
 

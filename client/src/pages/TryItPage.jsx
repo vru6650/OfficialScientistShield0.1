@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fa';
 import { SiCplusplus, SiCsharp } from 'react-icons/si';
 import CodeEditor from '../components/CodeEditor';
+import ResponsiveContainer from '../components/layout/ResponsiveContainer.jsx';
 
 const playgroundTemplates = [
     {
@@ -309,8 +310,8 @@ export default function TryItPage() {
         || (typeof activeTemplate.code === 'object' && (activeTemplate.code?.html || activeTemplate.code?.css));
 
     return (
-        <div className='min-h-screen px-4 pb-16 pt-10 sm:px-6 lg:px-10 text-slate-900 dark:text-slate-100'>
-            <div className='mx-auto flex max-w-7xl flex-col gap-10'>
+        <div className='workspace-page min-h-screen text-slate-900 dark:text-slate-100'>
+            <ResponsiveContainer width='xl' spacing='page' className='flex flex-col gap-8 sm:gap-10'>
                 <section className='relative overflow-hidden rounded-[32px] border border-slate-200/70 bg-white/80 p-8 shadow-[0_50px_140px_-80px_rgba(8,14,28,0.25)] dark:border-white/15 dark:bg-slate-950/70 dark:shadow-[0_50px_140px_-80px_rgba(8,14,28,0.9)]'>
                     <div className='pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.28),_transparent_55%),radial-gradient(circle_at_80%_10%,_rgba(251,191,36,0.2),_transparent_45%),radial-gradient(circle_at_20%_85%,_rgba(56,189,248,0.22),_transparent_50%)]' />
                     <div className='relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr]'>
@@ -551,7 +552,7 @@ export default function TryItPage() {
                         </div>
                     </div>
                 </section>
-            </div>
+            </ResponsiveContainer>
         </div>
     );
 }

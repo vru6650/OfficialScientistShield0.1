@@ -10,16 +10,16 @@ import React from 'react';
  */
 export default function TutorialLayout({ sidebarContent, mainContent }) {
     return (
-        <div className="flex flex-col md:flex-row min-h-screen">
+        <div className="flex min-h-screen min-w-0 flex-col md:flex-row">
             {/* Sidebar section */}
-            <aside className="md:w-72 w-full p-4 border-r border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 shadow-lg md:h-screen md:sticky md:top-0 overflow-y-auto scrollbar-custom z-10 transition-all duration-300 ease-in-out">
+            <aside className="z-10 max-h-[45svh] w-full overflow-y-auto border-b border-gray-200 bg-gray-100 p-4 shadow-lg transition-all duration-300 ease-in-out scrollbar-custom dark:border-gray-700 dark:bg-gray-800 md:sticky md:top-0 md:max-h-screen md:w-72 md:shrink-0 md:border-b-0 md:border-r">
                 {sidebarContent}
             </aside>
 
             {/* Main content section */}
-            <main className="flex-1 overflow-x-hidden p-6 md:p-10">
+            <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 md:p-10">
                 {mainContent}
             </main>
         </div>
     );
-}
+}    

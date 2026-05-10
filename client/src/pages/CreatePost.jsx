@@ -761,7 +761,7 @@ export default function CreatePost() {
     };
 
     return (
-        <div className='liquid-stage' data-theme='liquid-glass'>
+        <div className='workspace-page liquid-stage' data-theme='liquid-glass'>
             <div className='liquid-stage__backdrop' aria-hidden='true'>
                 <div className='liquid-stage__blob liquid-stage__blob--cyan' />
                 <div className='liquid-stage__blob liquid-stage__blob--violet' />
@@ -771,7 +771,7 @@ export default function CreatePost() {
                 <div className='liquid-stage__noise' />
             </div>
 
-            <div className='create-post-studio relative z-10 min-h-screen px-4 py-8 pb-32 lg:px-6 lg:pb-10'>
+            <div className='create-post-studio relative z-10 min-h-screen px-3 py-6 pb-32 sm:px-4 sm:py-8 lg:px-6 lg:pb-10'>
                 <div className='mx-auto max-w-7xl space-y-6'>
                     <section className='create-post-hero'>
                         <div className='grid gap-6 xl:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]'>
